@@ -5,9 +5,9 @@ import * as React from 'react';
 
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
-import TabOneScreen from '../screens/TabOneScreen';
-import TabTwoScreen from '../screens/TabTwoScreen';
-import TabThreeScreen from '../screens/TabThreeScreen';
+import SawabTab from '../screens/SawabTab';
+import ProgressTab from '../screens/ProgressTab';
+import JannahTab from '../screens/JannahTab';
 import { BottomTabParamList, TabOneParamList, TabTwoParamList } from '../types';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
@@ -18,23 +18,23 @@ export default function BottomTabNavigator() {
   return (
     <BottomTab.Navigator
       initialRouteName="TabOne"
-      tabBarOptions={{ activeTintColor: Colors[colorScheme].richBlack }}>
+      tabBarOptions={{ activeTintColor: Colors[colorScheme].orangePeel }}>
       <BottomTab.Screen
-        name="TabOne"
+        name="Sawab"
         component={TabOneNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].tiffanyBlue} />,
         }}
       />
       <BottomTab.Screen
-        name="TabTwo"
+        name="Progress"
         component={TabTwoNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].roseMadder} />,
         }}
       />
       <BottomTab.Screen
-        name="TabThree"
+        name="Jannah"
         component={TabThreeNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].orangePeel} />,
@@ -68,7 +68,7 @@ function TabOneNavigator() {
     <TabOneStack.Navigator>
       <TabOneStack.Screen
         name="TabOneScreen"
-        component={TabOneScreen}
+        component={SawabTab}
         options={{ headerTitle: 'Sawab Top-Up' }}
       />
     </TabOneStack.Navigator>
@@ -82,8 +82,8 @@ function TabTwoNavigator() {
     <TabTwoStack.Navigator>
       <TabTwoStack.Screen
         name="TabTwoScreen"
-        component={TabTwoScreen}
-        options={{ headerTitle: 'Progress Report' }}
+        component={ProgressTab}
+        options={{ headerTitle: 'Progress Report Stats' }}
       />
     </TabTwoStack.Navigator>
   );
@@ -96,7 +96,7 @@ function TabThreeNavigator() {
     <TabThreeStack.Navigator>
       <TabThreeStack.Screen
         name="TabThreeScreen"
-        component={TabThreeScreen}
+        component={JannahTab}
         options={{ headerTitle: 'Jannah Builder' }}
       />
     </TabThreeStack.Navigator>
