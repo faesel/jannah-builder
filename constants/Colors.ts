@@ -29,6 +29,6 @@ export default {
     roseMadder: roseMadder,
     orangePeel: orangePeel,
     tabIconDefault: '#ccc',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: tintColorLight,
   },
 };
