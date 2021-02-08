@@ -5,6 +5,10 @@ const tiffanyBlue = '#2EC4B6';
 const roseMadder = '#E71D36';
 const orangePeel = '#FF9F1C';
 
+// Panels
+const lightGray = '#f3f3f3';
+
+
 const tintColorLight = '#2f95dc';
 const tintColorDark = '#fff';
 
@@ -17,6 +21,7 @@ export default {
     tiffanyBlue: tiffanyBlue,
     roseMadder: roseMadder,
     orangePeel: orangePeel,
+    lightGray: lightGray,
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorLight,
   },
@@ -28,6 +33,7 @@ export default {
     tiffanyBlue: tiffanyBlue,
     roseMadder: roseMadder,
     orangePeel: orangePeel,
+    lightGray: lightGray,
     tabIconDefault: '#ccc',
     tabIconSelected: tintColorLight,
   },

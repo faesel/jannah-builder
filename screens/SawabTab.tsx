@@ -4,117 +4,167 @@ import { StyleSheet } from 'react-native';
 import { Text, View } from '../components/Themed';
 import Colors from '../constants/Colors'
 import useColorScheme from '../hooks/useColorScheme';
+import { AntDesign } from '@expo/vector-icons'; 
 
 export default function SawabTab() {
   const colorScheme = useColorScheme();
 
   return (
     <View style={styles.container}>
-          <View
+   
+
+      <View
+        lightColor={Colors[colorScheme].lightGray}
+        darkColor={Colors[colorScheme].babyPowder}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          margin: 20,
+          borderRadius: 15,
+          padding: 10
+        }}>
+
+        <View
+          lightColor={Colors[colorScheme].lightGray}
+          darkColor={Colors[colorScheme].babyPowder}
           style={{
             flexDirection: "column",
             display: "flex",
-            margin: 20,
-            borderRadius: 10,
-            padding: 10,
-            backgroundColor: "red"
+            padding: 10
           }}>
-            <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)"
-              style={{marginBottom:10, fontSize:20}}>
+          <View
+            lightColor={Colors[colorScheme].lightGray}
+            darkColor={Colors[colorScheme].babyPowder}
+            style={{ marginBottom: 10, width:100 }}>
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{ fontSize: 20 }}>
               Prayers
             </Text>
 
-            <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)">
-              FAJAR:
-            </Text>
-
-            <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)">
-              ZAUHAR:
-            </Text>
-
-            <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)">
-              ASR:
-            </Text>
-
-            <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)">
-              MAGHRIB:
-            </Text>
-
-            <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)">
-              ISHA'A:
-            </Text>
-
           </View>
 
           <View
-          style={{
-            flexDirection: "column",
-            display: "flex",
-            height: 100,
-            margin: 20,
-            padding:10,
-            borderRadius: 10,
-            marginTop: 0,
-            backgroundColor: "yellow"
-          }}>
-             <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)"
-              style={{marginBottom:10, fontSize:20}}>
-              Quran
+            lightColor={Colors[colorScheme].lightGray}
+            darkColor={Colors[colorScheme].babyPowder}
+            style={{
+              flexDirection: "row",
+            display: "flex", }}>
+
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{paddingRight: 5}}>
+              Fajar
             </Text>
+
+            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="green" />
+
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{paddingRight: 5}}>
+              Dhuhr
+            </Text>
+
+            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="green" />
+
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{paddingRight: 5}}>
+              Asr
+            </Text>
+
+            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="gray" />
+
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{paddingRight: 5}}>
+              Maghrib
+            </Text>
+
+            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="green" />
+
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{paddingRight: 5}}>
+              Isha
+            </Text>
+
+            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="gray" />
           </View>
 
-          <View
-          style={{
-            flexDirection: "column",
-            display: "flex",
-            height: 100,
-            margin: 20,
-            padding:10,
-            borderRadius: 10,
-            marginTop: 0,
-            backgroundColor: "green"
-          }}>
-             <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)"
-              style={{marginBottom:10, fontSize:20}}>
-              Zakat
-            </Text>
-          </View>
 
 
-          <View
-          style={{
-            flexDirection: "column",
-            display: "flex",
-            height: 100,
-            margin: 20,
-            padding:10,
-            borderRadius: 10,
-            marginTop: 0,
-            backgroundColor: "blue"
-          }}>
-             <Text 
-              lightColor="rgba(0,0,0,0.8)"
-              darkColor="rgba(255,255,255,0.8)"
-              style={{marginBottom:10, fontSize:20}}>
-              TOTAL TODAY: 10 SAWAB
+
+        </View>
+
+      </View>
+
+      <View
+        lightColor={Colors[colorScheme].lightGray}
+        darkColor={Colors[colorScheme].babyPowder}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          height: 100,
+          margin: 20,
+          padding: 10,
+          borderRadius: 15,
+          marginTop: 0,
+        }}>
+        <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+          style={{ marginBottom: 10, fontSize: 20 }}>
+          Quran
             </Text>
-          </View>
+      </View>
+
+      <View
+        lightColor={Colors[colorScheme].lightGray}
+        darkColor={Colors[colorScheme].babyPowder}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          height: 100,
+          margin: 20,
+          padding: 10,
+          borderRadius: 15,
+          marginTop: 0
+        }}>
+        <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+          style={{ marginBottom: 10, fontSize: 20 }}>
+          Zakat
+            </Text>
+      </View>
+
+
+      <View
+        lightColor={Colors[colorScheme].lightGray}
+        darkColor={Colors[colorScheme].babyPowder}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          height: 100,
+          margin: 20,
+          padding: 10,
+          borderRadius: 15,
+          marginTop: 0
+        }}>
+        <Text
+          lightColor={Colors[colorScheme].richBlack}
+          darkColor={Colors[colorScheme].richBlack}
+          style={{ marginBottom: 10, fontSize: 20 }}>
+          TOTAL TODAY: 10 SAWAB
+            </Text>
+      </View>
 
     </View>
   );
