@@ -6,9 +6,10 @@ import * as React from 'react';
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
 import SawabTab from '../screens/SawabTab';
+import Prayer from '../screens/PrayerScreen';
 import ProgressTab from '../screens/ProgressTab';
 import JannahTab from '../screens/JannahTab';
-import { BottomTabParamList, TabOneParamList, TabTwoParamList } from '../types';
+import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList } from '../types';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -17,7 +18,7 @@ export default function BottomTabNavigator() {
 
   return (
     <BottomTab.Navigator
-      initialRouteName="TabOne"
+      initialRouteName="Sawab"
       tabBarOptions={{ activeTintColor: Colors[colorScheme].orangePeel }}>
       <BottomTab.Screen
         name="Sawab"
@@ -71,6 +72,7 @@ function TabOneNavigator() {
         component={SawabTab}
         options={{ headerTitle: 'Sawab Top-Up' }}
       />
+      <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer' }} />
     </TabOneStack.Navigator>
   );
 }
@@ -89,7 +91,7 @@ function TabTwoNavigator() {
   );
 }
 
-const TabThreeStack = createStackNavigator<TabTwoParamList>();
+const TabThreeStack = createStackNavigator<TabThreeParamList>();
 
 function TabThreeNavigator() {
   return (

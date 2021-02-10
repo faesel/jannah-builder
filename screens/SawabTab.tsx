@@ -1,17 +1,19 @@
 import * as React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 
 import { Text, View } from '../components/Themed';
 import Colors from '../constants/Colors'
 import useColorScheme from '../hooks/useColorScheme';
-import { AntDesign } from '@expo/vector-icons'; 
+import { AntDesign } from '@expo/vector-icons';
+import { RootStackParamList } from '../types';
+import { StackScreenProps } from '@react-navigation/stack';
 
-export default function SawabTab() {
+export default function SawabTab({ navigation }: StackScreenProps<RootStackParamList>) {
   const colorScheme = useColorScheme();
 
   return (
     <View style={styles.container}>
-   
+
 
       <View
         lightColor={Colors[colorScheme].lightGray}
@@ -32,73 +34,73 @@ export default function SawabTab() {
             display: "flex",
             padding: 10
           }}>
-          <View
-            lightColor={Colors[colorScheme].lightGray}
-            darkColor={Colors[colorScheme].babyPowder}
-            style={{ marginBottom: 10, width:100 }}>
-            <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
-              style={{ fontSize: 20 }}>
-              Prayers
+          <Text
+            lightColor={Colors[colorScheme].richBlack}
+            darkColor={Colors[colorScheme].richBlack}
+            style={{ fontSize: 20, paddingBottom: 10 }}>
+            Prayers
             </Text>
 
-          </View>
 
           <View
             lightColor={Colors[colorScheme].lightGray}
             darkColor={Colors[colorScheme].babyPowder}
             style={{
               flexDirection: "row",
-            display: "flex", }}>
+              display: "flex",
+            }}>
 
             <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-              style={{paddingRight: 5}}>
+              style={{ paddingRight: 5 }}>
               Fajar
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="green" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="green" />
 
             <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-              style={{paddingRight: 5}}>
+              style={{ paddingRight: 5 }}>
               Dhuhr
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="green" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="green" />
 
             <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-              style={{paddingRight: 5}}>
+              style={{ paddingRight: 5 }}>
               Asr
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="gray" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="gray" />
 
             <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-              style={{paddingRight: 5}}>
+              style={{ paddingRight: 5 }}>
               Maghrib
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="green" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="green" />
 
             <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-              style={{paddingRight: 5}}>
+              style={{ paddingRight: 5 }}>
               Isha
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{paddingRight: 10}} color="gray" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="gray" />
+
+           
           </View>
 
-
+          <TouchableOpacity onPress={() => navigation.navigate('Prayer')}>
+              <Text>Go to prayer screen!</Text>
+            </TouchableOpacity>
 
 
         </View>
@@ -111,18 +113,28 @@ export default function SawabTab() {
         style={{
           flexDirection: "column",
           display: "flex",
-          height: 100,
           margin: 20,
-          padding: 10,
           borderRadius: 15,
+          padding: 10,
           marginTop: 0,
         }}>
-        <Text
+              <View
+          lightColor={Colors[colorScheme].lightGray}
+          darkColor={Colors[colorScheme].babyPowder}
+          style={{
+            flexDirection: "column",
+            display: "flex",
+            padding: 10
+          }}>
+            <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-          style={{ marginBottom: 10, fontSize: 20 }}>
-          Quran
+              style={{ fontSize: 20 }}>
+              Quran
             </Text>
+
+          </View>
+
       </View>
 
       <View
@@ -131,19 +143,29 @@ export default function SawabTab() {
         style={{
           flexDirection: "column",
           display: "flex",
-          height: 100,
           margin: 20,
           padding: 10,
           borderRadius: 15,
           marginTop: 0
         }}>
-        <Text
+           <View
+          lightColor={Colors[colorScheme].lightGray}
+          darkColor={Colors[colorScheme].babyPowder}
+          style={{
+            flexDirection: "column",
+            display: "flex",
+            padding: 10
+          }}>
+            <Text
               lightColor={Colors[colorScheme].richBlack}
               darkColor={Colors[colorScheme].richBlack}
-          style={{ marginBottom: 10, fontSize: 20 }}>
-          Zakat
+              style={{ fontSize: 20 }}>
+              Zakat
             </Text>
+
+          </View>
       </View>
+
 
 
       <View
@@ -152,18 +174,27 @@ export default function SawabTab() {
         style={{
           flexDirection: "column",
           display: "flex",
-          height: 100,
           margin: 20,
           padding: 10,
           borderRadius: 15,
           marginTop: 0
         }}>
-        <Text
-          lightColor={Colors[colorScheme].richBlack}
-          darkColor={Colors[colorScheme].richBlack}
-          style={{ marginBottom: 10, fontSize: 20 }}>
-          TOTAL TODAY: 10 SAWAB
+           <View
+          lightColor={Colors[colorScheme].lightGray}
+          darkColor={Colors[colorScheme].babyPowder}
+          style={{
+            flexDirection: "column",
+            display: "flex",
+            padding: 10
+          }}>
+            <Text
+              lightColor={Colors[colorScheme].richBlack}
+              darkColor={Colors[colorScheme].richBlack}
+              style={{ fontSize: 20 }}>
+              Total: 100 
             </Text>
+
+          </View>
       </View>
 
     </View>
