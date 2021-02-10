@@ -1,12 +1,14 @@
 import * as React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 
 import { Text, View } from '../components/Themed';
 import Colors from '../constants/Colors'
 import useColorScheme from '../hooks/useColorScheme';
 import { AntDesign } from '@expo/vector-icons';
+import { RootStackParamList } from '../types';
+import { StackScreenProps } from '@react-navigation/stack';
 
-export default function SawabTab() {
+export default function SawabTab({ navigation }: StackScreenProps<RootStackParamList>) {
   const colorScheme = useColorScheme();
 
   return (
@@ -92,9 +94,13 @@ export default function SawabTab() {
             </Text>
 
             <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="gray" />
+
+           
           </View>
 
-
+          <TouchableOpacity onPress={() => navigation.navigate('Prayer')}>
+              <Text>Go to prayer screen!</Text>
+            </TouchableOpacity>
 
 
         </View>

@@ -9,6 +9,7 @@ export default {
           TabOne: {
             screens: {
               TabOneScreen: 'one',
+              PrayerScreen: 'prayer'
             },
           },
           TabTwo: {
@@ -16,7 +17,17 @@ export default {
               TabTwoScreen: 'two',
             },
           },
+          TabThree: {
+            screens: {
+              TabThreeScreen: 'three',
+            },
+          },
         },
+      },
+      Prayer: {
+        screens: {
+          Prayer: 'prayer'
+        }
       },
       NotFound: '*',
     },
