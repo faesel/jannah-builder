@@ -8,8 +8,41 @@ import { AntDesign } from '@expo/vector-icons';
 import { RootStackParamList } from '../types';
 import { StackScreenProps } from '@react-navigation/stack';
 
+import {
+  LineChart,
+  BarChart,
+  PieChart,
+  ProgressChart,
+  ContributionGraph,
+  StackedBarChart
+} from "react-native-chart-kit";
+import { Dimensions } from 'react-native';
+import { AbstractChartConfig } from 'react-native-chart-kit/dist/AbstractChart';
+
 export default function SawabTab({ navigation }: StackScreenProps<RootStackParamList>) {
   const colorScheme = useColorScheme();
+
+  const commitsData = [
+    { date: "2017-01-02", count: 1 },
+    { date: "2017-01-03", count: 2 },
+    { date: "2017-01-04", count: 3 },
+    { date: "2017-01-05", count: 4 },
+    { date: "2017-01-06", count: 5 },
+    { date: "2017-01-30", count: 2 },
+    { date: "2017-01-31", count: 3 },
+    { date: "2017-03-01", count: 2 },
+    { date: "2017-04-02", count: 4 },
+    { date: "2017-03-05", count: 2 },
+    { date: "2017-02-30", count: 4 }
+  ];
+  
+
+  const data = {
+    labels: ["Prayer", "Quran", "Zakat"], // optional
+    data: [0.4, 0.6, 0.8],
+    colors: ["#dfe4ea", "#ced6e0", "#a4b0be"]
+  };
+  const screenWidth = Dimensions.get("window").width;
 
   return (
     <View style={styles.container}>
@@ -196,6 +229,51 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
 
           </View>
       </View>
+
+
+      <View
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          margin: 20,
+          marginTop: 0
+        }}>
+          
+         
+
+<ContributionGraph
+  values={commitsData}
+  endDate={new Date("2017-04-01")}
+  numDays={105}
+  width={screenWidth}
+  height={220}
+  chartConfig={{
+    backgroundColor: Colors.light.roseMadder,
+    backgroundGradientFrom: Colors.light.babyPowder,
+    backgroundGradientTo: Colors.light.babyPowder,
+    
+    // backgroundColor: "#e26a00",
+    // backgroundGradientFrom: "#fb8c00",
+    // backgroundGradientTo: "#ffa726",
+    decimalPlaces: 2, // optional, defaults to 2dp
+    color: (opacity = 1) => `rgba(0, 255, 47, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    style: {
+      borderRadius: 16
+    },
+    propsForDots: {
+      r: "6",
+      strokeWidth: "2",
+      stroke: Colors.dark.orangePeel
+    }
+  }}
+/>
+
+
+
+      </View>
+
+     
 
     </View>
   );
