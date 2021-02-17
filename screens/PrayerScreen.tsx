@@ -5,6 +5,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../types';
 import { useGetPrayer, useSavePrayer, defaultPrayer } from '../hooks/usePrayer'
 
+import { DraxProvider, DraxView } from 'react-native-drax';
+
 export default function PrayerScreen({
   navigation,
 }: StackScreenProps<RootStackParamList>) {
@@ -28,6 +30,7 @@ export default function PrayerScreen({
   }
 
   return (
+    <>
     <View style={styles.container}>
       <Text style={styles.title}>This is the prayer screen.</Text>
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.link}>
@@ -39,6 +42,30 @@ export default function PrayerScreen({
       </TouchableOpacity>
       <Text>{ newPrayer !== defaultPrayer ? newPrayer.title : value.title }</Text>
     </View>
+    <DraxProvider>
+          <View style={styles.container}>
+              <DraxView
+                  style={styles.draggable}
+                  onDragStart={() => {
+                      console.log('start drag');
+                  }}
+                  payload="world"
+              />
+              <DraxView
+                  style={styles.receiver}
+                  onReceiveDragEnter={({ dragged: { payload } }) => {
+                      console.log(`hello ${payload}`);
+                  }}
+                  onReceiveDragExit={({ dragged: { payload } }) => {
+                      console.log(`goodbye ${payload}`);
+                  }}
+                  onReceiveDragDrop={({ dragged: { payload } }) => {
+                      console.log(`received ${payload}`);
+                  }}
+              />
+          </View>
+      </DraxProvider>
+    </>
   );
 }
 
@@ -62,4 +89,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2e78b7',
   },
+draggable: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'blue',
+},
+receiver: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'green',
+},
 });
