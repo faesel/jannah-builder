@@ -5,11 +5,13 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../types';
 import { useGetPrayer, useSavePrayer, defaultPrayer } from '../hooks/usePrayer'
 
-import { DraxProvider, DraxView } from 'react-native-drax';
+import { DraxProvider, DraxView, DraxList } from 'react-native-drax';
 
 export default function PrayerScreen({
   navigation,
 }: StackScreenProps<RootStackParamList>) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
   const [value, error, isPending] = useGetPrayer(defaultPrayer);
   const [newPrayer, setPrayer] = React.useState(defaultPrayer);
 
@@ -18,6 +20,7 @@ export default function PrayerScreen({
   }
 
   const [savedValue, saveError, isSaving] = useSavePrayer(newPrayer);
+  const [alphaData, setAlphaData] = React.useState(alphabet);
 
   if(isSaving) {
     console.log('SAVING..')
@@ -43,28 +46,48 @@ export default function PrayerScreen({
       <Text>{ newPrayer !== defaultPrayer ? newPrayer.title : value.title }</Text>
     </View>
     <DraxProvider>
-          <View style={styles.container}>
-              <DraxView
-                  style={styles.draggable}
-                  onDragStart={() => {
-                      console.log('start drag');
-                  }}
-                  payload="world"
-              />
-              <DraxView
-                  style={styles.receiver}
-                  onReceiveDragEnter={({ dragged: { payload } }) => {
-                      console.log(`hello ${payload}`);
-                  }}
-                  onReceiveDragExit={({ dragged: { payload } }) => {
-                      console.log(`goodbye ${payload}`);
-                  }}
-                  onReceiveDragDrop={({ dragged: { payload } }) => {
-                      console.log(`received ${payload}`);
-                  }}
-              />
-          </View>
+      <View style={styles.container}>
+          <DraxView
+              style={styles.draggable}
+              onDragStart={() => {
+                  console.log('start drag');
+              }}
+              payload="world"
+          />
+          <DraxView
+              style={styles.receiver}
+              onReceiveDragEnter={({ dragged: { payload } }) => {
+                  console.log(`hello ${payload}`);
+              }}
+              onReceiveDragExit={({ dragged: { payload } }) => {
+                  console.log(`goodbye ${payload}`);
+              }}
+              onReceiveDragDrop={({ dragged: { payload } }) => {
+                  console.log(`received ${payload}`);
+              }}
+          />
+      </View>
       </DraxProvider>
+      <DraxProvider>
+        <View style={styles.container}>
+          <DraxList
+            style={{display: "flex", flexDirection: "row"}}
+            data={alphaData}
+            renderItemContent={({ item }) => (
+              <View style={styles.alphaItem}>
+                <Text style={styles.alphaText}>{item}</Text>
+              </View>
+            )}
+            onItemReorder={({ fromIndex, toIndex }) => {
+              const newData = alphaData.slice();
+              newData.splice(toIndex, 0, newData.splice(fromIndex, 1)[0]);
+              setAlphaData(newData);
+            }}
+            numColumns={5}
+            keyExtractor={(item) => item}
+          />
+        </View>
+    </DraxProvider>
     </>
   );
 }
@@ -98,5 +121,16 @@ receiver: {
     width: 100,
     height: 100,
     backgroundColor: 'green',
+},
+alphaItem: {
+  backgroundColor: '#aaaaff',
+  borderRadius: 8,
+  margin: 4,
+  padding: 4,
+  minWidth: 50,
+  width: 50
+},
+alphaText: {
+  fontSize: 28,
 },
 });
