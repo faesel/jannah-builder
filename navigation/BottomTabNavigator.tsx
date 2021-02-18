@@ -19,26 +19,26 @@ export default function BottomTabNavigator() {
   return (
     <BottomTab.Navigator
       initialRouteName="Sawab"
-      tabBarOptions={{ activeTintColor: Colors[colorScheme].orangePeel }}>
+      tabBarOptions={{ activeTintColor: Colors[colorScheme].primary }}>
       <BottomTab.Screen
         name="Sawab"
         component={TabOneNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].tiffanyBlue} />,
+          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].primaryVariant} />,
         }}
       />
       <BottomTab.Screen
         name="Progress"
         component={TabTwoNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].roseMadder} />,
+          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].primaryVariant} />,
         }}
       />
       <BottomTab.Screen
         name="Jannah"
         component={TabThreeNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].orangePeel} />,
+          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].primaryVariant} />,
         }}
       />
 

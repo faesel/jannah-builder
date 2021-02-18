@@ -49,8 +49,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
 
 
       <View
-        lightColor={Colors[colorScheme].lightGray}
-        darkColor={Colors[colorScheme].babyPowder}
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
         style={{
           flexDirection: "column",
           display: "flex",
@@ -60,50 +60,50 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
         }}>
 
         <View
-          lightColor={Colors[colorScheme].lightGray}
-          darkColor={Colors[colorScheme].babyPowder}
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
           style={{
             flexDirection: "column",
             display: "flex",
             padding: 10
           }}>
           <Text
-            lightColor={Colors[colorScheme].richBlack}
-            darkColor={Colors[colorScheme].richBlack}
+            lightColor={Colors[colorScheme].onSurface}
+            darkColor={Colors[colorScheme].onSurface}
             style={{ fontSize: 20, paddingBottom: 10 }}>
             Prayers
             </Text>
 
 
           <View
-            lightColor={Colors[colorScheme].lightGray}
-            darkColor={Colors[colorScheme].babyPowder}
+            lightColor={Colors[colorScheme].surface}
+            darkColor={Colors[colorScheme].surface}
             style={{
               flexDirection: "row",
               display: "flex",
             }}>
 
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ paddingRight: 5 }}>
               Fajar
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="green" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color={Colors[colorScheme].secondary} />
 
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ paddingRight: 5 }}>
               Dhuhr
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="green" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color={Colors[colorScheme].secondary} />
 
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ paddingRight: 5 }}>
               Asr
             </Text>
@@ -111,28 +111,32 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="gray" />
 
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ paddingRight: 5 }}>
               Maghrib
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="green" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color={Colors[colorScheme].secondary} />
 
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ paddingRight: 5 }}>
               Isha
             </Text>
 
-            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color="gray" />
+            <AntDesign name="checkcircle" size={15} style={{ paddingRight: 10 }} color={Colors[colorScheme].secondary} />
 
            
           </View>
 
           <TouchableOpacity onPress={() => navigation.navigate('Prayer')}>
-              <Text>Go to prayer screen!</Text>
+              <Text
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}>
+              Go to prayer screen!
+            </Text>
             </TouchableOpacity>
 
 
@@ -141,8 +145,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
       </View>
 
       <View
-        lightColor={Colors[colorScheme].lightGray}
-        darkColor={Colors[colorScheme].babyPowder}
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
         style={{
           flexDirection: "column",
           display: "flex",
@@ -152,16 +156,16 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
           marginTop: 0,
         }}>
               <View
-          lightColor={Colors[colorScheme].lightGray}
-          darkColor={Colors[colorScheme].babyPowder}
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
           style={{
             flexDirection: "column",
             display: "flex",
             padding: 10
           }}>
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ fontSize: 20 }}>
               Quran
             </Text>
@@ -171,8 +175,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
       </View>
 
       <View
-        lightColor={Colors[colorScheme].lightGray}
-        darkColor={Colors[colorScheme].babyPowder}
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
         style={{
           flexDirection: "column",
           display: "flex",
@@ -182,16 +186,16 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
           marginTop: 0
         }}>
            <View
-          lightColor={Colors[colorScheme].lightGray}
-          darkColor={Colors[colorScheme].babyPowder}
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
           style={{
             flexDirection: "column",
             display: "flex",
             padding: 10
           }}>
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ fontSize: 20 }}>
               Zakat
             </Text>
@@ -202,8 +206,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
 
 
       <View
-        lightColor={Colors[colorScheme].lightGray}
-        darkColor={Colors[colorScheme].babyPowder}
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
         style={{
           flexDirection: "column",
           display: "flex",
@@ -213,16 +217,16 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
           marginTop: 0
         }}>
            <View
-          lightColor={Colors[colorScheme].lightGray}
-          darkColor={Colors[colorScheme].babyPowder}
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
           style={{
             flexDirection: "column",
             display: "flex",
             padding: 10
           }}>
             <Text
-              lightColor={Colors[colorScheme].richBlack}
-              darkColor={Colors[colorScheme].richBlack}
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
               style={{ fontSize: 20 }}>
               Total: 100 
             </Text>
@@ -248,13 +252,9 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
   width={screenWidth}
   height={220}
   chartConfig={{
-    backgroundColor: Colors.light.roseMadder,
-    backgroundGradientFrom: Colors.light.babyPowder,
-    backgroundGradientTo: Colors.light.babyPowder,
-    
-    // backgroundColor: "#e26a00",
-    // backgroundGradientFrom: "#fb8c00",
-    // backgroundGradientTo: "#ffa726",
+    backgroundColor: Colors.light.background,
+    backgroundGradientFrom: Colors.light.background,
+    backgroundGradientTo: Colors.light.background,
     decimalPlaces: 2, // optional, defaults to 2dp
     color: (opacity = 1) => `rgba(0, 255, 47, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
@@ -264,7 +264,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
     propsForDots: {
       r: "6",
       strokeWidth: "2",
-      stroke: Colors.dark.orangePeel
+      stroke: Colors.dark.primary
     }
   }}
 />
