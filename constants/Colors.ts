@@ -45,7 +45,8 @@ export default {
 //       primary: '#6200EE',
 //       primaryVariant: '#3700B3',
 //       secondary: '#03DAC6',
-//       background: '#FFFFFF',
+//       surface: '#292929',
+//       background: '#E5E5E5',
 //       error: '#B00020',
 
 //       onPrimary: '#FFFFFF',
@@ -57,7 +58,8 @@ export default {
 //       primary: '#BB86FC',
 //       primaryVariant: '#3700B3',
 //       secondary: '#03DAC6',
-//       background: '#121212',
+//       surface: '#121212',
+//       background: '#292929',
 //       error: '#CF6679',
       
 //       onPrimary: '#000000',
