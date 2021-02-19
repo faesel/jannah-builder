@@ -70,7 +70,7 @@ function TabOneNavigator() {
       <TabOneStack.Screen
         name="TabOneScreen"
         component={SawabTab}
-        options={{ headerTitle: 'Sawab Top-Up' }}
+        options={{ headerTitle: 'Sawab Top-Up', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }}
       />
       <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer' }} />
     </TabOneStack.Navigator>
@@ -85,7 +85,7 @@ function TabTwoNavigator() {
       <TabTwoStack.Screen
         name="TabTwoScreen"
         component={ProgressTab}
-        options={{ headerTitle: 'Progress Report Stats' }}
+        options={{ headerTitle: 'Progress Report Stats', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }}
       />
     </TabTwoStack.Navigator>
   );
@@ -99,7 +99,7 @@ function TabThreeNavigator() {
       <TabThreeStack.Screen
         name="TabThreeScreen"
         component={JannahTab}
-        options={{ headerTitle: 'Jannah Builder' }}
+        options={{ headerTitle: 'Jannah Builder', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }}
       />
     </TabThreeStack.Navigator>
   );

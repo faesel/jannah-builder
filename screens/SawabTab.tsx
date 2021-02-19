@@ -4,7 +4,7 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, View } from '../components/Themed';
 import Colors from '../constants/Colors'
 import useColorScheme from '../hooks/useColorScheme';
-import { FontAwesome5, AntDesign, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
+import { FontAwesome5, AntDesign, MaterialCommunityIcons, FontAwesome, Entypo } from '@expo/vector-icons';
 import { RootStackParamList } from '../types';
 import { StackScreenProps } from '@react-navigation/stack';
 
@@ -275,12 +275,17 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             display: "flex",
             padding: 10
           }}>
-          <Text
-            lightColor={Colors[colorScheme].onSurface}
-            darkColor={Colors[colorScheme].onSurface}
-            style={{ fontSize: 20, fontWeight: "bold" }}>
-            Sawab Summary: 100 Sawab
-            </Text>
+            <View style={{flexDirection: "row", display: "flex"}} lightColor={Colors[colorScheme].surface} darkColor={Colors[colorScheme].surface}>
+              <Entypo name="wallet" size={20} style={{ paddingRight: 10 }} color={Colors[colorScheme].onSurface} />
+              <Text
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ fontSize: 20, fontWeight: "bold" }}>
+                Sawab Summary
+              </Text>  
+            </View>
+            
+            
 
         </View>
       </View>
