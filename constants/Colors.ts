@@ -43,7 +43,7 @@
 export default {
     light: {
       primary: '#ed4f00',
-      primaryVariant: '#ed9200',
+      primaryVariant: '#da0317',
       secondary: '#03DAC6',
       surface: '#FFFFFF',
       background: '#E5E5E5',
@@ -57,7 +57,7 @@ export default {
     },
     dark: {
       primary: '#ed4f00',
-      primaryVariant: '#ed9200',
+      primaryVariant: '#da0317',
       secondary: '#03DAC6',
       surface: '#121212',
       background: '#292929',

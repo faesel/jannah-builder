@@ -47,14 +47,14 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
   return (
     <View style={styles.container}>
 
-
+<TouchableOpacity onPress={() => navigation.navigate('Prayer')}>
       <View
         lightColor={Colors[colorScheme].surface}
         darkColor={Colors[colorScheme].surface}
         style={{
           flexDirection: "column",
           display: "flex",
-          margin: 20,
+          margin: 10,
           borderRadius: 15,
           padding: 10
         }}>
@@ -70,10 +70,9 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
           <Text
             lightColor={Colors[colorScheme].onSurface}
             darkColor={Colors[colorScheme].onSurface}
-            style={{ fontSize: 20, paddingBottom: 10 }}>
-            Prayers
+            style={{ fontSize: 20, fontWeight: 'bold', paddingBottom: 10 }}>
+              Prayers
             </Text>
-
 
           <View
             lightColor={Colors[colorScheme].surface}
@@ -130,19 +129,10 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
 
            
           </View>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Prayer')}>
-              <Text
-              lightColor={Colors[colorScheme].onSurface}
-              darkColor={Colors[colorScheme].onSurface}>
-              Go to prayer screen!
-            </Text>
-            </TouchableOpacity>
-
-
         </View>
 
       </View>
+      </TouchableOpacity>
 
       <View
         lightColor={Colors[colorScheme].surface}
@@ -150,7 +140,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
         style={{
           flexDirection: "column",
           display: "flex",
-          margin: 20,
+          margin: 10,
           borderRadius: 15,
           padding: 10,
           marginTop: 0,
@@ -166,7 +156,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             <Text
               lightColor={Colors[colorScheme].onSurface}
               darkColor={Colors[colorScheme].onSurface}
-              style={{ fontSize: 20 }}>
+              style={{ fontSize: 20, fontWeight: "bold" }}>
               Quran
             </Text>
 
@@ -180,7 +170,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
         style={{
           flexDirection: "column",
           display: "flex",
-          margin: 20,
+          margin: 10,
           padding: 10,
           borderRadius: 15,
           marginTop: 0
@@ -196,7 +186,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             <Text
               lightColor={Colors[colorScheme].onSurface}
               darkColor={Colors[colorScheme].onSurface}
-              style={{ fontSize: 20 }}>
+              style={{ fontSize: 20, fontWeight: "bold" }}>
               Zakat
             </Text>
 
@@ -211,7 +201,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
         style={{
           flexDirection: "column",
           display: "flex",
-          margin: 20,
+          margin: 10,
           padding: 10,
           borderRadius: 15,
           marginTop: 0
@@ -227,7 +217,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             <Text
               lightColor={Colors[colorScheme].onSurface}
               darkColor={Colors[colorScheme].onSurface}
-              style={{ fontSize: 20 }}>
+              style={{ fontSize: 20, fontWeight: "bold" }}>
               Total: 100 
             </Text>
 
@@ -247,7 +237,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
 
 <ContributionGraph
   values={commitsData}
-  endDate={new Date("2017-04-01")}
+  endDate={new Date("2020-04-01")}
   numDays={105}
   width={screenWidth}
   height={220}
@@ -255,8 +245,9 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
     backgroundColor: Colors.light.background,
     backgroundGradientFrom: Colors.light.background,
     backgroundGradientTo: Colors.light.background,
+
     decimalPlaces: 2, // optional, defaults to 2dp
-    color: (opacity = 1) => `rgba(0, 255, 47, ${opacity})`,
+    color: (opacity = 1) => `rgba(3,218,198, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
     style: {
       borderRadius: 16
