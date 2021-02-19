@@ -59,8 +59,8 @@ export default {
       primary: '#ed4f00',
       primaryVariant: '#da0317',
       secondary: '#03DAC6',
-      background: '#121212',
       surface: '#292929',
+      background: '#121212',
       error: '#CF6679',
       
       onPrimary: '#000000',

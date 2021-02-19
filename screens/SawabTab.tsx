@@ -128,8 +128,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             </Text>
 
           <View
-            lightColor={Colors[colorScheme].primary}
-            darkColor={Colors[colorScheme].primary}
+            lightColor={Colors[colorScheme].secondary}
+            darkColor={Colors[colorScheme].secondary}
             style={{ width: 300, maxHeight: 40, minHeight: 40, marginTop:10 }}
           >
               <Text
@@ -169,8 +169,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             </Text>
 
             <View
-            lightColor={Colors[colorScheme].primary}
-            darkColor={Colors[colorScheme].primary}
+            lightColor={Colors[colorScheme].secondary}
+            darkColor={Colors[colorScheme].secondary}
             style={{ width: 200, maxHeight: 40, minHeight: 40, marginTop:10 }}
           >
               <Text
