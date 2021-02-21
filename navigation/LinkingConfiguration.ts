@@ -24,11 +24,6 @@ export default {
           },
         },
       },
-      Prayer: {
-        screens: {
-          Prayer: 'prayer'
-        }
-      },
       NotFound: '*',
     },
   },
