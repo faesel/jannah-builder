@@ -10,6 +10,7 @@ import Prayer from '../screens/PrayerScreen';
 import ProgressTab from '../screens/ProgressTab';
 import JannahTab from '../screens/JannahTab';
 import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList } from '../types';
+import { getTabBarHeight } from '@react-navigation/bottom-tabs/lib/typescript/src/views/BottomTabBar';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -19,7 +20,10 @@ export default function BottomTabNavigator() {
   return (
     <BottomTab.Navigator
       initialRouteName="Sawab"
-      tabBarOptions={{ activeTintColor: Colors[colorScheme].primary }}>
+      tabBarOptions={{ 
+        activeTintColor: Colors[colorScheme].primary, 
+        style: { minHeight: 60 }
+      }}>
       <BottomTab.Screen
         name="Sawab"
         component={TabOneNavigator}

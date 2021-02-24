@@ -218,7 +218,7 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
                   lightColor={Colors[colorScheme].onSurface}
                   darkColor={Colors[colorScheme].onSurface}
                   style={{ fontSize: 20, fontWeight: "bold" }}>
-                  Dhirk
+                  Dhikr
                 </Text>
                 <Text
                 lightColor={Colors[colorScheme].onSurface}
@@ -312,14 +312,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'column'
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
   },
 });
