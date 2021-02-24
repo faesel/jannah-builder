@@ -8,7 +8,6 @@
 // // Panels
 // const lightGray = '#f3f3f3';
 
-
 // const tintColorLight = '#2f95dc';
 // const tintColorDark = '#fff';
 
@@ -39,37 +38,33 @@
 //   },
 // };
 
-
 export default {
-    light: {
-      primary: '#ed4f00',
-      primaryVariant: '#da0317',
-      secondary: '#03DAC6',
-      surface: '#FFFFFF',
-      background: '#E5E5E5',
-      error: '#B00020',
+  light: {
+    primary: '#ed4f00',
+    primaryVariant: '#da0317',
+    secondary: '#03DAC6',
+    surface: '#FFFFFF',
+    background: '#E5E5E5',
+    error: '#B00020',
 
-      onPrimary: '#FFFFFF',
-      onSecondary: '#000000',
-      onBackground: '#FFFFFF',
-      onSurface: '#000000',
-      onError: '#FFFFFF'
-    },
-    dark: {
-      primary: '#ed4f00',
-      primaryVariant: '#da0317',
-      secondary: '#03DAC6',
-      surface: '#292929',
-      background: '#121212',
-      error: '#CF6679',
-      
-      onPrimary: '#000000',
-      onSecondary: '#000000',
-      onBackground: '#FFFFFF',
-      onSurface: '#FFFFFF',
-      onError: '#000000'
-    },
-  };
-  
-  
-  
+    onPrimary: '#FFFFFF',
+    onSecondary: '#000000',
+    onBackground: '#FFFFFF',
+    onSurface: '#000000',
+    onError: '#FFFFFF'
+  },
+  dark: {
+    primary: '#ed4f00',
+    primaryVariant: '#da0317',
+    secondary: '#03DAC6',
+    surface: '#292929',
+    background: '#121212',
+    error: '#CF6679',
+
+    onPrimary: '#000000',
+    onSecondary: '#000000',
+    onBackground: '#FFFFFF',
+    onSurface: '#FFFFFF',
+    onError: '#000000'
+  }
+}

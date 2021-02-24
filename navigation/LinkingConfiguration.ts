@@ -1,4 +1,4 @@
-import * as Linking from 'expo-linking';
+import * as Linking from 'expo-linking'
 
 export default {
   prefixes: [Linking.makeUrl('/')],
@@ -11,21 +11,21 @@ export default {
               TabOneScreen: 'sawab',
               PrayerScreen: 'prayer',
               SawabSettingsScreen: 'sawabsettings'
-            },
+            }
           },
           TabTwo: {
             screens: {
-              TabTwoScreen: 'progress',
-            },
+              TabTwoScreen: 'progress'
+            }
           },
           TabThree: {
             screens: {
-              TabThreeScreen: 'jannah',
-            },
-          },
-        },
+              TabThreeScreen: 'jannah'
+            }
+          }
+        }
       },
-      NotFound: '*',
-    },
-  },
-};
+      NotFound: '*'
+    }
+  }
+}
