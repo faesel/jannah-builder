@@ -8,6 +8,13 @@ import { FontAwesome5, AntDesign, MaterialCommunityIcons, FontAwesome, Entypo } 
 import { RootStackParamList } from '../types'
 import { StackScreenProps } from '@react-navigation/stack'
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'column'
+  }
+})
+
 export default function SawabTab ({ navigation }: StackScreenProps<RootStackParamList>) {
   const colorScheme = useColorScheme()
 
@@ -403,10 +410,3 @@ export default function SawabTab ({ navigation }: StackScreenProps<RootStackPara
     </SafeAreaView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column'
-  }
-})

@@ -1,11 +1,52 @@
 import { StackScreenProps } from '@react-navigation/stack'
 import * as React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-
 import { RootStackParamList } from '../types'
 import { useGetPrayer, useSavePrayer, defaultPrayer } from '../hooks/usePrayer'
-
 import { DraxProvider, DraxView, DraxList } from 'react-native-drax'
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold'
+  },
+  link: {
+    marginTop: 15,
+    paddingVertical: 15
+  },
+  linkText: {
+    fontSize: 14,
+    color: '#2e78b7'
+  },
+  draggable: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'blue'
+  },
+  receiver: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'green'
+  },
+  alphaItem: {
+    backgroundColor: '#aaaaff',
+    borderRadius: 8,
+    margin: 4,
+    padding: 4,
+    minWidth: 50,
+    width: 50
+  },
+  alphaText: {
+    fontSize: 28
+  }
+})
 
 export default function Dnd ({
   navigation
@@ -91,46 +132,3 @@ export default function Dnd ({
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold'
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7'
-  },
-  draggable: {
-    width: 100,
-    height: 100,
-    backgroundColor: 'blue'
-  },
-  receiver: {
-    width: 100,
-    height: 100,
-    backgroundColor: 'green'
-  },
-  alphaItem: {
-    backgroundColor: '#aaaaff',
-    borderRadius: 8,
-    margin: 4,
-    padding: 4,
-    minWidth: 50,
-    width: 50
-  },
-  alphaText: {
-    fontSize: 28
-  }
-})

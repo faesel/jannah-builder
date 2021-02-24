@@ -1,4 +1,4 @@
-import { Ionicons, MaterialIcons, Octicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { MaterialIcons, Octicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack'
 import * as React from 'react'
@@ -15,48 +15,8 @@ import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>()
 
-export default function BottomTabNavigator () {
-  const colorScheme = useColorScheme()
-
-  return (
-    <BottomTab.Navigator
-      initialRouteName="Sawab"
-      tabBarOptions={{
-        activeTintColor: Colors[colorScheme].primary,
-        style: { minHeight: 60 }
-      }}>
-      <BottomTab.Screen
-        name="Sawab"
-        component={TabOneNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].primaryVariant} />
-        }}
-      />
-      <BottomTab.Screen
-        name="Progress"
-        component={TabTwoNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].primaryVariant} />
-        }}
-      />
-      <BottomTab.Screen
-        name="Jannah"
-        component={TabThreeNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].primaryVariant} />
-        }}
-      />
-
-    </BottomTab.Navigator>
-  )
-}
-
 // You can explore the built-in icon families and icons on the web at:
 // https://icons.expo.fyi/
-function TabBarIcon (props: { name: React.ComponentProps<typeof Ionicons>['name']; color: string }) {
-  return <Ionicons size={30} style={{ marginBottom: -3 }} {...props} />
-}
-
 function TabBarIconMaterial (props: { name: React.ComponentProps<typeof MaterialIcons>['name']; color: string }) {
   return <MaterialIcons size={30} style={{ marginBottom: -3 }} {...props} />
 }
@@ -117,5 +77,41 @@ function TabThreeNavigator () {
         options={{ headerTitle: 'Jannah Builder', headerTitleStyle: { fontWeight: 'bold', fontSize: 25 } }}
       />
     </TabThreeStack.Navigator>
+  )
+}
+
+export default function BottomTabNavigator () {
+  const colorScheme = useColorScheme()
+
+  return (
+    <BottomTab.Navigator
+      initialRouteName="Sawab"
+      tabBarOptions={{
+        activeTintColor: Colors[colorScheme].primary,
+        style: { minHeight: 60 }
+      }}>
+      <BottomTab.Screen
+        name="Sawab"
+        component={TabOneNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].primaryVariant} />
+        }}
+      />
+      <BottomTab.Screen
+        name="Progress"
+        component={TabTwoNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].primaryVariant} />
+        }}
+      />
+      <BottomTab.Screen
+        name="Jannah"
+        component={TabThreeNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].primaryVariant} />
+        }}
+      />
+
+    </BottomTab.Navigator>
   )
 }

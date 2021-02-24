@@ -3,16 +3,6 @@ import * as React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { RootStackParamList } from '../types'
 
-export default function SawabSettings ({
-  navigation
-}: StackScreenProps<RootStackParamList>) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>This is the settings screen.</Text>
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -26,3 +16,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   }
 })
+
+export default function SawabSettings ({
+  navigation
+}: StackScreenProps<RootStackParamList>) {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>This is the settings screen.</Text>
+    </View>
+  )
+}
