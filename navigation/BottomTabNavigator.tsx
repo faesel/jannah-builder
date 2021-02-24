@@ -2,15 +2,17 @@ import { Ionicons, MaterialIcons, Octicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
-
+import { TouchableOpacity } from 'react-native';
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
 import SawabTab from '../screens/SawabTab';
 import Prayer from '../screens/PrayerScreen';
+import SawabSettingsScreen from '../screens/SawabSettingsScreen';
 import ProgressTab from '../screens/ProgressTab';
 import JannahTab from '../screens/JannahTab';
+import { StackScreenProps } from '@react-navigation/stack';
 import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList } from '../types';
-import { getTabBarHeight } from '@react-navigation/bottom-tabs/lib/typescript/src/views/BottomTabBar';
+import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -68,15 +70,25 @@ function TabBarIconOcticons(props: { name: React.ComponentProps<typeof Octicons>
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
 const TabOneStack = createStackNavigator<TabOneParamList>();
 
-function TabOneNavigator() {
+function TabOneNavigator({ navigation }: StackScreenProps<RootStackParamList>) {
+  const colorScheme = useColorScheme();
+
   return (
     <TabOneStack.Navigator>
       <TabOneStack.Screen
         name="TabOneScreen"
         component={SawabTab}
-        options={{ headerTitle: 'Sawab Top-Up', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }}
+        options={{ 
+          headerTitle: 'Sawab Top-Up', 
+          headerTitleStyle: { fontWeight: "bold", fontSize: 25 },
+          headerRight: () => 
+            <TouchableOpacity onPress={() => navigation.navigate('SawabSettings')}>
+              <MaterialCommunityIcons name="dots-vertical" style={{ marginRight: 5 }} size={40} color={Colors[colorScheme].secondary} />
+            </TouchableOpacity>
+        }}
       />
-      <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer' }} />
+      <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }} />
+      <TabOneStack.Screen name="SawabSettings" component={SawabSettingsScreen} options={{ title: 'Sawab Settings', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }} />
     </TabOneStack.Navigator>
   );
 }

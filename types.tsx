@@ -13,6 +13,7 @@ export type BottomTabParamList = {
 export type TabOneParamList = {
   TabOneScreen: undefined;
   Prayer: undefined;
+  SawabSettings: undefined;
 };
 
 export type TabTwoParamList = {

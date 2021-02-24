@@ -9,7 +9,8 @@ export default {
           TabOne: {
             screens: {
               TabOneScreen: 'one',
-              PrayerScreen: 'prayer'
+              PrayerScreen: 'prayer',
+              SawabSettingsScreen: 'sawabsettings'
             },
           },
           TabTwo: {
