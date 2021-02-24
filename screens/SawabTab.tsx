@@ -42,6 +42,12 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
                   style={{ fontSize: 20, fontWeight: 'bold', paddingBottom: 10 }}>
                   Prayers
                 </Text>
+                <Text 
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ position: 'absolute', right: 0, fontSize: 20, fontWeight: 'bold', paddingBottom: 10}}>
+                  4/5
+                </Text>           
               </View>
             <View
               lightColor={Colors[colorScheme].surface}
@@ -131,6 +137,12 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
                 style={{ fontSize: 20, fontWeight: "bold" }}>
                 Quran
               </Text>
+              <Text 
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ position: 'absolute', right: 0, fontSize: 20, fontWeight: 'bold', paddingBottom: 10}}>
+                  30 Min
+                </Text>
             </View>
 
           <View
@@ -208,6 +220,12 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
                   style={{ fontSize: 20, fontWeight: "bold" }}>
                   Dhirk
                 </Text>
+                <Text
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ position: 'absolute', right: 0, fontSize: 20, fontWeight: 'bold', paddingBottom: 10}}>
+                  30 Min
+                </Text>
               </View>
 
             <View
@@ -284,12 +302,8 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
                 Sawab Summary
               </Text>  
             </View>
-            
-            
-
         </View>
       </View>
-
     </View>
   );
 }
