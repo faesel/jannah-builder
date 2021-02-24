@@ -1,35 +1,35 @@
-import { StackScreenProps } from '@react-navigation/stack';
-import * as React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StackScreenProps } from '@react-navigation/stack'
+import * as React from 'react'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
-import { RootStackParamList } from '../types';
+import { RootStackParamList } from '../types'
 import { useGetPrayer, useSavePrayer, defaultPrayer } from '../hooks/usePrayer'
 
-import { DraxProvider, DraxView, DraxList } from 'react-native-drax';
+import { DraxProvider, DraxView, DraxList } from 'react-native-drax'
 
-export default function Dnd({
-  navigation,
+export default function Dnd ({
+  navigation
 }: StackScreenProps<RootStackParamList>) {
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
-  const [value, error, isPending] = useGetPrayer(defaultPrayer);
-  const [newPrayer, setPrayer] = React.useState(defaultPrayer);
+  const [value, error, isPending] = useGetPrayer(defaultPrayer)
+  const [newPrayer, setPrayer] = React.useState(defaultPrayer)
 
-  if(isPending) {
+  if (isPending) {
     console.log('LOADING..')
   }
 
-  const [savedValue, saveError, isSaving] = useSavePrayer(newPrayer);
-  const [alphaData, setAlphaData] = React.useState(alphabet);
+  const [savedValue, saveError, isSaving] = useSavePrayer(newPrayer)
+  const [alphaData, setAlphaData] = React.useState(alphabet)
 
-  if(isSaving) {
+  if (isSaving) {
     console.log('SAVING..')
   }
 
   const handlePress = () => {
-    var random = `test${new Date().toLocaleString()}`;
-    var prayer = {...value, title: random};
-    setPrayer(prayer);
+    const random = `test${new Date().toLocaleString()}`
+    const prayer = { ...value, title: random }
+    setPrayer(prayer)
   }
 
   return (
@@ -50,20 +50,20 @@ export default function Dnd({
           <DraxView
               style={styles.draggable}
               onDragStart={() => {
-                  console.log('start drag');
+                console.log('start drag')
               }}
               payload="world"
           />
           <DraxView
               style={styles.receiver}
               onReceiveDragEnter={({ dragged: { payload } }) => {
-                  console.log(`hello ${payload}`);
+                console.log(`hello ${payload}`)
               }}
               onReceiveDragExit={({ dragged: { payload } }) => {
-                  console.log(`goodbye ${payload}`);
+                console.log(`goodbye ${payload}`)
               }}
               onReceiveDragDrop={({ dragged: { payload } }) => {
-                  console.log(`received ${payload}`);
+                console.log(`received ${payload}`)
               }}
           />
       </View>
@@ -71,7 +71,7 @@ export default function Dnd({
       <DraxProvider>
         <View style={styles.container}>
           <DraxList
-            style={{display: "flex", flexDirection: "row"}}
+            style={{ display: 'flex', flexDirection: 'row' }}
             data={alphaData}
             renderItemContent={({ item }) => (
               <View style={styles.alphaItem}>
@@ -79,9 +79,9 @@ export default function Dnd({
               </View>
             )}
             onItemReorder={({ fromIndex, toIndex }) => {
-              const newData = alphaData.slice();
-              newData.splice(toIndex, 0, newData.splice(fromIndex, 1)[0]);
-              setAlphaData(newData);
+              const newData = alphaData.slice()
+              newData.splice(toIndex, 0, newData.splice(fromIndex, 1)[0])
+              setAlphaData(newData)
             }}
             numColumns={5}
             keyExtractor={(item) => item}
@@ -89,7 +89,7 @@ export default function Dnd({
         </View>
     </DraxProvider>
     </>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -98,39 +98,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 20
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: 'bold'
   },
   link: {
     marginTop: 15,
-    paddingVertical: 15,
+    paddingVertical: 15
   },
   linkText: {
     fontSize: 14,
-    color: '#2e78b7',
+    color: '#2e78b7'
   },
-draggable: {
+  draggable: {
     width: 100,
     height: 100,
-    backgroundColor: 'blue',
-},
-receiver: {
+    backgroundColor: 'blue'
+  },
+  receiver: {
     width: 100,
     height: 100,
-    backgroundColor: 'green',
-},
-alphaItem: {
-  backgroundColor: '#aaaaff',
-  borderRadius: 8,
-  margin: 4,
-  padding: 4,
-  minWidth: 50,
-  width: 50
-},
-alphaText: {
-  fontSize: 28,
-},
-});
+    backgroundColor: 'green'
+  },
+  alphaItem: {
+    backgroundColor: '#aaaaff',
+    borderRadius: 8,
+    margin: 4,
+    padding: 4,
+    minWidth: 50,
+    width: 50
+  },
+  alphaText: {
+    fontSize: 28
+  }
+})

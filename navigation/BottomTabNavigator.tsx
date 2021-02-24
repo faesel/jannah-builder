@@ -1,122 +1,121 @@
-import { Ionicons, MaterialIcons, Octicons } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import * as React from 'react';
-import { TouchableOpacity } from 'react-native';
-import Colors from '../constants/Colors';
-import useColorScheme from '../hooks/useColorScheme';
-import SawabTab from '../screens/SawabTab';
-import Prayer from '../screens/PrayerScreen';
-import SawabSettingsScreen from '../screens/SawabSettingsScreen';
-import ProgressTab from '../screens/ProgressTab';
-import JannahTab from '../screens/JannahTab';
-import { StackScreenProps } from '@react-navigation/stack';
-import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList } from '../types';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { Ionicons, MaterialIcons, Octicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { createStackNavigator, StackScreenProps } from '@react-navigation/stack'
+import * as React from 'react'
+import { TouchableOpacity } from 'react-native'
+import Colors from '../constants/Colors'
+import useColorScheme from '../hooks/useColorScheme'
+import SawabTab from '../screens/SawabTab'
+import Prayer from '../screens/PrayerScreen'
+import SawabSettingsScreen from '../screens/SawabSettingsScreen'
+import ProgressTab from '../screens/ProgressTab'
+import JannahTab from '../screens/JannahTab'
 
-const BottomTab = createBottomTabNavigator<BottomTabParamList>();
+import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList } from '../types'
 
-export default function BottomTabNavigator() {
-  const colorScheme = useColorScheme();
+const BottomTab = createBottomTabNavigator<BottomTabParamList>()
+
+export default function BottomTabNavigator () {
+  const colorScheme = useColorScheme()
 
   return (
     <BottomTab.Navigator
       initialRouteName="Sawab"
-      tabBarOptions={{ 
-        activeTintColor: Colors[colorScheme].primary, 
+      tabBarOptions={{
+        activeTintColor: Colors[colorScheme].primary,
         style: { minHeight: 60 }
       }}>
       <BottomTab.Screen
         name="Sawab"
         component={TabOneNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].primaryVariant} />,
+          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].primaryVariant} />
         }}
       />
       <BottomTab.Screen
         name="Progress"
         component={TabTwoNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].primaryVariant} />,
+          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].primaryVariant} />
         }}
       />
       <BottomTab.Screen
         name="Jannah"
         component={TabThreeNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].primaryVariant} />,
+          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].primaryVariant} />
         }}
       />
 
     </BottomTab.Navigator>
-  );
+  )
 }
 
 // You can explore the built-in icon families and icons on the web at:
 // https://icons.expo.fyi/
-function TabBarIcon(props: { name: React.ComponentProps<typeof Ionicons>['name']; color: string }) {
-  return <Ionicons size={30} style={{ marginBottom: -3 }} {...props} />;
+function TabBarIcon (props: { name: React.ComponentProps<typeof Ionicons>['name']; color: string }) {
+  return <Ionicons size={30} style={{ marginBottom: -3 }} {...props} />
 }
 
-function TabBarIconMaterial(props: { name: React.ComponentProps<typeof MaterialIcons>['name']; color: string }) {
-  return <MaterialIcons size={30} style={{ marginBottom: -3 }} {...props} />;
+function TabBarIconMaterial (props: { name: React.ComponentProps<typeof MaterialIcons>['name']; color: string }) {
+  return <MaterialIcons size={30} style={{ marginBottom: -3 }} {...props} />
 }
 
-function TabBarIconOcticons(props: { name: React.ComponentProps<typeof Octicons>['name']; color: string }) {
-  return <Octicons size={30} style={{ marginBottom: -3 }} {...props} />;
+function TabBarIconOcticons (props: { name: React.ComponentProps<typeof Octicons>['name']; color: string }) {
+  return <Octicons size={30} style={{ marginBottom: -3 }} {...props} />
 }
 
 // Each tab has its own navigation stack, you can read more about this pattern here:
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
-const TabOneStack = createStackNavigator<TabOneParamList>();
+const TabOneStack = createStackNavigator<TabOneParamList>()
 
-function TabOneNavigator({ navigation }: StackScreenProps<RootStackParamList>) {
-  const colorScheme = useColorScheme();
+function TabOneNavigator ({ navigation }: StackScreenProps<RootStackParamList>) {
+  const colorScheme = useColorScheme()
 
   return (
     <TabOneStack.Navigator>
       <TabOneStack.Screen
         name="TabOneScreen"
         component={SawabTab}
-        options={{ 
-          headerTitle: 'Sawab Top-Up', 
-          headerTitleStyle: { fontWeight: "bold", fontSize: 25 },
-          headerRight: () => 
+        options={{
+          headerTitle: 'Sawab Top-Up',
+          headerTitleStyle: { fontWeight: 'bold', fontSize: 25 },
+          headerRight: () =>
             <TouchableOpacity onPress={() => navigation.navigate('SawabSettings')}>
               <MaterialCommunityIcons name="dots-vertical" style={{ marginRight: 5 }} size={40} color={Colors[colorScheme].secondary} />
             </TouchableOpacity>
         }}
       />
-      <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }} />
-      <TabOneStack.Screen name="SawabSettings" component={SawabSettingsScreen} options={{ title: 'Sawab Settings', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }} />
+      <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer', headerTitleStyle: { fontWeight: 'bold', fontSize: 25 } }} />
+      <TabOneStack.Screen name="SawabSettings" component={SawabSettingsScreen} options={{ title: 'Sawab Settings', headerTitleStyle: { fontWeight: 'bold', fontSize: 25 } }} />
     </TabOneStack.Navigator>
-  );
+  )
 }
 
-const TabTwoStack = createStackNavigator<TabTwoParamList>();
+const TabTwoStack = createStackNavigator<TabTwoParamList>()
 
-function TabTwoNavigator() {
+function TabTwoNavigator () {
   return (
     <TabTwoStack.Navigator>
       <TabTwoStack.Screen
         name="TabTwoScreen"
         component={ProgressTab}
-        options={{ headerTitle: 'Progress Report Stats', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }}
+        options={{ headerTitle: 'Progress Report Stats', headerTitleStyle: { fontWeight: 'bold', fontSize: 25 } }}
       />
     </TabTwoStack.Navigator>
-  );
+  )
 }
 
-const TabThreeStack = createStackNavigator<TabThreeParamList>();
+const TabThreeStack = createStackNavigator<TabThreeParamList>()
 
-function TabThreeNavigator() {
+function TabThreeNavigator () {
   return (
     <TabThreeStack.Navigator>
       <TabThreeStack.Screen
         name="TabThreeScreen"
         component={JannahTab}
-        options={{ headerTitle: 'Jannah Builder', headerTitleStyle: { fontWeight: "bold", fontSize: 25 } }}
+        options={{ headerTitle: 'Jannah Builder', headerTitleStyle: { fontWeight: 'bold', fontSize: 25 } }}
       />
     </TabThreeStack.Navigator>
-  );
+  )
 }
