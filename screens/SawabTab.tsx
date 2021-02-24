@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 
 import { Text, View } from '../components/Themed';
 import Colors from '../constants/Colors'
@@ -12,8 +12,9 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
   const colorScheme = useColorScheme();
 
   return (
-    <View style={styles.container}>
-
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
+        
       <TouchableOpacity onPress={() => navigation.navigate('Prayer')}>
         <View
           lightColor={Colors[colorScheme].surface}
@@ -304,7 +305,104 @@ export default function SawabTab({ navigation }: StackScreenProps<RootStackParam
             </View>
         </View>
       </View>
-    </View>
+
+      <View
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          margin: 10,
+          padding: 10,
+          borderRadius: 15,
+          marginTop: 0
+        }}>
+        <View
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
+          style={{
+            flexDirection: "column",
+            display: "flex",
+            padding: 10
+          }}>
+            <View style={{flexDirection: "row", display: "flex"}} lightColor={Colors[colorScheme].surface} darkColor={Colors[colorScheme].surface}>
+              <Entypo name="wallet" size={20} style={{ paddingRight: 10 }} color={Colors[colorScheme].onSurface} />
+              <Text
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ fontSize: 20, fontWeight: "bold" }}>
+                Sawab Summary
+              </Text>  
+            </View>
+        </View>
+      </View>
+
+      <View
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          margin: 10,
+          padding: 10,
+          borderRadius: 15,
+          marginTop: 0
+        }}>
+        <View
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
+          style={{
+            flexDirection: "column",
+            display: "flex",
+            padding: 10
+          }}>
+            <View style={{flexDirection: "row", display: "flex"}} lightColor={Colors[colorScheme].surface} darkColor={Colors[colorScheme].surface}>
+              <Entypo name="wallet" size={20} style={{ paddingRight: 10 }} color={Colors[colorScheme].onSurface} />
+              <Text
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ fontSize: 20, fontWeight: "bold" }}>
+                Sawab Summary
+              </Text>  
+            </View>
+        </View>
+      </View>
+
+      <View
+        lightColor={Colors[colorScheme].surface}
+        darkColor={Colors[colorScheme].surface}
+        style={{
+          flexDirection: "column",
+          display: "flex",
+          margin: 10,
+          padding: 10,
+          borderRadius: 15,
+          marginTop: 0
+        }}>
+        <View
+          lightColor={Colors[colorScheme].surface}
+          darkColor={Colors[colorScheme].surface}
+          style={{
+            flexDirection: "column",
+            display: "flex",
+            padding: 10
+          }}>
+            <View style={{flexDirection: "row", display: "flex"}} lightColor={Colors[colorScheme].surface} darkColor={Colors[colorScheme].surface}>
+              <Entypo name="wallet" size={20} style={{ paddingRight: 10 }} color={Colors[colorScheme].onSurface} />
+              <Text
+                lightColor={Colors[colorScheme].onSurface}
+                darkColor={Colors[colorScheme].onSurface}
+                style={{ fontSize: 20, fontWeight: "bold" }}>
+                Sawab Summary
+              </Text>  
+            </View>
+        </View>
+      </View>
+
+      
+      </ScrollView>
+
+    </SafeAreaView>
   );
 }
 
