@@ -10,6 +10,10 @@ export type BottomTabParamList = {
   Jannah: undefined;
 };
 
+export type SettingsParamList = {
+  SawabSettings: undefined;
+}
+
 export type TabOneParamList = {
   TabOneScreen: undefined;
   Prayer: undefined;

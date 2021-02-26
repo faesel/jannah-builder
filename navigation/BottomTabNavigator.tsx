@@ -11,7 +11,7 @@ import SawabSettingsScreen from '../screens/SawabSettingsScreen'
 import ProgressTab from '../screens/ProgressTab'
 import JannahTab from '../screens/JannahTab'
 
-import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList } from '../types'
+import { BottomTabParamList, TabOneParamList, TabTwoParamList, TabThreeParamList, SettingsParamList } from '../types'
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>()
 
@@ -29,7 +29,15 @@ function TabBarIconOcticons (props: { name: React.ComponentProps<typeof Octicons
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
 const TabOneStack = createStackNavigator<TabOneParamList>()
 
-function TabOneNavigator ({ navigation }: StackScreenProps<RootStackParamList>) {
+function SawabSettings ({ navigation }: StackScreenProps<SettingsParamList>, colorScheme: string) {
+  return (
+    <TouchableOpacity onPress={() => navigation.navigate('SawabSettings')}>
+      <MaterialCommunityIcons name="dots-vertical" style={{ marginRight: 5 }} size={40} color={colorScheme} />
+    </TouchableOpacity>
+  )
+}
+
+function TabOneNavigator (navigationProps: StackScreenProps<SettingsParamList>) {
   const colorScheme = useColorScheme()
 
   return (
@@ -40,10 +48,7 @@ function TabOneNavigator ({ navigation }: StackScreenProps<RootStackParamList>) 
         options={{
           headerTitle: 'Sawab Top-Up',
           headerTitleStyle: { fontWeight: 'bold', fontSize: 25 },
-          headerRight: () =>
-            <TouchableOpacity onPress={() => navigation.navigate('SawabSettings')}>
-              <MaterialCommunityIcons name="dots-vertical" style={{ marginRight: 5 }} size={40} color={Colors[colorScheme].secondary} />
-            </TouchableOpacity>
+          headerRight: () => SawabSettings(navigationProps, Colors[colorScheme].primaryVariant)
         }}
       />
       <TabOneStack.Screen name="Prayer" component={Prayer} options={{ title: 'Prayer', headerTitleStyle: { fontWeight: 'bold', fontSize: 25 } }} />
@@ -94,21 +99,21 @@ export default function BottomTabNavigator () {
         name="Sawab"
         component={TabOneNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="add-task" color={Colors[colorScheme].primaryVariant} />
+          tabBarIcon: () => TabBarIconMaterial({ name: 'add-task', color: Colors[colorScheme].primaryVariant })
         }}
       />
       <BottomTab.Screen
         name="Progress"
         component={TabTwoNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconOcticons name="graph" color={Colors[colorScheme].primaryVariant} />
+          tabBarIcon: () => TabBarIconOcticons({ name: 'graph', color: Colors[colorScheme].primaryVariant })
         }}
       />
       <BottomTab.Screen
         name="Jannah"
         component={TabThreeNavigator}
         options={{
-          tabBarIcon: ({ color }) => <TabBarIconMaterial name="house" color={Colors[colorScheme].primaryVariant} />
+          tabBarIcon: () => TabBarIconOcticons({ name: 'home', color: Colors[colorScheme].primaryVariant })
         }}
       />
 
