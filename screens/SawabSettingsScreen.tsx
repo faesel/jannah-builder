@@ -1,14 +1,12 @@
-import { StackScreenProps } from '@react-navigation/stack'
 import * as React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { RootStackParamList } from '../types'
+import { StyleSheet, Text, View, TextInput, NativeSyntheticEvent, TextInputChangeEventData, ActivityIndicator } from 'react-native'
+import { useGetSawabSettings } from '../hooks/useSawabGoal'
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: 'column',
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: 20
   },
   title: {
@@ -17,12 +15,23 @@ const styles = StyleSheet.create({
   }
 })
 
-export default function SawabSettings ({
-  navigation
-}: StackScreenProps<RootStackParamList>) {
+const handleNewQuranGoal = (event: NativeSyntheticEvent<TextInputChangeEventData>) => {
+  console.log(event)
+}
+
+export default function SawabSettingsScreen () {
+  const [value, error, isPending] = useGetSawabSettings()
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This is the settings screen.</Text>
+      {isPending && <ActivityIndicator size="large" />}
+      {error && <Text>Ops failed to get your previous goal settings.</Text>}
+      {!isPending &&
+        <>
+          <Text style={styles.title}>Quran Goal</Text>
+          <TextInput onChange={handleNewQuranGoal} value={value.QuranGoal?.toString()}></TextInput>
+        </>
+      }
     </View>
   )
 }
