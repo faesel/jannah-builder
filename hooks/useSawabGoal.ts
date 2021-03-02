@@ -32,11 +32,10 @@ export function useGetSawabSettings (): [SawabSettings, string | null, boolean] 
         const jsonValue = await AsyncStorage.getItem(SAWAB_KEY)
 
         if (jsonValue) {
-            const jsonObject = jsonValue != null ? JSON.parse(jsonValue) as SawabSettings : {} as SawabSettings
-            setState({ value: jsonObject, error: null, isPending: false })
-        }
-        else {
-            setState({ ...state, error: null, isPending: false })
+          const jsonObject = jsonValue != null ? JSON.parse(jsonValue) as SawabSettings : {} as SawabSettings
+          setState({ value: jsonObject, error: null, isPending: false })
+        } else {
+          setState({ ...state, error: null, isPending: false })
         }
       } catch (error) {
         setState({ ...state, error: error.toString(), isPending: false })
