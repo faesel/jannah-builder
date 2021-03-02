@@ -4,6 +4,7 @@ import Colors from '../constants/Colors'
 import { useGetSawabSettings } from '../hooks/useSawabGoal'
 import { Text, View, TextInput } from '../components/Themed'
 import useColorScheme from '../hooks/useColorScheme'
+import { Picker } from '@react-native-community/picker'
 
 const styles = StyleSheet.create({
   container: {
@@ -65,6 +66,12 @@ export default function SawabSettingsScreen () {
             lightColor={Colors[colorScheme].onSurface}
             darkColor={Colors[colorScheme].onSurface}
             style={{ ...styles.textInput, borderBottomColor: Colors[colorScheme].secondary }} keyboardType='number-pad' onChange={handleNewQuranGoal} value={value.ZakatCurrency?.toString()}></TextInput>
+
+          <Picker
+            style={{ height: 50, width: 100 }}>
+            <Picker.Item label="£" value="£" />
+            <Picker.Item label="$" value="$" />
+          </Picker>
 
           <Text
             lightColor={Colors[colorScheme].onSurface}
