@@ -4,6 +4,7 @@ import Colors from '../constants/Colors'
 import { useGetSawabSettings } from '../hooks/useSawabGoal'
 import { Text, View, TextInput } from '../components/Themed'
 import useColorScheme from '../hooks/useColorScheme'
+import { Currency } from '../constants/Currency'
 import { Picker } from '@react-native-community/picker'
 
 const styles = StyleSheet.create({
@@ -30,6 +31,7 @@ const handleNewQuranGoal = (event: NativeSyntheticEvent<TextInputChangeEventData
 }
 
 export default function SawabSettingsScreen () {
+  const [currency, setCurrency] = React.useState('GBP')
   const colorScheme = useColorScheme()
   const [value, error, isPending] = useGetSawabSettings()
 
@@ -68,9 +70,12 @@ export default function SawabSettingsScreen () {
             style={{ ...styles.textInput, borderBottomColor: Colors[colorScheme].secondary }} keyboardType='number-pad' onChange={handleNewQuranGoal} value={value.ZakatCurrency?.toString()}></TextInput>
 
           <Picker
+            selectedValue={currency}
+            onValueChange={newValue => setCurrency(newValue.toString())}
             style={{ height: 50, width: 100 }}>
-            <Picker.Item label="£" value="£" />
-            <Picker.Item label="$" value="$" />
+            {Currency.map((c, index) => {
+              return <Picker.Item key={index} label={`${c.currency} (${c.symbol})`} value={c.abbreviation}></Picker.Item>
+            })}
           </Picker>
 
           <Text
