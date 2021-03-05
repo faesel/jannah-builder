@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { Text as DefaultText, TextInput as DefaultTextInput, View as DefaultView } from 'react-native'
+import { PickerItemProps, Text as DefaultText, TextInput as DefaultTextInput, View as DefaultView } from 'react-native'
+import { Picker as DefaultPicker } from '@react-native-community/picker'
 
 import Colors from '../constants/Colors'
 import useColorScheme from '../hooks/useColorScheme'
@@ -26,6 +27,7 @@ type ThemeProps = {
 export type TextProps = ThemeProps & DefaultText['props'];
 export type ViewProps = ThemeProps & DefaultView['props'];
 export type TextInputProps = ThemeProps & DefaultTextInput['props'];
+export type PickerProps = ThemeProps & IPickerProps & DefaultPicker['props'];
 
 export function Text (props: TextProps) {
   const { style, lightColor, darkColor, ...otherProps } = props
@@ -46,4 +48,27 @@ export function TextInput (props: TextInputProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'onBackground')
 
   return <DefaultTextInput style={[{ color }, style]} {...otherProps} />
+}
+
+export interface IPickerProps
+{
+  pickerItems: IPickerItem[]
+}
+
+export interface IPickerItem {
+  label: string,
+  value: string,
+}
+
+export function Picker (props: PickerProps) {
+  const { style, lightColor, darkColor, ...otherProps } = props
+  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'onBackground')
+
+  return (
+    <DefaultPicker style={[{ color }, style]} {...otherProps}>
+      {props.pickerItems.map((item, index) =>
+        <DefaultPicker.Item key={index} label={item.label} value={item.value}></DefaultPicker.Item>
+      )}
+    </DefaultPicker>
+  )
 }

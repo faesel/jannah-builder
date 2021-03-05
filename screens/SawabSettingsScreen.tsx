@@ -2,10 +2,9 @@ import * as React from 'react'
 import { StyleSheet, NativeSyntheticEvent, TextInputChangeEventData, ActivityIndicator } from 'react-native'
 import Colors from '../constants/Colors'
 import { useGetSawabSettings } from '../hooks/useSawabGoal'
-import { Text, View, TextInput } from '../components/Themed'
+import { Text, View, TextInput, Picker, IPickerItem } from '../components/Themed'
 import useColorScheme from '../hooks/useColorScheme'
 import { Currency } from '../constants/Currency'
-import { Picker } from '@react-native-community/picker'
 
 const styles = StyleSheet.create({
   container: {
@@ -21,6 +20,11 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
     fontSize: 20,
     padding: 10,
+    borderBottomWidth: 5,
+    marginBottom: 10
+  },
+  pickerStyle: {
+    borderStyle: 'solid',
     borderBottomWidth: 5,
     marginBottom: 10
   }
@@ -64,19 +68,22 @@ export default function SawabSettingsScreen () {
             darkColor={Colors[colorScheme].onSurface}
             style={styles.title}>Zakat Currency</Text>
 
-          <TextInput
-            lightColor={Colors[colorScheme].onSurface}
-            darkColor={Colors[colorScheme].onSurface}
-            style={{ ...styles.textInput, borderBottomColor: Colors[colorScheme].secondary }} keyboardType='number-pad' onChange={handleNewQuranGoal} value={value.ZakatCurrency?.toString()}></TextInput>
-
-          <Picker
-            selectedValue={currency}
-            onValueChange={newValue => setCurrency(newValue.toString())}
-            style={{ height: 50, width: 100 }}>
-            {Currency.map((c, index) => {
-              return <Picker.Item key={index} label={`${c.currency} (${c.symbol})`} value={c.abbreviation}></Picker.Item>
-            })}
-          </Picker>
+          <View
+            lightColor={Colors[colorScheme].surface}
+            darkColor={Colors[colorScheme].surface}
+            style={{
+              ...styles.pickerStyle, borderBottomColor: Colors[colorScheme].secondary
+            }}>
+            <Picker
+              lightColor={Colors[colorScheme].onSurface}
+              darkColor={Colors[colorScheme].onSurface}
+              selectedValue={currency}
+              onValueChange={newValue => setCurrency(newValue.toString())}
+              pickerItems={Currency.map(c => ({
+                label: `${c.currency} (${c.symbol})`,
+                value: c.abbreviation
+              } as IPickerItem))}></Picker>
+          </View>
 
           <Text
             lightColor={Colors[colorScheme].onSurface}
