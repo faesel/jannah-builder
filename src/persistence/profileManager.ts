@@ -13,7 +13,7 @@ export class ProfileManager {
    */
   static createProfile(name: string): UserProfile {
     const now = Date.now();
-    const profileId = `profile_${now}_${Math.random().toString(36).substr(2, 9)}`;
+    const profileId = `profile_${now}_${Math.random().toString(36).substring(2, 11)}`;
 
     const worldState: WorldState = {
       trees: [],

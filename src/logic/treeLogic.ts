@@ -13,7 +13,7 @@ export class TreeLogic {
   static createTree(position: Position): Tree {
     const now = Date.now();
     return {
-      id: `tree_${now}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `tree_${now}_${Math.random().toString(36).substring(2, 11)}`,
       stage: 'sapling',
       position,
       createdAt: now,
