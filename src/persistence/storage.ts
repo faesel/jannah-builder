@@ -89,7 +89,7 @@ export class Storage {
    */
   static async multiSet(keyValuePairs: Array<[string, unknown]>): Promise<void> {
     try {
-      const pairs = keyValuePairs.map(([key, value]) => [
+      const pairs: [string, string][] = keyValuePairs.map(([key, value]) => [
         key,
         JSON.stringify(value),
       ]);

@@ -3,8 +3,7 @@
  * Processes daily game state updates based on prayer logs
  */
 
-import { UserProfile, DayProcessingResult, Tree } from '../types/models';
-import { GAME_CONFIG } from '../config/game.config';
+import { UserProfile, DayProcessingResult } from '../types/models';
 import { PrayerLogic } from './prayerLogic';
 import { TreeLogic } from './treeLogic';
 

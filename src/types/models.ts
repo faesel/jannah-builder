@@ -2,7 +2,7 @@
  * Core data model type definitions for Jannah Builder
  */
 
-import { Prayer, TreeStage, Season, IllustriousItemType } from '../config/game.config';
+import { TreeStage, Season, IllustriousItemType } from '../config/game.config';
 
 // ===== Prayer Logging =====
 

@@ -4,7 +4,7 @@
  */
 
 import { PrayerLog } from '../types/models';
-import { Prayer, GAME_CONFIG } from '../config/game.config';
+import { Prayer } from '../config/game.config';
 
 export class PrayerLogic {
   /**

@@ -3,7 +3,7 @@
  * Handles creating, loading, and managing user profiles (up to 3)
  */
 
-import { UserProfile, WorldState, Statistics, StreakData, AppState } from '../types/models';
+import { UserProfile, WorldState, Statistics, StreakData, AppState, AppSettings } from '../types/models';
 import { GAME_CONFIG, Season } from '../config/game.config';
 import { Storage, STORAGE_KEYS } from './storage';
 
@@ -167,14 +167,16 @@ export class ProfileManager {
       Storage.get(STORAGE_KEYS.SETTINGS),
     ]);
 
+    const defaultSettings: AppSettings = {
+      notifications: true,
+      soundEnabled: true,
+      theme: 'auto',
+    };
+
     return {
       profiles: profiles || [],
       activeProfileId,
-      settings: settings || {
-        notifications: true,
-        soundEnabled: true,
-        theme: 'auto',
-      },
+      settings: (settings as AppSettings) || defaultSettings,
       lastSyncedAt: Date.now(),
     };
   }
