@@ -50,4 +50,4 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build validation (web)
-        run: npx expo export:web --no-pwa
+        run: npx expo export --platform web
