@@ -50,6 +50,8 @@ export interface WorldState {
     width: number;
     height: number;
   };
+  /** Number of tile columns/rows in the grid (square grid) */
+  gridSize: number;
   lastUpdated: number;
 }
 

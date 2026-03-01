@@ -83,10 +83,12 @@ export const GAME_CONFIG = {
 
   // Map settings
   map: {
-    initialSize: { width: 20, height: 20 }, // Tiles
-    expansionRate: 5, // Tiles per expansion
-    expansionThreshold: 20, // Trees needed for expansion
-    tileSize: 32, // Pixels
+    initialGridSize: 4, // Start with a 4×4 grid of tiles
+    maxGridSize: 24, // Maximum grid density
+    minTileSize: 16, // Smallest a tile can be (px) — must stay recognizable
+    tileSize: 32, // Base reference tile size (used by sprite generation)
+    // Grid grows by 1 column+row each time this many total world elements exist
+    growthInterval: 3,
   },
 
   // Profile settings
@@ -95,7 +97,10 @@ export const GAME_CONFIG = {
     defaultName: 'Profile',
   },
 
-  // Visual effects
+  // Debug / testing
+  debug: {
+    showGridLines: true, // Toggle to show tile grid lines on the map
+  },
   effects: {
     quran: {
       ambientLightBoost: 1.3,

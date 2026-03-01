@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { COLORS } from '../../src/config/colors';
 
 export default function TabLayout() {
   console.log('[TabLayout] Rendering');
@@ -8,7 +9,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         lazy: false,
-        sceneStyle: { backgroundColor: '#F5F7F3' },
+        sceneStyle: { backgroundColor: COLORS.appBackground },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E0E5DD',
@@ -30,6 +31,7 @@ export default function TabLayout() {
         options={{
           title: 'View Jannah',
           tabBarLabel: 'Jannah',
+          sceneStyle: { backgroundColor: COLORS.grass },
         }}
       />
       <Tabs.Screen

@@ -7,6 +7,7 @@ import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppInitializer } from '../src/logic/appInitializer';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { COLORS } from '../src/config/colors';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -15,7 +16,7 @@ const JannahTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#F5F7F3',
+    background: COLORS.appBackground,
   },
 };
 
@@ -53,14 +54,14 @@ export default function RootLayout() {
   console.log('[RootLayout] Rendering');
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#F5F7F3' }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.appBackground }}>
       <SafeAreaProvider>
         <ErrorBoundary>
           <ThemeProvider value={JannahTheme}>
             <Stack 
               screenOptions={{ 
                 headerShown: false,
-                contentStyle: { backgroundColor: '#F5F7F3' },
+                contentStyle: { backgroundColor: COLORS.appBackground },
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />

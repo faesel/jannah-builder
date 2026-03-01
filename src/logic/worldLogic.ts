@@ -172,6 +172,7 @@ export class WorldLogic {
           .concat(result.illustriousItemsAdded),
         season,
         mapSize: newMapSize,
+        gridSize: Math.max(newMapSize.width, newMapSize.height),
         lastUpdated: Date.now(),
       },
       statistics,

@@ -74,25 +74,35 @@ describe('WorldElementLogic', () => {
   });
 
   describe('evaluateMapExpansion', () => {
-    const initial = { width: 20, height: 20 };
+    const initial = { width: 4, height: 4 };
 
-    it('returns null when below the threshold', () => {
-      expect(WorldElementLogic.evaluateMapExpansion(10, initial)).toBeNull();
+    it('returns null when no growth earned', () => {
+      // 0 trees → initialGridSize(4) + 0 = 4, already at 4
+      expect(WorldElementLogic.evaluateMapExpansion(0, initial)).toBeNull();
     });
 
-    it('expands at the first threshold (20 trees)', () => {
-      const result = WorldElementLogic.evaluateMapExpansion(20, initial);
-      expect(result).toEqual({ width: 25, height: 25 });
+    it('expands after growthInterval trees', () => {
+      // 3 trees → 4 + floor(3/3) = 5
+      const result = WorldElementLogic.evaluateMapExpansion(3, initial);
+      expect(result).toEqual({ width: 5, height: 5 });
     });
 
-    it('expands further at 40 trees', () => {
-      const result = WorldElementLogic.evaluateMapExpansion(40, initial);
-      expect(result).toEqual({ width: 30, height: 30 });
+    it('expands further with more trees', () => {
+      // 9 trees → 4 + floor(9/3) = 7
+      const result = WorldElementLogic.evaluateMapExpansion(9, initial);
+      expect(result).toEqual({ width: 7, height: 7 });
     });
 
-    it('returns null if map is already large enough', () => {
-      const large = { width: 30, height: 30 };
-      expect(WorldElementLogic.evaluateMapExpansion(20, large)).toBeNull();
+    it('returns null if grid is already large enough', () => {
+      const large = { width: 10, height: 10 };
+      // 3 trees → target 5, but already at 10
+      expect(WorldElementLogic.evaluateMapExpansion(3, large)).toBeNull();
+    });
+
+    it('caps at maxGridSize', () => {
+      // Huge tree count → capped at maxGridSize (24)
+      const result = WorldElementLogic.evaluateMapExpansion(200, initial);
+      expect(result).toEqual({ width: 24, height: 24 });
     });
   });
 });

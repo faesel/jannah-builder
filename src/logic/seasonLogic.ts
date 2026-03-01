@@ -27,8 +27,10 @@ export class SeasonLogic {
     prayerLogs: PrayerLog[],
     currentDate: string
   ): Season {
-    // No history at all — default to spring (new user)
+    // No history or no complete days — default to spring (new/returning user)
     if (prayerLogs.length === 0) return 'spring';
+    const hasCompleteDays = prayerLogs.some((l) => l.isComplete);
+    if (!hasCompleteDays) return 'spring';
 
     const streak = this.countStreakUpTo(prayerLogs, currentDate);
     const gap = this.countGapUpTo(prayerLogs, currentDate);

@@ -84,24 +84,20 @@ export class WorldElementLogic {
   }
 
   /**
-   * Evaluate map expansion. Returns new size if expansion is warranted.
+   * Evaluate grid expansion. Returns new grid size if growth is warranted.
+   * Grid grows by 1 for every `growthInterval` total world elements.
    */
   static evaluateMapExpansion(
     treeCount: number,
     currentSize: { width: number; height: number }
   ): { width: number; height: number } | null {
-    const { expansionThreshold, expansionRate, initialSize } = GAME_CONFIG.map;
+    const { initialGridSize, maxGridSize, growthInterval } = GAME_CONFIG.map;
 
-    // How many expansions have been earned
-    const expansionsEarned = Math.floor(treeCount / expansionThreshold);
-    const expectedWidth = initialSize.width + expansionsEarned * expansionRate;
-    const expectedHeight = initialSize.height + expansionsEarned * expansionRate;
+    const earned = initialGridSize + Math.floor(treeCount / growthInterval);
+    const target = Math.min(maxGridSize, earned);
 
-    if (expectedWidth > currentSize.width || expectedHeight > currentSize.height) {
-      return {
-        width: Math.max(currentSize.width, expectedWidth),
-        height: Math.max(currentSize.height, expectedHeight),
-      };
+    if (target > currentSize.width || target > currentSize.height) {
+      return { width: target, height: target };
     }
 
     return null;

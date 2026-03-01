@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLORS } from '../../src/config/colors';
 
 export default function StatisticsScreen() {
   return (
@@ -19,7 +20,7 @@ export default function StatisticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7F3',
+    backgroundColor: COLORS.appBackground,
   },
   content: {
     flex: 1,

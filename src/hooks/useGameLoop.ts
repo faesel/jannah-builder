@@ -40,9 +40,16 @@ export function useGameLoop(): GameLoopState {
 
       let currentProfile = await ProfileManager.getActiveProfile();
       if (!currentProfile) {
-        setProfile(null);
-        setProcessing(false);
-        return;
+        // Try to recover an orphaned profile
+        const existing = await ProfileManager.loadProfiles();
+        if (existing.length > 0) {
+          currentProfile = existing[0];
+          await ProfileManager.setActiveProfileId(currentProfile.id);
+        } else {
+          setProfile(null);
+          setProcessing(false);
+          return;
+        }
       }
 
       // Process each missed day in chronological order

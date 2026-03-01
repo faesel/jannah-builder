@@ -21,6 +21,9 @@ export const TILE_SPRITES = {
   path: require('../../assets/sprites/tiles/path.png'),
   water: require('../../assets/sprites/tiles/water.png'),
   dirt: require('../../assets/sprites/tiles/dirt.png'),
+  fence_vertical: require('../../assets/sprites/tiles/fence_vertical.png'),
+  fence_horizontal: require('../../assets/sprites/tiles/fence_horizontal.png'),
+  fence_corner: require('../../assets/sprites/tiles/fence_corner.png'),
 };
 
 // --- Trees ---
@@ -77,4 +80,10 @@ export const ILLUSTRIOUS_SPRITES = {
   glowing_tree: require('../../assets/sprites/illustrious/glowing_tree.png'),
   floating_lantern: require('../../assets/sprites/illustrious/floating_lantern.png'),
   light_arch: require('../../assets/sprites/illustrious/light_arch.png'),
+};
+
+// --- Landmarks ---
+
+export const LANDMARK_SPRITES = {
+  signboard: require('../../assets/sprites/landmarks/signboard.png'),
 };

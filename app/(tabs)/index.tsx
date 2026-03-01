@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrayerLog } from '../../src/types/models';
+import { COLORS } from '../../src/config/colors';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
@@ -92,10 +93,20 @@ export default function LogPrayerScreen() {
 
   const savePrayerLog = async (log: PrayerLog) => {
     try {
-      const profile = await ProfileManager.getActiveProfile();
+      let profile = await ProfileManager.getActiveProfile();
+
+      // Auto-create or recover a profile on first interaction
       if (!profile) {
-        console.log('[LogPrayerScreen] No profile to save to');
-        return;
+        const existing = await ProfileManager.loadProfiles();
+        if (existing.length > 0) {
+          // Recover: set first existing profile as active
+          profile = existing[0];
+          await ProfileManager.setActiveProfileId(profile.id);
+          console.log('[LogPrayerScreen] Recovered existing profile:', profile.id);
+        } else {
+          console.log('[LogPrayerScreen] No profiles, creating one');
+          profile = await ProfileManager.addProfile(GAME_CONFIG.profiles.defaultName);
+        }
       }
 
       const existingLogIndex = profile.prayerLogs.findIndex(
@@ -277,7 +288,7 @@ export default function LogPrayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7F3',
+    backgroundColor: COLORS.appBackground,
   },
   scrollContent: {
     padding: 20,

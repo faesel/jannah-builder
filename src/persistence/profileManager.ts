@@ -22,7 +22,8 @@ export class ProfileManager {
       animals: [],
       illustriousItems: [],
       season: 'spring' as Season,
-      mapSize: GAME_CONFIG.map.initialSize,
+      mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+      gridSize: GAME_CONFIG.map.initialGridSize,
       lastUpdated: now,
     };
 
