@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "generate-sprites": "node scripts/generate-sprites.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -36,6 +37,7 @@
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
     "babel-preset-expo": "^54.0.10",
+    "canvas": "^3.2.1",
     "eslint": "^9.39.2",
     "eslint-config-expo": "^10.0.0",
     "jest": "^30.2.0",
