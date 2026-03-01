@@ -1,18 +1,28 @@
 /**
  * World Logic
- * Processes daily game state updates based on prayer logs
+ * Processes daily game state updates based on prayer logs.
+ *
+ * This is the central orchestrator that calls into SeasonLogic,
+ * IllustriousItemLogic, WorldElementLogic, and TreeLogic to
+ * produce a single DayProcessingResult for each elapsed day.
  */
 
 import { UserProfile, DayProcessingResult } from '../types/models';
 import { PrayerLogic } from './prayerLogic';
 import { TreeLogic } from './treeLogic';
+import { SeasonLogic } from './seasonLogic';
+import { IllustriousItemLogic } from './illustriousItemLogic';
+import { WorldElementLogic } from './worldElementLogic';
 
 export class WorldLogic {
   /**
-   * Process the end of a day and update world state
-   * This is the main game loop function
+   * Process a single date and return what changed.
+   * The date parameter allows replaying missed days in order.
    */
-  static processDayEnd(profile: UserProfile): DayProcessingResult {
+  static processDay(
+    profile: UserProfile,
+    date: string
+  ): DayProcessingResult {
     const result: DayProcessingResult = {
       treesAdded: [],
       treesDecayed: [],
@@ -24,39 +34,80 @@ export class WorldLogic {
       seasonChanged: false,
     };
 
-    const today = PrayerLogic.getTodayDate();
-    const todayLog = profile.prayerLogs.find((log) => log.date === today);
+    const dayLog = profile.prayerLogs.find((log) => log.date === date);
+    const dayComplete = dayLog?.isComplete ?? false;
 
-    // Check if today was complete
-    if (todayLog && todayLog.isComplete) {
-      // Day was complete - check for tree generation
-      const consecutiveDays = PrayerLogic.countConsecutiveDays(
-        profile.prayerLogs
+    // --- Trees: generation or decay ---
+    if (dayComplete) {
+      const consecutiveDays = SeasonLogic.countStreakUpTo(
+        profile.prayerLogs,
+        date
       );
-
       const treesToGenerate = TreeLogic.shouldGenerateTrees(consecutiveDays);
       const currentTreeCount = profile.worldState.trees.length;
       const treesNeeded = treesToGenerate - currentTreeCount;
 
       if (treesNeeded > 0) {
-        const newTrees = TreeLogic.generateTrees(
+        result.treesAdded = TreeLogic.generateTrees(
           treesNeeded,
           profile.worldState.trees
         );
-        result.treesAdded = newTrees;
       }
     } else {
-      // Day was missed - apply decay
       const decayResult = TreeLogic.applyDecay(profile.worldState.trees);
       result.treesDecayed = decayResult.degradedTrees;
       result.treesRemoved = decayResult.removedTreeIds;
     }
 
+    // Project what the tree list will look like after this day
+    const projectedTrees = this.projectTrees(profile, result);
+    const projectedTreeCount = projectedTrees.length;
+
+    // --- Season ---
+    const seasonResult = SeasonLogic.evaluateSeasonChange(
+      profile.worldState.season,
+      profile.prayerLogs,
+      date
+    );
+    if (seasonResult.changed) {
+      result.seasonChanged = true;
+      result.newSeason = seasonResult.newSeason;
+    }
+
+    // --- Buildings & animals ---
+    result.buildingsAdded = WorldElementLogic.evaluateBuildings(
+      projectedTreeCount,
+      profile.worldState.buildings,
+      projectedTrees
+    );
+    result.animalsAdded = WorldElementLogic.evaluateAnimals(
+      projectedTreeCount,
+      profile.worldState.animals,
+      projectedTrees
+    );
+
+    // --- Illustrious items ---
+    const streak = SeasonLogic.countStreakUpTo(profile.prayerLogs, date);
+    const illustriousResult = IllustriousItemLogic.evaluate(
+      streak,
+      profile.worldState.illustriousItems,
+      projectedTrees
+    );
+    result.illustriousItemsAdded = illustriousResult.itemsToAdd;
+    result.illustriousItemsRemoved = illustriousResult.itemIdsToRemove;
+
     return result;
   }
 
   /**
-   * Apply processing result to profile
+   * Legacy entry point — processes today.
+   */
+  static processDayEnd(profile: UserProfile): DayProcessingResult {
+    return this.processDay(profile, PrayerLogic.getTodayDate());
+  }
+
+  /**
+   * Apply processing result to profile, returning the updated profile.
    */
   static applyProcessingResult(
     profile: UserProfile,
@@ -68,19 +119,29 @@ export class WorldLogic {
     updatedTrees.push(...result.treesAdded);
 
     // Update degraded trees
-    result.treesDecayed.forEach((degradedTree) => {
+    for (const degradedTree of result.treesDecayed) {
       const index = updatedTrees.findIndex((t) => t.id === degradedTree.id);
       if (index !== -1) {
         updatedTrees[index] = degradedTree;
       }
-    });
+    }
 
     // Remove trees
     const filteredTrees = updatedTrees.filter(
       (tree) => !result.treesRemoved.includes(tree.id)
     );
 
-    // Update statistics
+    // Map expansion
+    const newMapSize =
+      WorldElementLogic.evaluateMapExpansion(
+        filteredTrees.length,
+        profile.worldState.mapSize
+      ) ?? profile.worldState.mapSize;
+
+    // Season
+    const season = result.newSeason ?? profile.worldState.season;
+
+    // Statistics
     const statistics = {
       ...profile.statistics,
       totalTreesGrown:
@@ -100,6 +161,7 @@ export class WorldLogic {
       worldState: {
         ...profile.worldState,
         trees: filteredTrees,
+        flowers: profile.worldState.flowers,
         buildings: [
           ...profile.worldState.buildings,
           ...result.buildingsAdded,
@@ -108,6 +170,8 @@ export class WorldLogic {
         illustriousItems: profile.worldState.illustriousItems
           .filter((item) => !result.illustriousItemsRemoved.includes(item.id))
           .concat(result.illustriousItemsAdded),
+        season,
+        mapSize: newMapSize,
         lastUpdated: Date.now(),
       },
       statistics,
@@ -115,7 +179,7 @@ export class WorldLogic {
   }
 
   /**
-   * Update statistics after logging a prayer
+   * Update statistics after logging a prayer.
    */
   static updateStatisticsForPrayer(profile: UserProfile): UserProfile {
     const totalPrayers = profile.prayerLogs.reduce((sum, log) => {
@@ -150,5 +214,24 @@ export class WorldLogic {
         consecutiveFullDays: consecutiveDays,
       },
     };
+  }
+
+  // --- Internal helpers ---
+
+  /**
+   * Project the tree list after applying a day result (without mutating profile).
+   */
+  private static projectTrees(
+    profile: UserProfile,
+    result: DayProcessingResult
+  ): typeof profile.worldState.trees {
+    const trees = [...profile.worldState.trees, ...result.treesAdded];
+
+    for (const degraded of result.treesDecayed) {
+      const idx = trees.findIndex((t) => t.id === degraded.id);
+      if (idx !== -1) trees[idx] = degraded;
+    }
+
+    return trees.filter((t) => !result.treesRemoved.includes(t.id));
   }
 }
