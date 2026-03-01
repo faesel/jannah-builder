@@ -6,9 +6,6 @@
 import { Season } from './game.config';
 
 export const COLORS = {
-  /** Grass / Jannah map background */
-  grass: '#7EC850',
-
   /** Season-specific grass colors for tile rendering */
   grassBySeason: {
     spring: '#7EC850',

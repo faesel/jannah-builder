@@ -1,5 +1,14 @@
 import { SeasonLogic } from '../logic/seasonLogic';
 import { PrayerLog } from '../types/models';
+import { GAME_CONFIG } from '../config/game.config';
+
+// Enable seasons for these tests
+beforeAll(() => {
+  (GAME_CONFIG.seasons as any).enabled = true;
+});
+afterAll(() => {
+  (GAME_CONFIG.seasons as any).enabled = false;
+});
 
 function makeLog(date: string, complete: boolean): PrayerLog {
   return {

@@ -116,11 +116,14 @@ describe('WorldLogic', () => {
     });
 
     it('evaluates season change', () => {
+      // Enable seasons for this test
+      (GAME_CONFIG.seasons as any).enabled = true;
       const logs = consecutiveLogs('2026-03-14', 14);
       const profile = makeProfile({ prayerLogs: logs });
       const result = WorldLogic.processDay(profile, '2026-03-14');
       expect(result.seasonChanged).toBe(true);
       expect(result.newSeason).toBe('summer');
+      (GAME_CONFIG.seasons as any).enabled = false;
     });
   });
 

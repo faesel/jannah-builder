@@ -35,6 +35,7 @@ export const GAME_CONFIG = {
 
   // Season system
   seasons: {
+    enabled: false, // Toggle to enable/disable season changes
     types: ['spring', 'summer', 'autumn', 'winter'] as const,
     springDefault: true,
     summerThreshold: 14, // Days of sustained consistency

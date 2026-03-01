@@ -31,7 +31,7 @@ export default function TabLayout() {
         options={{
           title: 'View Jannah',
           tabBarLabel: 'Jannah',
-          sceneStyle: { backgroundColor: COLORS.grass },
+          sceneStyle: { backgroundColor: COLORS.grassBySeason.spring },
         }}
       />
       <Tabs.Screen

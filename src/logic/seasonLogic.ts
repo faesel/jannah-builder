@@ -27,6 +27,9 @@ export class SeasonLogic {
     prayerLogs: PrayerLog[],
     currentDate: string
   ): Season {
+    // If seasons are disabled, always return spring
+    if (!GAME_CONFIG.seasons.enabled) return 'spring';
+
     // No history or no complete days — default to spring (new/returning user)
     if (prayerLogs.length === 0) return 'spring';
     const hasCompleteDays = prayerLogs.some((l) => l.isComplete);
