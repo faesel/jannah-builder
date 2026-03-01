@@ -1,27 +1,28 @@
 {
   "expo": {
-    "name": "temp-expo",
-    "slug": "temp-expo",
+    "name": "jannah-builder",
+    "slug": "jannah-builder",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "scheme": "jannahbuilder",
+    "backgroundColor": "#F5F7F3",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F5F7F3"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jannahbuilder.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.jannahbuilder.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
