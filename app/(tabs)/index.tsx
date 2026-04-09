@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { PrayerLog } from '../../src/types/models';
 import { COLORS } from '../../src/config/colors';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
@@ -19,11 +20,7 @@ export default function LogPrayerScreen() {
   const [error, setError] = useState<string | null>(null);
   const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    loadTodayLog();
-  }, []);
-
-  const loadTodayLog = async () => {
+  const loadTodayLog = useCallback(async () => {
     try {
       const profile = await ProfileManager.getActiveProfile();
       
@@ -44,7 +41,13 @@ export default function LogPrayerScreen() {
       setError(err instanceof Error ? err.message : String(err));
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTodayLog();
+    }, [loadTodayLog])
+  );
 
   const handlePrayerToggle = (prayer: string) => {
     if (!todayLog) return;

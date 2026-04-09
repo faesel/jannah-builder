@@ -6,14 +6,17 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { COLORS } from '../../src/config/colors';
 import { StatCard } from '../../src/components/StatCard';
 import { ProfileManager } from '../../src/persistence/profileManager';
+import { Storage } from '../../src/persistence/storage';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { UserProfile, PrayerLog } from '../../src/types/models';
+import { AppInitializer } from '../../src/logic/appInitializer';
 
 const SEASON_LABELS: Record<string, string> = {
   spring: '🌸 Spring',
@@ -107,6 +110,29 @@ export default function StatisticsScreen() {
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     loadProfile();
+  }, [loadProfile]);
+
+  const handleResetGarden = useCallback(() => {
+    Alert.alert(
+      'Reset your garden?',
+      'All prayers, trees, and progress will be removed. This cannot be undone.',
+      [
+        { text: 'Keep my garden', style: 'cancel' },
+        {
+          text: 'Reset everything',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await Storage.clear();
+              await AppInitializer.initialize();
+              await loadProfile();
+            } catch (err) {
+              console.error('[StatisticsScreen] Error resetting:', err);
+            }
+          },
+        },
+      ]
+    );
   }, [loadProfile]);
 
   if (loading) {
@@ -290,6 +316,15 @@ export default function StatisticsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Reset */}
+        <Pressable
+          style={styles.resetButton}
+          onPress={handleResetGarden}
+          accessibilityLabel="Reset garden and clear all data"
+        >
+          <Text style={styles.resetText}>Reset Garden</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -491,5 +526,20 @@ const styles = StyleSheet.create({
   worldDivider: {
     height: 1,
     backgroundColor: '#E0E5DD',
+  },
+
+  // Reset
+  resetButton: {
+    marginTop: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D4A0A0',
+  },
+  resetText: {
+    fontSize: 14,
+    color: '#A06060',
+    fontWeight: '500',
   },
 });
