@@ -130,8 +130,16 @@ export default function StatisticsScreen() {
     );
   }
 
-  const { statistics, streaks, worldState, prayerLogs } = profile;
+  const { statistics, worldState, prayerLogs } = profile;
   const days = getLast7Days(prayerLogs);
+
+  // Compute live values from prayer logs so stats are always fresh
+  const totalPrayersLogged = prayerLogs.reduce(
+    (sum, log) => sum + Object.values(log.prayers).filter(Boolean).length, 0
+  );
+  const totalDaysComplete = prayerLogs.filter((log) => log.isComplete).length;
+  const currentStreak = PrayerLogic.countConsecutiveDays(prayerLogs);
+  const longestStreak = Math.max(statistics.longestStreak, currentStreak);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -149,16 +157,16 @@ export default function StatisticsScreen() {
         {/* Streak section */}
         <View style={styles.streakSection}>
           <View style={styles.streakCard}>
-            <Text style={styles.streakValue}>{statistics.currentStreak}</Text>
+            <Text style={styles.streakValue}>{currentStreak}</Text>
             <Text style={styles.streakLabel}>
-              {statistics.currentStreak === 1 ? 'day' : 'days'} continuing
+              {currentStreak === 1 ? 'day' : 'days'} continuing
             </Text>
           </View>
           <View style={styles.streakDivider} />
           <View style={styles.streakCard}>
-            <Text style={styles.streakValue}>{statistics.longestStreak}</Text>
+            <Text style={styles.streakValue}>{longestStreak}</Text>
             <Text style={styles.streakLabel}>
-              {statistics.longestStreak === 1 ? 'day' : 'days'} longest
+              {longestStreak === 1 ? 'day' : 'days'} longest
             </Text>
           </View>
         </View>
@@ -199,9 +207,9 @@ export default function StatisticsScreen() {
           <Text style={styles.sectionTitle}>Your Garden</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statsRow}>
-              <StatCard icon="🤲" label="Prayers Logged" value={statistics.totalPrayersLogged} />
+              <StatCard icon="🤲" label="Prayers Logged" value={totalPrayersLogged} />
               <View style={styles.gridGap} />
-              <StatCard icon="📅" label="Complete Days" value={statistics.totalDaysComplete} />
+              <StatCard icon="📅" label="Complete Days" value={totalDaysComplete} />
             </View>
             <View style={styles.statsRow}>
               <StatCard icon="🌳" label="Trees Grown" value={statistics.totalTreesGrown} />
