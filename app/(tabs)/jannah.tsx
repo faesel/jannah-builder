@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
-  useWindowDimensions,
+  LayoutChangeEvent,
 } from 'react-native';
 import { useGameLoop } from '../../src/hooks/useGameLoop';
 import { GAME_CONFIG, Season } from '../../src/config/game.config';
@@ -22,18 +22,28 @@ const DEFAULT_WORLD: WorldState = {
 };
 
 export default function JannahScreen() {
-  const { profile, processing } = useGameLoop();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { profile } = useGameLoop();
+  const [layout, setLayout] = useState<{ width: number; height: number } | null>(null);
+
+  const handleLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setLayout((prev) => {
+      if (prev && prev.width === width && prev.height === height) return prev;
+      return { width, height };
+    });
+  }, []);
 
   const worldState = profile?.worldState ?? DEFAULT_WORLD;
 
   return (
-    <View style={styles.container}>
-      <JannahCanvas
-        worldState={worldState}
-        screenWidth={screenWidth}
-        screenHeight={screenHeight}
-      />
+    <View style={styles.container} onLayout={handleLayout}>
+      {layout && (
+        <JannahCanvas
+          worldState={worldState}
+          screenWidth={layout.width}
+          screenHeight={layout.height}
+        />
+      )}
     </View>
   );
 }
@@ -41,5 +51,6 @@ export default function JannahScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
 });

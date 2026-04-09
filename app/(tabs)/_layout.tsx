@@ -2,13 +2,10 @@ import { Tabs } from 'expo-router';
 import { COLORS } from '../../src/config/colors';
 
 export default function TabLayout() {
-  console.log('[TabLayout] Rendering');
-  
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        lazy: false,
         sceneStyle: { backgroundColor: COLORS.appBackground },
         tabBarStyle: {
           backgroundColor: '#FFFFFF',

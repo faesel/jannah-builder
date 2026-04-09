@@ -100,6 +100,24 @@ describe('PrayerLogic', () => {
     it('getNextDate returns the day after', () => {
       expect(PrayerLogic.getNextDate('2026-02-28')).toBe('2026-03-01');
     });
+
+    it('getNextDate advances correctly across DST boundaries', () => {
+      // US DST spring-forward: 2026-03-08. Previously caused infinite loop
+      // because local-time getDate() returned the wrong day on DST transitions.
+      expect(PrayerLogic.getNextDate('2026-03-07')).toBe('2026-03-08');
+      expect(PrayerLogic.getNextDate('2026-03-08')).toBe('2026-03-09');
+      expect(PrayerLogic.getNextDate('2026-03-09')).toBe('2026-03-10');
+      // US DST fall-back: 2026-11-01
+      expect(PrayerLogic.getNextDate('2026-10-31')).toBe('2026-11-01');
+      expect(PrayerLogic.getNextDate('2026-11-01')).toBe('2026-11-02');
+    });
+
+    it('getPreviousDate retreats correctly across DST boundaries', () => {
+      expect(PrayerLogic.getPreviousDate('2026-03-09')).toBe('2026-03-08');
+      expect(PrayerLogic.getPreviousDate('2026-03-08')).toBe('2026-03-07');
+      expect(PrayerLogic.getPreviousDate('2026-11-02')).toBe('2026-11-01');
+      expect(PrayerLogic.getPreviousDate('2026-11-01')).toBe('2026-10-31');
+    });
   });
 
   describe('wasDayMissed', () => {

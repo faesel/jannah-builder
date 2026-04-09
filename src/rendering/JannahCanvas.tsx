@@ -30,21 +30,12 @@ export function JannahCanvas({ worldState, screenWidth, screenHeight }: JannahCa
     Math.floor(Math.min(screenWidth, screenHeight) / gridSize),
   );
 
-  // Columns and rows fill the entire screen (rectangular grid)
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
 
   // Center of the grid in tile coordinates
   const centerCol = Math.floor(cols / 2);
   const centerRow = Math.floor(rows / 2);
-
-  console.log('[JannahCanvas] Rendering:', {
-    season, gridSize, tileSize, cols, rows,
-    grassLight: COLORS.grassBySeason[season],
-    grassDark: COLORS.grassDarkBySeason[season],
-    totalTiles: cols * rows,
-    screenWidth, screenHeight,
-  });
 
   // Grass tiles — colored Views with subtle checkerboard for texture
   const grassTiles = useMemo(() => {
@@ -98,7 +89,7 @@ export function JannahCanvas({ worldState, screenWidth, screenHeight }: JannahCa
   }, [cols, rows, tileSize]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.grassBySeason[season] }}>
+    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grassBySeason[season] }}>
       {/* Grass tile Views for checkerboard texture */}
       {grassTiles}
 

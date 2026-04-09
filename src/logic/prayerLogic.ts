@@ -122,7 +122,7 @@ export class PrayerLogic {
    */
   static getPreviousDate(date: string): string {
     const d = new Date(date);
-    d.setDate(d.getDate() - 1);
+    d.setUTCDate(d.getUTCDate() - 1);
     return d.toISOString().split('T')[0];
   }
 
@@ -131,7 +131,7 @@ export class PrayerLogic {
    */
   static getNextDate(date: string): string {
     const d = new Date(date);
-    d.setDate(d.getDate() + 1);
+    d.setUTCDate(d.getUTCDate() + 1);
     return d.toISOString().split('T')[0];
   }
 

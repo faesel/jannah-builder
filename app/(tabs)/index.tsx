@@ -14,38 +14,29 @@ import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
 
 export default function LogPrayerScreen() {
-  console.log('[LogPrayerScreen] Component mounting');
-  
   const [todayLog, setTodayLog] = useState<PrayerLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    console.log('[LogPrayerScreen] useEffect running');
     loadTodayLog();
   }, []);
 
   const loadTodayLog = async () => {
     try {
-      console.log('[LogPrayerScreen] Loading today log...');
       const profile = await ProfileManager.getActiveProfile();
-      console.log('[LogPrayerScreen] Profile loaded:', profile ? 'exists' : 'null');
       
       if (!profile) {
-        console.log('[LogPrayerScreen] No profile, creating new log');
         const today = PrayerLogic.getTodayDate();
         const newLog = PrayerLogic.createPrayerLog(today);
-        console.log('[LogPrayerScreen] New log created:', newLog);
         setTodayLog(newLog);
         setLoading(false);
         return;
       }
 
       const today = PrayerLogic.getTodayDate();
-      console.log('[LogPrayerScreen] Today date:', today);
       const log = PrayerLogic.getOrCreatePrayerLog(profile.prayerLogs, today);
-      console.log('[LogPrayerScreen] Log retrieved:', log);
       setTodayLog(log);
       setLoading(false);
     } catch (err) {
@@ -56,14 +47,12 @@ export default function LogPrayerScreen() {
   };
 
   const handlePrayerToggle = (prayer: string) => {
-    console.log('[LogPrayerScreen] Toggling prayer:', prayer);
     if (!todayLog) return;
 
     const updatedLog = PrayerLogic.logPrayer(
       todayLog,
       prayer as typeof GAME_CONFIG.prayers.dailyPrayers[number]
     );
-    console.log('[LogPrayerScreen] Prayer toggled, new state:', updatedLog.prayers[prayer as keyof typeof updatedLog.prayers]);
     setTodayLog(updatedLog);
     debouncedSave(updatedLog);
   };
@@ -102,9 +91,7 @@ export default function LogPrayerScreen() {
           // Recover: set first existing profile as active
           profile = existing[0];
           await ProfileManager.setActiveProfileId(profile.id);
-          console.log('[LogPrayerScreen] Recovered existing profile:', profile.id);
         } else {
-          console.log('[LogPrayerScreen] No profiles, creating one');
           profile = await ProfileManager.addProfile(GAME_CONFIG.profiles.defaultName);
         }
       }
@@ -124,13 +111,10 @@ export default function LogPrayerScreen() {
         ...profile,
         prayerLogs: updatedPrayerLogs,
       });
-      console.log('[LogPrayerScreen] Prayer saved');
     } catch (err) {
       console.error('[LogPrayerScreen] Error saving prayer:', err);
     }
   };
-
-  console.log('[LogPrayerScreen] Rendering, loading:', loading, 'error:', error, 'todayLog:', todayLog ? 'exists' : 'null');
 
   if (loading) {
     return (

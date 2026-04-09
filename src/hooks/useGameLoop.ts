@@ -32,78 +32,90 @@ export function useGameLoop(): GameLoopState {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const hasProcessed = useRef(false);
+  const isRunning = useRef(false);
 
-  const runGameLoop = async () => {
-    try {
-      setProcessing(true);
-      setError(null);
+  // Store latest values in refs so the effect closure always sees current data
+  const missedDatesRef = useRef(missedDates);
+  missedDatesRef.current = missedDates;
+  const todayRef = useRef(today);
+  todayRef.current = today;
 
-      let currentProfile = await ProfileManager.getActiveProfile();
-      if (!currentProfile) {
-        // Try to recover an orphaned profile
-        const existing = await ProfileManager.loadProfiles();
-        if (existing.length > 0) {
-          currentProfile = existing[0];
-          await ProfileManager.setActiveProfileId(currentProfile.id);
-        } else {
-          setProfile(null);
-          setProcessing(false);
-          return;
-        }
-      }
-
-      // Process each missed day in chronological order
-      const datesToProcess = [...missedDates, today];
-      let processed = 0;
-
-      for (const date of datesToProcess) {
-        const result = WorldLogic.processDay(currentProfile, date);
-
-        // Only apply if something actually changed
-        const hasChanges =
-          result.treesAdded.length > 0 ||
-          result.treesDecayed.length > 0 ||
-          result.treesRemoved.length > 0 ||
-          result.buildingsAdded.length > 0 ||
-          result.animalsAdded.length > 0 ||
-          result.illustriousItemsAdded.length > 0 ||
-          result.illustriousItemsRemoved.length > 0 ||
-          result.seasonChanged;
-
-        if (hasChanges) {
-          currentProfile = WorldLogic.applyProcessingResult(
-            currentProfile,
-            result
-          );
-          processed++;
-        }
-      }
-
-      // Update statistics and persist
-      currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
-      await ProfileManager.updateProfile(currentProfile);
-      await markProcessed();
-
-      setProfile(currentProfile);
-      setDaysProcessed(processed);
-    } catch (err) {
-      console.error('[useGameLoop] Error processing:', err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // Run on mount and when day boundary changes
   useEffect(() => {
+    if (isRunning.current) return;
     if (!hasProcessed.current || dayChanged) {
       hasProcessed.current = true;
-      runGameLoop();
+
+      const run = async () => {
+        if (isRunning.current) return;
+        isRunning.current = true;
+
+        try {
+          setProcessing(true);
+          setError(null);
+
+          let currentProfile = await ProfileManager.getActiveProfile();
+          if (!currentProfile) {
+            const existing = await ProfileManager.loadProfiles();
+            if (existing.length > 0) {
+              currentProfile = existing[0];
+              await ProfileManager.setActiveProfileId(currentProfile.id);
+            } else {
+              setProfile(null);
+              return;
+            }
+          }
+
+          // Read latest values from refs (not stale closure)
+          const datesToProcess = [...missedDatesRef.current, todayRef.current];
+
+          let processed = 0;
+
+          for (const date of datesToProcess) {
+            const result = WorldLogic.processDay(currentProfile, date);
+
+            const hasChanges =
+              result.treesAdded.length > 0 ||
+              result.treesDecayed.length > 0 ||
+              result.treesRemoved.length > 0 ||
+              result.buildingsAdded.length > 0 ||
+              result.animalsAdded.length > 0 ||
+              result.illustriousItemsAdded.length > 0 ||
+              result.illustriousItemsRemoved.length > 0 ||
+              result.seasonChanged;
+
+            if (hasChanges) {
+              currentProfile = WorldLogic.applyProcessingResult(
+                currentProfile,
+                result
+              );
+              processed++;
+            }
+          }
+
+          currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
+          await ProfileManager.updateProfile(currentProfile);
+          await markProcessed();
+
+          setProfile(currentProfile);
+          setDaysProcessed(processed);
+        } catch (err) {
+          console.error('[useGameLoop] Error processing:', err);
+          setError(err instanceof Error ? err.message : String(err));
+        } finally {
+          setProcessing(false);
+          isRunning.current = false;
+        }
+      };
+
+      run();
     }
-  }, [dayChanged, today]);
+  }, [dayChanged, today, markProcessed]);
 
   const refresh = async () => {
-    await runGameLoop();
+    hasProcessed.current = false;
+    isRunning.current = false;
+    // Trigger via state — the effect will pick it up
+    setProcessing(false);
   };
 
   return { processing, daysProcessed, profile, error, refresh };

@@ -51,8 +51,6 @@ export default function RootLayout() {
     return null;
   }
 
-  console.log('[RootLayout] Rendering');
-
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.appBackground }}>
       <SafeAreaProvider>
