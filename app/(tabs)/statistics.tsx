@@ -209,7 +209,7 @@ export default function StatisticsScreen() {
 
         {/* Core stats grid */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Garden</Text>
+          <Text style={styles.sectionTitle}>All Time</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statsRow}>
               <StatCard icon="🤲" label="Prayers Logged" value={totalPrayersLogged} />
@@ -231,7 +231,7 @@ export default function StatisticsScreen() {
 
         {/* World summary */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>World</Text>
+          <Text style={styles.sectionTitle}>Your Garden</Text>
           <View style={styles.worldCard}>
             <View style={styles.worldRow}>
               <Text style={styles.worldLabel}>Season</Text>
