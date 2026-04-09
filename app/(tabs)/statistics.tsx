@@ -27,6 +27,7 @@ interface DayInfo {
   date: string;
   dayLabel: string;
   status: DayStatus;
+  prayerCount: number;
 }
 
 function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
@@ -41,14 +42,17 @@ function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
       : dateObj.toLocaleDateString('en-GB', { weekday: 'short' });
 
     const log = prayerLogs.find((l) => l.date === cursor);
+    const prayerCount = log
+      ? Object.values(log.prayers).filter(Boolean).length
+      : 0;
     let status: DayStatus = 'missed';
     if (log?.isComplete) {
       status = 'complete';
-    } else if (log && Object.values(log.prayers).some(Boolean)) {
+    } else if (prayerCount > 0) {
       status = 'partial';
     }
 
-    days.unshift({ date: cursor, dayLabel, status });
+    days.unshift({ date: cursor, dayLabel, status, prayerCount });
     cursor = PrayerLogic.getPreviousDate(cursor);
   }
 
@@ -63,7 +67,7 @@ const STATUS_COLOURS: Record<DayStatus, string> = {
 
 const STATUS_ICONS: Record<DayStatus, string> = {
   complete: '✓',
-  partial: '·',
+  partial: '½',
   missed: '—',
 };
 
@@ -179,7 +183,7 @@ export default function StatisticsScreen() {
               <View
                 key={day.date}
                 style={styles.dayColumn}
-                accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}`}
+                accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}, ${day.prayerCount} of 5`}
               >
                 <View
                   style={[
@@ -191,6 +195,7 @@ export default function StatisticsScreen() {
                     {STATUS_ICONS[day.status]}
                   </Text>
                 </View>
+                <Text style={styles.dayCount}>{day.prayerCount}/5</Text>
                 <Text style={[
                   styles.dayLabel,
                   day.dayLabel === 'Today' && styles.dayLabelToday,
@@ -377,6 +382,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  dayCount: {
+    fontSize: 10,
+    color: '#8B9D83',
+    marginBottom: 2,
   },
   dayLabel: {
     fontSize: 11,
