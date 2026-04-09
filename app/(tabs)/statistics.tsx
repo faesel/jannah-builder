@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -77,10 +78,13 @@ const STATUS_LABELS: Record<DayStatus, string> = {
   missed: 'No prayers logged',
 };
 
+type StatsView = 'allTime' | 'current';
+
 export default function StatisticsScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statsView, setStatsView] = useState<StatsView>('current');
 
   const loadProfile = useCallback(async () => {
     try {
@@ -207,48 +211,74 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        {/* Core stats grid */}
+        {/* Stats grid with toggle */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All Time</Text>
+          <View style={styles.toggleRow}>
+            <Pressable
+              style={[styles.toggleButton, statsView === 'current' && styles.toggleButtonActive]}
+              onPress={() => setStatsView('current')}
+            >
+              <Text style={[styles.toggleText, statsView === 'current' && styles.toggleTextActive]}>
+                Current
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.toggleButton, statsView === 'allTime' && styles.toggleButtonActive]}
+              onPress={() => setStatsView('allTime')}
+            >
+              <Text style={[styles.toggleText, statsView === 'allTime' && styles.toggleTextActive]}>
+                All Time
+              </Text>
+            </Pressable>
+          </View>
           <View style={styles.statsGrid}>
-            <View style={styles.statsRow}>
-              <StatCard icon="🤲" label="Prayers Logged" value={totalPrayersLogged} />
-              <View style={styles.gridGap} />
-              <StatCard icon="📅" label="Complete Days" value={totalDaysComplete} />
-            </View>
-            <View style={styles.statsRow}>
-              <StatCard icon="🌳" label="Trees Grown" value={statistics.totalTreesGrown} />
-              <View style={styles.gridGap} />
-              <StatCard icon="🍂" label="Trees Returned" value={statistics.totalTreesDecayed} />
-            </View>
-            <View style={styles.statsRow}>
-              <StatCard icon="🏠" label="Buildings" value={statistics.totalBuildingsCreated} />
-              <View style={styles.gridGap} />
-              <StatCard icon="🐦" label="Animals" value={statistics.totalAnimalsAppeared} />
-            </View>
+            {statsView === 'current' ? (
+              <>
+                <View style={styles.statsRow}>
+                  <StatCard icon="🌳" label="Living Trees" value={worldState.trees.length} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon="🌸" label="Flowers" value={worldState.flowers.length} />
+                </View>
+                <View style={styles.statsRow}>
+                  <StatCard icon="🏠" label="Buildings" value={worldState.buildings.length} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon="🐦" label="Animals" value={worldState.animals.length} />
+                </View>
+                <View style={styles.statsRow}>
+                  <StatCard icon="✨" label="Illustrious Gifts" value={worldState.illustriousItems.length} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon="📅" label="Complete Days" value={totalDaysComplete} />
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.statsRow}>
+                  <StatCard icon="🤲" label="Prayers Logged" value={totalPrayersLogged} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon="📅" label="Complete Days" value={totalDaysComplete} />
+                </View>
+                <View style={styles.statsRow}>
+                  <StatCard icon="🌳" label="Trees Grown" value={statistics.totalTreesGrown} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon="🍂" label="Trees Returned" value={statistics.totalTreesDecayed} />
+                </View>
+                <View style={styles.statsRow}>
+                  <StatCard icon="🏠" label="Buildings" value={statistics.totalBuildingsCreated} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon="🐦" label="Animals" value={statistics.totalAnimalsAppeared} />
+                </View>
+              </>
+            )}
           </View>
         </View>
 
-        {/* World summary */}
+        {/* Season & garden age */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Garden</Text>
           <View style={styles.worldCard}>
             <View style={styles.worldRow}>
               <Text style={styles.worldLabel}>Season</Text>
               <Text style={styles.worldValue}>
                 {SEASON_LABELS[worldState.season] ?? worldState.season}
-              </Text>
-            </View>
-            <View style={styles.worldDivider} />
-            <View style={styles.worldRow}>
-              <Text style={styles.worldLabel}>Living trees</Text>
-              <Text style={styles.worldValue}>{worldState.trees.length}</Text>
-            </View>
-            <View style={styles.worldDivider} />
-            <View style={styles.worldRow}>
-              <Text style={styles.worldLabel}>Illustrious gifts</Text>
-              <Text style={styles.worldValue}>
-                {worldState.illustriousItems.length}
               </Text>
             </View>
             <View style={styles.worldDivider} />
@@ -353,6 +383,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2C4A3E',
     marginBottom: 12,
+  },
+
+  // Toggle
+  toggleRow: {
+    flexDirection: 'row',
+    backgroundColor: '#E0E5DD',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 12,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#FFFFFF',
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8B9D83',
+  },
+  toggleTextActive: {
+    color: '#2C4A3E',
+    fontWeight: '600',
   },
 
   // 7-day history
