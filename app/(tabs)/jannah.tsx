@@ -7,6 +7,7 @@ import {
 import { useGameLoop } from '../../src/hooks/useGameLoop';
 import { GAME_CONFIG, Season } from '../../src/config/game.config';
 import { WorldState } from '../../src/types/models';
+import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { JannahCanvas } from '../../src/rendering/JannahCanvas';
 
 const DEFAULT_WORLD: WorldState = {
@@ -35,6 +36,10 @@ export default function JannahScreen() {
 
   const worldState = profile?.worldState ?? DEFAULT_WORLD;
 
+  // Find today's prayer log to drive visual effects
+  const today = PrayerLogic.getTodayDate();
+  const todayLog = profile?.prayerLogs.find((l) => l.date === today);
+
   return (
     <View style={styles.container} onLayout={handleLayout}>
       {layout && (
@@ -42,6 +47,8 @@ export default function JannahScreen() {
           worldState={worldState}
           screenWidth={layout.width}
           screenHeight={layout.height}
+          quranLogged={todayLog?.quranLogged}
+          dhikrLogged={todayLog?.dhikrLogged}
         />
       )}
     </View>

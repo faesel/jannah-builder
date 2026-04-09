@@ -7,8 +7,8 @@
  * No panning or zooming needed.
  */
 
-import React, { useMemo } from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 import { WorldState, Tree, Flower, Building, Animal, IllustriousItem } from '../types/models';
 import { Season, GAME_CONFIG } from '../config/game.config';
 import { COLORS } from '../config/colors';
@@ -18,9 +18,11 @@ interface JannahCanvasProps {
   worldState: WorldState;
   screenWidth: number;
   screenHeight: number;
+  quranLogged?: boolean;
+  dhikrLogged?: boolean;
 }
 
-export function JannahCanvas({ worldState, screenWidth, screenHeight }: JannahCanvasProps) {
+export function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, dhikrLogged }: JannahCanvasProps) {
   const season = worldState.season;
   const gridSize = worldState.gridSize ?? GAME_CONFIG.map.initialGridSize;
 
@@ -134,6 +136,19 @@ export function JannahCanvas({ worldState, screenWidth, screenHeight }: JannahCa
       {worldState.illustriousItems.map((i) => (
         <IllustriousSprite key={i.id} item={i} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
+
+      {/* Qur'an ambient overlay */}
+      {quranLogged && (
+        <QuranOverlay screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
+      )}
+
+      {/* Dhikr floating particles */}
+      {dhikrLogged && (
+        <DhikrParticles screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
+      )}
+
+      {/* Season ambient decorations */}
+      <SeasonDecorations season={season} screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
     </View>
   );
 }
@@ -233,15 +248,188 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
   item: IllustriousItem; center: number; centerRow: number; tileSize: number;
 }) {
   const size = tileSize * 1.5;
+  const pulseAnim = useRef(new Animated.Value(0.7)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
+
   return (
-    <View style={[styles.illustriousGlow, {
-      left: (item.position.x + center) * tileSize - tileSize * 0.25,
-      top: (item.position.y + centerRow) * tileSize - tileSize * 0.25,
-      width: size,
-      height: size,
-    }]}>
+    <Animated.View
+      style={[styles.illustriousGlow, {
+        left: (item.position.x + center) * tileSize - tileSize * 0.25,
+        top: (item.position.y + centerRow) * tileSize - tileSize * 0.25,
+        width: size,
+        height: size,
+        opacity: pulseAnim,
+      }]}
+      importantForAccessibility="no"
+    >
       <Image source={ILLUSTRIOUS_SPRITES[item.type]} style={{ width: size, height: size }} />
+    </Animated.View>
+  );
+}
+
+// ============================================================
+// Qur'an Ambient Overlay
+// ============================================================
+
+function QuranOverlay({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start();
+    return () => fadeAnim.setValue(0);
+  }, [fadeAnim]);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: screenWidth,
+        height: screenHeight,
+        backgroundColor: 'rgba(255, 235, 180, 0.10)',
+        opacity: fadeAnim,
+      }}
+      pointerEvents="none"
+      importantForAccessibility="no"
+    />
+  );
+}
+
+// ============================================================
+// Dhikr Floating Particles
+// ============================================================
+
+const PARTICLE_COUNT = 10;
+
+function DhikrParticles({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+  const particles = useMemo(() => {
+    return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+      id: i,
+      x: Math.random() * screenWidth,
+      startY: screenHeight * (0.3 + Math.random() * 0.6),
+      size: 4 + Math.random() * 4,
+      duration: 4000 + Math.random() * 3000,
+      delay: Math.random() * 2000,
+    }));
+  }, [screenWidth, screenHeight]);
+
+  return (
+    <View style={{ position: 'absolute', left: 0, top: 0, width: screenWidth, height: screenHeight }} pointerEvents="none">
+      {particles.map((p) => (
+        <FloatingDot key={p.id} {...p} screenHeight={screenHeight} />
+      ))}
     </View>
+  );
+}
+
+function FloatingDot({ x, startY, size, duration, delay, screenHeight }: {
+  x: number; startY: number; size: number; duration: number; delay: number; screenHeight: number;
+}) {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const drift = screenHeight * 0.3;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(translateY, { toValue: -drift, duration, useNativeDriver: true }),
+          Animated.sequence([
+            Animated.timing(opacity, { toValue: 0.7, duration: duration * 0.2, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0.7, duration: duration * 0.5, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0, duration: duration * 0.3, useNativeDriver: true }),
+          ]),
+        ]),
+        Animated.parallel([
+          Animated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ]),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [translateY, opacity, duration, delay, screenHeight]);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        left: x - size / 2,
+        top: startY,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: '#FFFDE0',
+        opacity,
+        transform: [{ translateY }],
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 4,
+        elevation: 3,
+      }}
+      importantForAccessibility="no"
+    />
+  );
+}
+
+// ============================================================
+// Season Decorations
+// ============================================================
+
+const DECORATION_CHARS: Record<Season, { emoji: string; count: number }> = {
+  spring: { emoji: '🌸', count: 6 },
+  summer: { emoji: '☀️', count: 3 },
+  autumn: { emoji: '🍂', count: 8 },
+  winter: { emoji: '❄️', count: 8 },
+};
+
+function SeasonDecorations({ season, screenWidth, screenHeight }: {
+  season: Season; screenWidth: number; screenHeight: number;
+}) {
+  const decorations = useMemo(() => {
+    const { emoji, count } = DECORATION_CHARS[season];
+    return Array.from({ length: count }, (_, i) => ({
+      id: i,
+      emoji,
+      x: Math.random() * screenWidth * 0.9 + screenWidth * 0.05,
+      y: Math.random() * screenHeight * 0.9 + screenHeight * 0.05,
+      size: 12 + Math.random() * 8,
+      rotation: Math.floor(Math.random() * 360),
+    }));
+  }, [season, screenWidth, screenHeight]);
+
+  return (
+    <>
+      {decorations.map((d) => (
+        <Text
+          key={d.id}
+          style={{
+            position: 'absolute',
+            left: d.x,
+            top: d.y,
+            fontSize: d.size,
+            opacity: 0.4,
+            transform: [{ rotate: `${d.rotation}deg` }],
+          }}
+          importantForAccessibility="no-hide-descendants"
+        >
+          {d.emoji}
+        </Text>
+      ))}
+    </>
   );
 }
 
