@@ -15,7 +15,6 @@ import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { PrayerLog } from '../../src/types/models';
-import { COLORS } from '../../src/config/colors';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
