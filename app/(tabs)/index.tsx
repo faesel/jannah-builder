@@ -13,11 +13,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
+import { Ionicons } from '@expo/vector-icons';
 import { PrayerLog } from '../../src/types/models';
 import { COLORS } from '../../src/config/colors';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
+
+const SPIRITUAL_ICONS = {
+  quran: require('../../assets/quran.png') as number,
+  dhikr: require('../../assets/dhikr.png') as number,
+};
 
 const PRAYER_ICONS: Record<string, any> = {
   Fajr:    require('../../assets/prayers/fajr.png'),
@@ -316,7 +322,7 @@ export default function LogPrayerScreen() {
         {/* Completion banner */}
         {todayLog.isComplete ? (
           <View style={styles.completionBanner}>
-            <Text style={styles.completionEmoji}>✨🌿✨</Text>
+            <Ionicons name="checkmark-circle" size={36} color="#4A7C59" style={{ marginBottom: 8 }} />
             <Text style={styles.completionText}>All prayers logged today</Text>
             <Text style={styles.completionSubtext}>May Allah accept your prayers</Text>
           </View>
@@ -339,7 +345,7 @@ export default function LogPrayerScreen() {
               accessibilityLabel="Qur'an reading"
               accessibilityHint={todayLog.quranLogged ? 'Double tap to unmark' : 'Double tap to mark as read'}
             >
-              <Text style={styles.spiritualEmoji}>📖</Text>
+              <Image source={SPIRITUAL_ICONS.quran} style={styles.spiritualIcon} />
               <Text style={[styles.spiritualLabel, todayLog.quranLogged && styles.spiritualLabelActive]}>
                 Qur'an
               </Text>
@@ -361,7 +367,7 @@ export default function LogPrayerScreen() {
               accessibilityLabel="Dhikr practice"
               accessibilityHint={todayLog.dhikrLogged ? 'Double tap to unmark' : 'Double tap to mark as done'}
             >
-              <Text style={styles.spiritualEmoji}>🤲</Text>
+              <Image source={SPIRITUAL_ICONS.dhikr} style={styles.spiritualIcon} />
               <Text style={[styles.spiritualLabel, todayLog.dhikrLogged && styles.spiritualLabelActive]}>
                 Dhikr
               </Text>
@@ -561,10 +567,6 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     }),
   },
-  completionEmoji: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
   completionText: {
     fontSize: 17,
     fontWeight: '700',
@@ -615,8 +617,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0ECF8',
     borderColor: '#C4B8E0',
   },
-  spiritualEmoji: {
-    fontSize: 32,
+  spiritualIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginBottom: 8,
   },
   spiritualLabel: {

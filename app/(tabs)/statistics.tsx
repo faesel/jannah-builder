@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../src/config/colors';
 import { StatCard } from '../../src/components/StatCard';
 import { ProfileManager } from '../../src/persistence/profileManager';
@@ -19,10 +20,10 @@ import { UserProfile, PrayerLog } from '../../src/types/models';
 import { AppInitializer } from '../../src/logic/appInitializer';
 
 const SEASON_LABELS: Record<string, string> = {
-  spring: '🌸 Spring',
-  summer: '☀️ Summer',
-  autumn: '🍂 Autumn',
-  winter: '❄️ Winter',
+  spring: 'Spring',
+  summer: 'Summer',
+  autumn: 'Autumn',
+  winter: 'Winter',
 };
 
 type DayStatus = 'complete' | 'partial' | 'missed';
@@ -154,7 +155,7 @@ export default function StatisticsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#8B9D83" />
           }
         >
-          <Text style={styles.emptyIcon}>🌱</Text>
+          <Ionicons name="leaf" size={64} color="#8B9D83" style={{ marginBottom: 16 }} />
           <Text style={styles.emptyTitle}>Your garden awaits</Text>
           <Text style={styles.emptySubtitle}>
             Log your first prayer to begin your journey
@@ -267,37 +268,37 @@ export default function StatisticsScreen() {
             {statsView === 'current' ? (
               <>
                 <View style={styles.statsRow}>
-                  <StatCard icon="🌳" label="Living Trees" value={worldState.trees.length} />
+                  <StatCard icon={<Ionicons name="leaf" size={24} color="#4A7C59" />} label="Living Trees" value={worldState.trees.length} />
                   <View style={styles.gridGap} />
-                  <StatCard icon="🌸" label="Flowers" value={worldState.flowers.length} />
+                  <StatCard icon={<Ionicons name="flower" size={24} color="#D4849A" />} label="Flowers" value={worldState.flowers.length} />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard icon="🏠" label="Buildings" value={worldState.buildings.length} />
+                  <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={worldState.buildings.length} />
                   <View style={styles.gridGap} />
-                  <StatCard icon="🐦" label="Animals" value={worldState.animals.length} />
+                  <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={worldState.animals.length} />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard icon="✨" label="Illustrious Gifts" value={worldState.illustriousItems.length} />
+                  <StatCard icon={<Ionicons name="star" size={24} color="#C4A020" />} label="Illustrious Gifts" value={worldState.illustriousItems.length} />
                   <View style={styles.gridGap} />
-                  <StatCard icon="📅" label="Complete Days" value={totalDaysComplete} />
+                  <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={totalDaysComplete} />
                 </View>
               </>
             ) : (
               <>
                 <View style={styles.statsRow}>
-                  <StatCard icon="🤲" label="Prayers Logged" value={totalPrayersLogged} />
+                  <StatCard icon={<Ionicons name="checkbox" size={24} color="#4A7C59" />} label="Prayers Logged" value={totalPrayersLogged} />
                   <View style={styles.gridGap} />
-                  <StatCard icon="📅" label="Complete Days" value={totalDaysComplete} />
+                  <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={totalDaysComplete} />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard icon="🌳" label="Trees Grown" value={statistics.totalTreesGrown} />
+                  <StatCard icon={<Ionicons name="leaf" size={24} color="#4A7C59" />} label="Trees Grown" value={statistics.totalTreesGrown} />
                   <View style={styles.gridGap} />
-                  <StatCard icon="🍂" label="Trees Returned" value={statistics.totalTreesDecayed} />
+                  <StatCard icon={<Ionicons name="leaf-outline" size={24} color="#8B9D83" />} label="Trees Returned" value={statistics.totalTreesDecayed} />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard icon="🏠" label="Buildings" value={statistics.totalBuildingsCreated} />
+                  <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={statistics.totalBuildingsCreated} />
                   <View style={styles.gridGap} />
-                  <StatCard icon="🐦" label="Animals" value={statistics.totalAnimalsAppeared} />
+                  <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={statistics.totalAnimalsAppeared} />
                 </View>
               </>
             )}
@@ -367,10 +368,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 22,
