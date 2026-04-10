@@ -11,6 +11,7 @@ import { COLORS } from '../src/config/colors';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ duration: 800, fade: true });
 
 const JannahTheme = {
   ...DefaultTheme,

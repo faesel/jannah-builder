@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../src/config/colors';
 
@@ -11,11 +12,29 @@ export default function TabLayout() {
         animation: 'fade',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
-          borderTopColor: '#E0E5DD',
-          borderTopWidth: 1,
+          borderTopWidth: 0,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingTop: 6,
+          ...Platform.select({
+            ios: {
+              shadowColor: '#2C4A3E',
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+            },
+            android: { elevation: 12 },
+          }),
         },
         tabBarActiveTintColor: '#4A7C59',
-        tabBarInactiveTintColor: '#8B9D83',
+        tabBarInactiveTintColor: '#B0BFA8',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.3,
+        },
+        tabBarIconStyle: {
+          marginBottom: -2,
+        },
       }}
     >
       <Tabs.Screen
@@ -23,8 +42,8 @@ export default function TabLayout() {
         options={{
           title: 'Log Prayer',
           tabBarLabel: 'Prayer',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="moon-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'moon' : 'moon-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -34,8 +53,8 @@ export default function TabLayout() {
           title: 'View Jannah',
           tabBarLabel: 'Jannah',
           sceneStyle: { backgroundColor: COLORS.grassBySeason.spring },
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="leaf-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'leaf' : 'leaf-outline'} size={24} color={color} />
           ),
         }}
       />
@@ -44,8 +63,8 @@ export default function TabLayout() {
         options={{
           title: 'Statistics',
           tabBarLabel: 'Stats',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bar-chart-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'bar-chart' : 'bar-chart-outline'} size={24} color={color} />
           ),
         }}
       />

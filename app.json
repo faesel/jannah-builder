@@ -8,11 +8,6 @@
     "userInterfaceStyle": "light",
     "scheme": "jannahbuilder",
     "backgroundColor": "#F5F7F3",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F5F7F3"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jannahbuilder.app",
@@ -37,7 +32,15 @@
       }
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F5F7F3",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 280
+        }
+      ]
     ]
   }
 }

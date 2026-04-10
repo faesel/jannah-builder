@@ -5,6 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -15,6 +17,14 @@ import { COLORS } from '../../src/config/colors';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
+
+const PRAYER_META: Record<string, { icon: string; time: string }> = {
+  Fajr:    { icon: '🌅', time: 'Dawn' },
+  Dhuhr:   { icon: '☀️',  time: 'Midday' },
+  Asr:     { icon: '🌤️', time: 'Afternoon' },
+  Maghrib: { icon: '🌇', time: 'Sunset' },
+  Isha:    { icon: '🌙', time: 'Night' },
+};
 
 export default function LogPrayerScreen() {
   const [todayLog, setTodayLog] = useState<PrayerLog | null>(null);
@@ -178,135 +188,143 @@ export default function LogPrayerScreen() {
     );
   }
 
+  const prayerCount = todayLog
+    ? Object.values(todayLog.prayers).filter(Boolean).length
+    : 0;
+  const totalPrayers = GAME_CONFIG.prayers.dailyPrayers.length;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         bounces={false}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        {/* Header with decorative background */}
+        <View style={styles.headerCard}>
+          <Text style={styles.greeting}>Assalamu Alaikum</Text>
           <Text style={styles.title}>Today's Prayers</Text>
           <Text style={styles.date}>
-            {new Date().toLocaleDateString('en-US', {
+            {new Date().toLocaleDateString('en-GB', {
               weekday: 'long',
-              month: 'long',
               day: 'numeric',
+              month: 'long',
             })}
           </Text>
+
+          {/* Progress bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${(prayerCount / totalPrayers) * 100}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.progressLabel}>
+              {prayerCount}/{totalPrayers} prayers
+            </Text>
+          </View>
         </View>
 
+        {/* Prayer cards */}
         <View style={styles.prayersSection}>
-          {GAME_CONFIG.prayers.dailyPrayers.map((prayer) => {
+          {GAME_CONFIG.prayers.dailyPrayers.map((prayer, index) => {
             const isChecked = Boolean(todayLog.prayers[prayer]);
+            const meta = PRAYER_META[prayer] ?? { icon: '🕌', time: '' };
             return (
               <Pressable
                 key={prayer}
-                style={[
+                style={({ pressed }) => [
                   styles.prayerCard,
-                  isChecked ? styles.prayerCardComplete : null,
+                  isChecked && styles.prayerCardComplete,
+                  pressed && styles.prayerCardPressed,
+                  { zIndex: 10 - index },
                 ]}
                 onPress={() => handlePrayerToggle(prayer)}
-                android_ripple={{ color: '#4A7C5930' }}
+                android_ripple={{ color: '#4A7C5920' }}
                 accessibilityRole="switch"
                 accessibilityState={{ checked: isChecked }}
                 accessibilityLabel={`${prayer} prayer`}
                 accessibilityHint={isChecked ? 'Double tap to unmark' : 'Double tap to mark as prayed'}
               >
-                <Text
-                  style={[
-                    styles.prayerName,
-                    isChecked ? styles.prayerNameComplete : null,
-                  ]}
-                >
-                  {prayer}
-                </Text>
-                <View
-                  style={[
-                    styles.checkbox,
-                    isChecked ? styles.checkboxChecked : null,
-                  ]}
-                >
-                  {isChecked ? (
-                    <Text style={styles.checkmark}>✓</Text>
-                  ) : null}
+                <View style={styles.prayerLeft}>
+                  <Text style={styles.prayerIcon}>{meta.icon}</Text>
+                  <View>
+                    <Text style={[styles.prayerName, isChecked && styles.prayerNameComplete]}>
+                      {prayer}
+                    </Text>
+                    <Text style={[styles.prayerTime, isChecked && styles.prayerTimeComplete]}>
+                      {meta.time}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                  {isChecked ? <Text style={styles.checkmark}>✓</Text> : null}
                 </View>
               </Pressable>
             );
           })}
         </View>
 
+        {/* Completion banner */}
         {todayLog.isComplete ? (
-          <View style={styles.completionMessage}>
-            <Text style={styles.completionText}>
-              ✨ All prayers logged today
-            </Text>
+          <View style={styles.completionBanner}>
+            <Text style={styles.completionEmoji}>✨🌿✨</Text>
+            <Text style={styles.completionText}>All prayers logged today</Text>
+            <Text style={styles.completionSubtext}>May Allah accept your prayers</Text>
           </View>
         ) : null}
 
+        {/* Spiritual practices */}
         <View style={styles.spiritualSection}>
-          <Text style={styles.spiritualTitle}>Spiritual Practices</Text>
-          <Pressable
-            style={[
-              styles.spiritualCard,
-              todayLog.quranLogged ? styles.spiritualCardActive : null,
-            ]}
-            onPress={() => handleQuranToggle()}
-            android_ripple={{ color: '#7B68AE30' }}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: todayLog.quranLogged }}
-            accessibilityLabel="Qur'an reading"
-            accessibilityHint={todayLog.quranLogged ? 'Double tap to unmark' : 'Double tap to mark as read'}
-          >
-            <Text
-              style={[
-                styles.spiritualLabel,
-                todayLog.quranLogged ? styles.spiritualLabelActive : null,
+          <Text style={styles.sectionTitle}>Spiritual Practices</Text>
+          <View style={styles.spiritualRow}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.spiritualCard,
+                todayLog.quranLogged && styles.spiritualCardActive,
+                pressed && styles.prayerCardPressed,
               ]}
+              onPress={() => handleQuranToggle()}
+              android_ripple={{ color: '#7B68AE20' }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: todayLog.quranLogged }}
+              accessibilityLabel="Qur'an reading"
+              accessibilityHint={todayLog.quranLogged ? 'Double tap to unmark' : 'Double tap to mark as read'}
             >
-              I read Qur'an today
-            </Text>
-            <View
-              style={[
-                styles.checkbox,
-                todayLog.quranLogged ? styles.spiritualCheckboxChecked : null,
+              <Text style={styles.spiritualEmoji}>📖</Text>
+              <Text style={[styles.spiritualLabel, todayLog.quranLogged && styles.spiritualLabelActive]}>
+                Qur'an
+              </Text>
+              <View style={[styles.miniCheck, todayLog.quranLogged && styles.miniCheckActive]}>
+                {todayLog.quranLogged ? <Text style={styles.miniCheckMark}>✓</Text> : null}
+              </View>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.spiritualCard,
+                todayLog.dhikrLogged && styles.spiritualCardActive,
+                pressed && styles.prayerCardPressed,
               ]}
+              onPress={() => handleDhikrToggle()}
+              android_ripple={{ color: '#7B68AE20' }}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: todayLog.dhikrLogged }}
+              accessibilityLabel="Dhikr practice"
+              accessibilityHint={todayLog.dhikrLogged ? 'Double tap to unmark' : 'Double tap to mark as done'}
             >
-              {todayLog.quranLogged ? (
-                <Text style={styles.checkmark}>✓</Text>
-              ) : null}
-            </View>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.spiritualCard,
-              todayLog.dhikrLogged ? styles.spiritualCardActive : null,
-            ]}
-            onPress={() => handleDhikrToggle()}
-            android_ripple={{ color: '#7B68AE30' }}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: todayLog.dhikrLogged }}
-            accessibilityLabel="Dhikr practice"
-            accessibilityHint={todayLog.dhikrLogged ? 'Double tap to unmark' : 'Double tap to mark as done'}
-          >
-            <Text
-              style={[
-                styles.spiritualLabel,
-                todayLog.dhikrLogged ? styles.spiritualLabelActive : null,
-              ]}
-            >
-              I did dhikr today
-            </Text>
-            <View
-              style={[
-                styles.checkbox,
-                todayLog.dhikrLogged ? styles.spiritualCheckboxChecked : null,
-              ]}
-            >
-              {todayLog.dhikrLogged ? (
-                <Text style={styles.checkmark}>✓</Text>
-              ) : null}
-            </View>
-          </Pressable>
+              <Text style={styles.spiritualEmoji}>🤲</Text>
+              <Text style={[styles.spiritualLabel, todayLog.dhikrLogged && styles.spiritualLabelActive]}>
+                Dhikr
+              </Text>
+              <View style={[styles.miniCheck, todayLog.dhikrLogged && styles.miniCheckActive]}>
+                {todayLog.dhikrLogged ? <Text style={styles.miniCheckMark}>✓</Text> : null}
+              </View>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -316,7 +334,7 @@ export default function LogPrayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.appBackground,
+    backgroundColor: '#EFF3EC',
   },
   scrollContent: {
     padding: 20,
@@ -335,53 +353,135 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#A67C52',
   },
-  header: {
+
+  /* ── Header card ── */
+  headerCard: {
+    backgroundColor: '#4A7C59',
+    borderRadius: 20,
+    padding: 24,
+    paddingTop: 28,
     marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  greeting: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   title: {
     fontSize: 28,
-    fontWeight: '600',
-    color: '#2C4A3E',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   date: {
-    fontSize: 16,
-    color: '#8B9D83',
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: 20,
   },
+
+  /* ── Progress bar ── */
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#A8D5A2',
+    borderRadius: 4,
+  },
+  progressLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    minWidth: 70,
+    textAlign: 'right',
+  },
+
+  /* ── Prayer cards ── */
   prayersSection: {
-    // Container for prayer cards
+    gap: 10,
+    marginBottom: 8,
   },
   prayerCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E5DD',
-    marginBottom: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E8ECE5',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
   },
   prayerCardComplete: {
     backgroundColor: '#E8F4EC',
-    borderColor: '#4A7C59',
+    borderColor: '#A8D5A2',
+  },
+  prayerCardPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.985 }],
+  },
+  prayerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  prayerIcon: {
+    fontSize: 28,
   },
   prayerName: {
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#2C4A3E',
   },
   prayerNameComplete: {
     color: '#4A7C59',
   },
+  prayerTime: {
+    fontSize: 13,
+    color: '#A0B098',
+    marginTop: 1,
+  },
+  prayerTimeComplete: {
+    color: '#7BAF85',
+  },
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 2,
-    borderColor: '#C5D1C0',
+    borderColor: '#D0D9CC',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAF7',
   },
   checkboxChecked: {
     backgroundColor: '#4A7C59',
@@ -389,55 +489,115 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  completionMessage: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#E8F4EC',
-    borderRadius: 12,
+
+  /* ── Completion banner ── */
+  completionBanner: {
+    marginTop: 12,
+    marginBottom: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#A8D5A2',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4A7C59',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  completionEmoji: {
+    fontSize: 24,
+    marginBottom: 8,
   },
   completionText: {
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
     color: '#4A7C59',
-    fontWeight: '500',
+    marginBottom: 4,
   },
+  completionSubtext: {
+    fontSize: 13,
+    color: '#8BAF8E',
+    fontStyle: 'italic',
+  },
+
+  /* ── Spiritual section ── */
   spiritualSection: {
-    marginTop: 32,
+    marginTop: 28,
   },
-  spiritualTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#2C4A3E',
-    marginBottom: 12,
+    marginBottom: 14,
+    letterSpacing: 0.3,
+  },
+  spiritualRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   spiritualCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flex: 1,
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E5DD',
-    marginBottom: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E8ECE5',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
+      android: { elevation: 2 },
+    }),
   },
   spiritualCardActive: {
-    backgroundColor: '#EDE8F5',
-    borderColor: '#7B68AE',
+    backgroundColor: '#F0ECF8',
+    borderColor: '#C4B8E0',
+  },
+  spiritualEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
   },
   spiritualLabel: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#2C4A3E',
+    marginBottom: 10,
   },
   spiritualLabelActive: {
     color: '#7B68AE',
   },
-  spiritualCheckboxChecked: {
+  miniCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#D0D9CC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAF7',
+  },
+  miniCheckActive: {
     backgroundColor: '#7B68AE',
     borderColor: '#7B68AE',
+  },
+  miniCheckMark: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });
