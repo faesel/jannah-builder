@@ -5,6 +5,8 @@
  * This ensures all values are configuration-driven and easily testable.
  */
 
+const DEBUG_LOW_ILLUSTRIOUS = false;
+
 export const GAME_CONFIG = {
   // Prayer mechanics
   prayers: {
@@ -54,10 +56,10 @@ export const GAME_CONFIG = {
       'light_arch',
     ] as const,
     streakThresholds: {
-      radiant_fountain: 30, // 30 consecutive full days
-      glowing_tree: 60,
-      floating_lantern: 90,
-      light_arch: 120,
+      radiant_fountain: DEBUG_LOW_ILLUSTRIOUS ? 1 : 30,
+      glowing_tree: DEBUG_LOW_ILLUSTRIOUS ? 2 : 60,
+      floating_lantern: DEBUG_LOW_ILLUSTRIOUS ? 3 : 90,
+      light_arch: DEBUG_LOW_ILLUSTRIOUS ? 4 : 120,
     },
     fadeOutDuration: 3000, // 3 seconds gentle fade
     showCounters: false, // Never show streak numbers prominently
@@ -84,12 +86,11 @@ export const GAME_CONFIG = {
 
   // Map settings
   map: {
-    initialGridSize: 4, // Start with a 4×4 grid of tiles
-    maxGridSize: 24, // Maximum grid density
-    minTileSize: 16, // Smallest a tile can be (px) — must stay recognizable
+    initialGridSize: 20, // Fixed grid size (no dynamic expansion)
+    maxGridSize: 20, // Same as initial — map does not grow
+    minTileSize: 16, // Smallest a tile can be (px) — must stay recognisable
     tileSize: 32, // Base reference tile size (used by sprite generation)
-    // Grid grows by 1 column+row each time this many total world elements exist
-    growthInterval: 3,
+    growthInterval: 0, // Disabled — map is fixed size
   },
 
   // Profile settings

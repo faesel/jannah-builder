@@ -74,7 +74,8 @@ export class IllustriousItemLogic {
   }
 
   /**
-   * Find a position for an illustrious item, offset from the tree cluster.
+   * Find a position for an illustrious item, near the tree cluster
+   * but not overlapping existing elements.
    */
   static findPosition(
     existingTrees: Tree[],
@@ -85,11 +86,11 @@ export class IllustriousItemLogic {
       ...existingItems.map((i) => `${i.position.x},${i.position.y}`),
     ]);
 
-    // Place items slightly outside the main tree cluster
-    const offsetBase = Math.max(
-      5,
-      Math.ceil(Math.sqrt(existingTrees.length)) + 2
-    );
+    // Place items just outside the tree cluster, but stay close to centre
+    const clusterRadius = existingTrees.length > 0
+      ? Math.ceil(Math.sqrt(existingTrees.length))
+      : 1;
+    const offsetBase = clusterRadius + 1;
 
     // Try positions in a ring around the cluster
     const offsets = [
@@ -97,10 +98,10 @@ export class IllustriousItemLogic {
       { x: -offsetBase, y: 0 },
       { x: 0, y: offsetBase },
       { x: 0, y: -offsetBase },
-      { x: offsetBase, y: offsetBase },
-      { x: -offsetBase, y: -offsetBase },
-      { x: offsetBase, y: -offsetBase },
-      { x: -offsetBase, y: offsetBase },
+      { x: offsetBase, y: 1 },
+      { x: -offsetBase, y: -1 },
+      { x: 1, y: -offsetBase },
+      { x: -1, y: offsetBase },
     ];
 
     for (const offset of offsets) {
@@ -110,7 +111,7 @@ export class IllustriousItemLogic {
       }
     }
 
-    // Fallback
-    return { x: offsetBase + 1, y: offsetBase + 1 };
+    // Fallback — place adjacent to centre
+    return { x: offsetBase, y: 1 };
   }
 }

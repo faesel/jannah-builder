@@ -1,4 +1,5 @@
 import { WorldElementLogic } from '../logic/worldElementLogic';
+import { GAME_CONFIG } from '../config/game.config';
 import { Tree, Building, Animal } from '../types/models';
 
 function makeTrees(count: number): Tree[] {
@@ -75,6 +76,24 @@ describe('WorldElementLogic', () => {
 
   describe('evaluateMapExpansion', () => {
     const initial = { width: 4, height: 4 };
+    let savedGrowthInterval: number;
+    let savedInitialGridSize: number;
+    let savedMaxGridSize: number;
+
+    beforeEach(() => {
+      savedGrowthInterval = GAME_CONFIG.map.growthInterval;
+      savedInitialGridSize = GAME_CONFIG.map.initialGridSize;
+      savedMaxGridSize = GAME_CONFIG.map.maxGridSize;
+      (GAME_CONFIG.map as any).growthInterval = 3;
+      (GAME_CONFIG.map as any).initialGridSize = 4;
+      (GAME_CONFIG.map as any).maxGridSize = 24;
+    });
+
+    afterEach(() => {
+      (GAME_CONFIG.map as any).growthInterval = savedGrowthInterval;
+      (GAME_CONFIG.map as any).initialGridSize = savedInitialGridSize;
+      (GAME_CONFIG.map as any).maxGridSize = savedMaxGridSize;
+    });
 
     it('returns null when no growth earned', () => {
       // 0 trees → initialGridSize(4) + 0 = 4, already at 4

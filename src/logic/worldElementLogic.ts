@@ -93,6 +93,8 @@ export class WorldElementLogic {
   ): { width: number; height: number } | null {
     const { initialGridSize, maxGridSize, growthInterval } = GAME_CONFIG.map;
 
+    if (growthInterval <= 0) return null; // Fixed map — no expansion
+
     const earned = initialGridSize + Math.floor(treeCount / growthInterval);
     const target = Math.min(maxGridSize, earned);
 
