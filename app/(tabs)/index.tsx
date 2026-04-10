@@ -6,7 +6,8 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Animated,
+  Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -18,12 +19,20 @@ import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
 
-const PRAYER_META: Record<string, { icon: string; time: string }> = {
-  Fajr:    { icon: '🌅', time: 'Dawn' },
-  Dhuhr:   { icon: '☀️',  time: 'Midday' },
-  Asr:     { icon: '🌤️', time: 'Afternoon' },
-  Maghrib: { icon: '🌇', time: 'Sunset' },
-  Isha:    { icon: '🌙', time: 'Night' },
+const PRAYER_ICONS: Record<string, any> = {
+  Fajr:    require('../../assets/prayers/fajr.png'),
+  Dhuhr:   require('../../assets/prayers/dhuhr.png'),
+  Asr:     require('../../assets/prayers/asr.png'),
+  Maghrib: require('../../assets/prayers/maghrib.png'),
+  Isha:    require('../../assets/prayers/isha.png'),
+};
+
+const PRAYER_TIMES: Record<string, string> = {
+  Fajr: 'Dawn',
+  Dhuhr: 'Midday',
+  Asr: 'Afternoon',
+  Maghrib: 'Sunset',
+  Isha: 'Night',
 };
 
 export default function LogPrayerScreen() {
@@ -82,6 +91,9 @@ export default function LogPrayerScreen() {
 
   const handlePrayerToggle = (prayer: string) => {
     if (!todayLog) return;
+    const isAlreadyLogged = Boolean(todayLog.prayers[prayer as keyof typeof todayLog.prayers]);
+    if (isAlreadyLogged) return; // Tap does nothing if already logged — use long-press to undo
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     const updatedLog = PrayerLogic.logPrayer(
@@ -95,6 +107,34 @@ export default function LogPrayerScreen() {
     }
     setTodayLog(updatedLog);
     debouncedSave(updatedLog);
+  };
+
+  const handlePrayerUndo = (prayer: string) => {
+    if (!todayLog) return;
+    const isLogged = Boolean(todayLog.prayers[prayer as keyof typeof todayLog.prayers]);
+    if (!isLogged) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
+    Alert.alert(
+      'Undo prayer',
+      `Unmark ${prayer} as prayed?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Undo',
+          style: 'destructive',
+          onPress: () => {
+            const updatedLog = PrayerLogic.logPrayer(
+              todayLog,
+              prayer as typeof GAME_CONFIG.prayers.dailyPrayers[number]
+            );
+            setTodayLog(updatedLog);
+            debouncedSave(updatedLog);
+          },
+        },
+      ]
+    );
   };
 
   const handleQuranToggle = () => {
@@ -232,31 +272,36 @@ export default function LogPrayerScreen() {
         <View style={styles.prayersSection}>
           {GAME_CONFIG.prayers.dailyPrayers.map((prayer, index) => {
             const isChecked = Boolean(todayLog.prayers[prayer]);
-            const meta = PRAYER_META[prayer] ?? { icon: '🕌', time: '' };
+            const iconSource = PRAYER_ICONS[prayer];
+            const timeLabel = PRAYER_TIMES[prayer] ?? '';
             return (
               <Pressable
                 key={prayer}
                 style={({ pressed }) => [
                   styles.prayerCard,
                   isChecked && styles.prayerCardComplete,
-                  pressed && styles.prayerCardPressed,
+                  pressed && !isChecked && styles.prayerCardPressed,
                   { zIndex: 10 - index },
                 ]}
                 onPress={() => handlePrayerToggle(prayer)}
+                onLongPress={() => handlePrayerUndo(prayer)}
+                delayLongPress={500}
                 android_ripple={{ color: '#4A7C5920' }}
                 accessibilityRole="switch"
                 accessibilityState={{ checked: isChecked }}
                 accessibilityLabel={`${prayer} prayer`}
-                accessibilityHint={isChecked ? 'Double tap to unmark' : 'Double tap to mark as prayed'}
+                accessibilityHint={isChecked ? 'Long press to undo' : 'Tap to mark as prayed'}
               >
                 <View style={styles.prayerLeft}>
-                  <Text style={styles.prayerIcon}>{meta.icon}</Text>
+                  {iconSource ? (
+                    <Image source={iconSource} style={styles.prayerIcon} />
+                  ) : null}
                   <View>
                     <Text style={[styles.prayerName, isChecked && styles.prayerNameComplete]}>
                       {prayer}
                     </Text>
                     <Text style={[styles.prayerTime, isChecked && styles.prayerTimeComplete]}>
-                      {meta.time}
+                      {timeLabel}
                     </Text>
                   </View>
                 </View>
@@ -455,7 +500,9 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   prayerIcon: {
-    fontSize: 28,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
   },
   prayerName: {
     fontSize: 18,
