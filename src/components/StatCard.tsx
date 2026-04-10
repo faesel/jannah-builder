@@ -4,13 +4,13 @@ import { View, Text, StyleSheet } from 'react-native';
 interface StatCardProps {
   label: string;
   value: string | number;
-  icon?: string;
+  icon?: React.ReactNode;
 }
 
 export const StatCard = React.memo(function StatCard({ label, value, icon }: StatCardProps) {
   return (
     <View style={styles.card} accessibilityLabel={`${label}: ${value}`}>
-      {icon ? <Text style={styles.icon}>{icon}</Text> : null}
+      {icon ? <View style={styles.iconContainer}>{icon}</View> : null}
       <Text style={styles.value}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </View>
@@ -28,8 +28,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 140,
   },
-  icon: {
-    fontSize: 24,
+  iconContainer: {
     marginBottom: 4,
   },
   value: {

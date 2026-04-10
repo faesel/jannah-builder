@@ -9,6 +9,7 @@
 
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { WorldState, Tree, Flower, Building, Animal, IllustriousItem } from '../types/models';
 import { Season, GAME_CONFIG } from '../config/game.config';
 import { COLORS } from '../config/colors';
@@ -389,21 +390,24 @@ function FloatingDot({ x, startY, size, duration, delay, screenHeight }: {
 // Season Decorations
 // ============================================================
 
-const DECORATION_CHARS: Record<Season, { emoji: string; count: number }> = {
-  spring: { emoji: '🌸', count: 6 },
-  summer: { emoji: '☀️', count: 3 },
-  autumn: { emoji: '🍂', count: 8 },
-  winter: { emoji: '❄️', count: 8 },
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+const DECORATION_ICONS: Record<Season, { name: IoniconsName; color: string; count: number }> = {
+  spring: { name: 'flower-outline', color: '#E8A0B4', count: 6 },
+  summer: { name: 'sunny-outline', color: '#F5C842', count: 3 },
+  autumn: { name: 'leaf-outline', color: '#C87941', count: 8 },
+  winter: { name: 'snow-outline', color: '#A8C8E8', count: 8 },
 };
 
 function SeasonDecorations({ season, screenWidth, screenHeight }: {
   season: Season; screenWidth: number; screenHeight: number;
 }) {
   const decorations = useMemo(() => {
-    const { emoji, count } = DECORATION_CHARS[season];
+    const { name, color, count } = DECORATION_ICONS[season];
     return Array.from({ length: count }, (_, i) => ({
       id: i,
-      emoji,
+      name,
+      color,
       x: Math.random() * screenWidth * 0.9 + screenWidth * 0.05,
       y: Math.random() * screenHeight * 0.9 + screenHeight * 0.05,
       size: 12 + Math.random() * 8,
@@ -414,20 +418,19 @@ function SeasonDecorations({ season, screenWidth, screenHeight }: {
   return (
     <>
       {decorations.map((d) => (
-        <Text
+        <View
           key={d.id}
           style={{
             position: 'absolute',
             left: d.x,
             top: d.y,
-            fontSize: d.size,
             opacity: 0.4,
             transform: [{ rotate: `${d.rotation}deg` }],
           }}
           importantForAccessibility="no-hide-descendants"
         >
-          {d.emoji}
-        </Text>
+          <Ionicons name={d.name} size={d.size} color={d.color} />
+        </View>
       ))}
     </>
   );

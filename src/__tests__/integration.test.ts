@@ -6,7 +6,6 @@
  */
 
 import { WorldLogic } from '../logic/worldLogic';
-import { PrayerLogic } from '../logic/prayerLogic';
 import { GAME_CONFIG } from '../config/game.config';
 import { UserProfile, WorldState, PrayerLog } from '../types/models';
 
