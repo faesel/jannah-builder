@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "jannah-builder",
+    "name": "Jannah Builder",
     "slug": "jannah-builder",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,17 +15,29 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jannahbuilder.app"
+      "bundleIdentifier": "com.jannahbuilder.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app does not use the camera.",
+        "NSPhotoLibraryUsageDescription": "This app does not access photos."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#4A7C59"
       },
       "package": "com.jannahbuilder.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

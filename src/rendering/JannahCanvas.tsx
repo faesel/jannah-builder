@@ -22,7 +22,7 @@ interface JannahCanvasProps {
   dhikrLogged?: boolean;
 }
 
-export function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, dhikrLogged }: JannahCanvasProps) {
+export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, dhikrLogged }: JannahCanvasProps) {
   const season = worldState.season;
   const gridSize = worldState.gridSize ?? GAME_CONFIG.map.initialGridSize;
 
@@ -151,7 +151,7 @@ export function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogge
       <SeasonDecorations season={season} screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
     </View>
   );
-}
+});
 
 // ============================================================
 // Trees

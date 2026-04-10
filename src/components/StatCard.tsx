@@ -7,7 +7,7 @@ interface StatCardProps {
   icon?: string;
 }
 
-export function StatCard({ label, value, icon }: StatCardProps) {
+export const StatCard = React.memo(function StatCard({ label, value, icon }: StatCardProps) {
   return (
     <View style={styles.card} accessibilityLabel={`${label}: ${value}`}>
       {icon ? <Text style={styles.icon}>{icon}</Text> : null}
@@ -15,7 +15,7 @@ export function StatCard({ label, value, icon }: StatCardProps) {
       <Text style={styles.label}>{label}</Text>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

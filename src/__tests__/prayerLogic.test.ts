@@ -135,4 +135,139 @@ describe('PrayerLogic', () => {
       expect(PrayerLogic.wasDayMissed(logs, '2026-03-01')).toBe(false);
     });
   });
+
+  // ================================================================
+  // Edge-case coverage
+  // ================================================================
+
+  describe('date boundary edge cases', () => {
+    it('handles year boundary correctly (Dec 31 → Jan 1)', () => {
+      expect(PrayerLogic.getNextDate('2025-12-31')).toBe('2026-01-01');
+      expect(PrayerLogic.getPreviousDate('2026-01-01')).toBe('2025-12-31');
+    });
+
+    it('handles leap year day (Feb 28 → Feb 29 in leap year)', () => {
+      // 2024 is a leap year
+      expect(PrayerLogic.getNextDate('2024-02-28')).toBe('2024-02-29');
+      expect(PrayerLogic.getNextDate('2024-02-29')).toBe('2024-03-01');
+    });
+
+    it('handles non-leap year Feb boundary', () => {
+      // 2025 is not a leap year
+      expect(PrayerLogic.getNextDate('2025-02-28')).toBe('2025-03-01');
+      expect(PrayerLogic.getPreviousDate('2025-03-01')).toBe('2025-02-28');
+    });
+
+    it('handles month-end boundaries (30-day months)', () => {
+      expect(PrayerLogic.getNextDate('2026-04-30')).toBe('2026-05-01');
+      expect(PrayerLogic.getPreviousDate('2026-05-01')).toBe('2026-04-30');
+    });
+
+    it('handles month-end boundaries (31-day months)', () => {
+      expect(PrayerLogic.getNextDate('2026-01-31')).toBe('2026-02-01');
+      expect(PrayerLogic.getPreviousDate('2026-02-01')).toBe('2026-01-31');
+    });
+  });
+
+  describe('getOrCreatePrayerLog edge cases', () => {
+    it('returns existing log when date matches', () => {
+      const existing = makeLog('2026-06-15', true);
+      const result = PrayerLogic.getOrCreatePrayerLog([existing], '2026-06-15');
+      expect(result).toBe(existing);
+      expect(result.isComplete).toBe(true);
+    });
+
+    it('creates a new log when no match exists', () => {
+      const existing = makeLog('2026-06-15', true);
+      const result = PrayerLogic.getOrCreatePrayerLog([existing], '2026-06-16');
+      expect(result.date).toBe('2026-06-16');
+      expect(result.isComplete).toBe(false);
+    });
+
+    it('returns correct log when multiple logs exist', () => {
+      const logs = [
+        makeLog('2026-06-14', true),
+        makeLog('2026-06-15', false),
+        makeLog('2026-06-16', true),
+      ];
+      const result = PrayerLogic.getOrCreatePrayerLog(logs, '2026-06-15');
+      expect(result.date).toBe('2026-06-15');
+      expect(result.isComplete).toBe(false);
+    });
+  });
+
+  describe('partial prayer logging', () => {
+    it('is not complete when only some prayers are logged', () => {
+      let log = PrayerLogic.createPrayerLog('2026-05-01');
+      log = PrayerLogic.logPrayer(log, 'Fajr');
+      log = PrayerLogic.logPrayer(log, 'Dhuhr');
+      log = PrayerLogic.logPrayer(log, 'Asr');
+      expect(log.isComplete).toBe(false);
+      expect(log.prayers.Maghrib).toBe(false);
+      expect(log.prayers.Isha).toBe(false);
+    });
+
+    it('logging the same prayer twice has no adverse effect', () => {
+      let log = PrayerLogic.createPrayerLog('2026-05-01');
+      log = PrayerLogic.logPrayer(log, 'Fajr');
+      log = PrayerLogic.logPrayer(log, 'Fajr');
+      expect(log.prayers.Fajr).toBe(true);
+      expect(log.isComplete).toBe(false);
+    });
+
+    it('quran and dhikr do not affect completion', () => {
+      let log = PrayerLogic.createPrayerLog('2026-05-01');
+      log = PrayerLogic.logQuran(log);
+      log = PrayerLogic.logDhikr(log);
+      expect(log.quranLogged).toBe(true);
+      expect(log.dhikrLogged).toBe(true);
+      expect(log.isComplete).toBe(false);
+    });
+  });
+
+  describe('countConsecutiveDays edge cases', () => {
+    it('returns 0 when only incomplete logs exist', () => {
+      const today = PrayerLogic.getTodayDate();
+      const logs = [makeLog(today, false)];
+      expect(PrayerLogic.countConsecutiveDays(logs)).toBe(0);
+    });
+
+    it('returns 0 when complete logs exist but not for today', () => {
+      const today = PrayerLogic.getTodayDate();
+      const twoDaysAgo = PrayerLogic.getPreviousDate(
+        PrayerLogic.getPreviousDate(today)
+      );
+      const logs = [makeLog(twoDaysAgo, true)];
+      expect(PrayerLogic.countConsecutiveDays(logs)).toBe(0);
+    });
+
+    it('handles a single complete day (today)', () => {
+      const today = PrayerLogic.getTodayDate();
+      const logs = [makeLog(today, true)];
+      expect(PrayerLogic.countConsecutiveDays(logs)).toBe(1);
+    });
+
+    it('ignores incomplete logs interleaved with complete ones', () => {
+      const today = PrayerLogic.getTodayDate();
+      const yesterday = PrayerLogic.getPreviousDate(today);
+      const logs = [
+        makeLog(yesterday, false), // incomplete — breaks streak
+        makeLog(today, true),
+      ];
+      expect(PrayerLogic.countConsecutiveDays(logs)).toBe(1);
+    });
+
+    it('handles unsorted input correctly', () => {
+      const today = PrayerLogic.getTodayDate();
+      const yesterday = PrayerLogic.getPreviousDate(today);
+      const dayBefore = PrayerLogic.getPreviousDate(yesterday);
+      // Deliberately out of order
+      const logs = [
+        makeLog(today, true),
+        makeLog(dayBefore, true),
+        makeLog(yesterday, true),
+      ];
+      expect(PrayerLogic.countConsecutiveDays(logs)).toBe(3);
+    });
+  });
 });

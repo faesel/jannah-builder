@@ -239,10 +239,13 @@ export default function StatisticsScreen() {
 
         {/* Stats grid with toggle */}
         <View style={styles.section}>
-          <View style={styles.toggleRow}>
+          <View style={styles.toggleRow} accessibilityRole="tablist">
             <Pressable
               style={[styles.toggleButton, statsView === 'current' && styles.toggleButtonActive]}
               onPress={() => setStatsView('current')}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: statsView === 'current' }}
+              accessibilityLabel="Current stats"
             >
               <Text style={[styles.toggleText, statsView === 'current' && styles.toggleTextActive]}>
                 Current
@@ -251,6 +254,9 @@ export default function StatisticsScreen() {
             <Pressable
               style={[styles.toggleButton, statsView === 'allTime' && styles.toggleButtonActive]}
               onPress={() => setStatsView('allTime')}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: statsView === 'allTime' }}
+              accessibilityLabel="All time stats"
             >
               <Text style={[styles.toggleText, statsView === 'allTime' && styles.toggleTextActive]}>
                 All Time
@@ -321,7 +327,9 @@ export default function StatisticsScreen() {
         <Pressable
           style={styles.resetButton}
           onPress={handleResetGarden}
+          accessibilityRole="button"
           accessibilityLabel="Reset garden and clear all data"
+          accessibilityHint="Double tap to reset. You will be asked to confirm."
         >
           <Text style={styles.resetText}>Reset Garden</Text>
         </Pressable>

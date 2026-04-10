@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import { PrayerLog } from '../../src/types/models';
 import { COLORS } from '../../src/config/colors';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
@@ -19,6 +21,24 @@ export default function LogPrayerScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const saveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const hasPlayedChime = React.useRef(false);
+
+  const playCompletionChime = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/completion-chime.wav'),
+        { volume: 0.5 }
+      );
+      await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('didJustFinish' in status && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch {
+      // Fail silently — sound is a nice-to-have
+    }
+  };
 
   const loadTodayLog = useCallback(async () => {
     try {
@@ -45,23 +65,31 @@ export default function LogPrayerScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      hasPlayedChime.current = false;
       loadTodayLog();
     }, [loadTodayLog])
   );
 
   const handlePrayerToggle = (prayer: string) => {
     if (!todayLog) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     const updatedLog = PrayerLogic.logPrayer(
       todayLog,
       prayer as typeof GAME_CONFIG.prayers.dailyPrayers[number]
     );
+    if (updatedLog.isComplete && !todayLog.isComplete && !hasPlayedChime.current) {
+      hasPlayedChime.current = true;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      playCompletionChime();
+    }
     setTodayLog(updatedLog);
     debouncedSave(updatedLog);
   };
 
   const handleQuranToggle = () => {
     if (!todayLog) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     const updatedLog = PrayerLogic.logQuran(todayLog);
     setTodayLog(updatedLog);
     debouncedSave(updatedLog);
@@ -69,6 +97,7 @@ export default function LogPrayerScreen() {
 
   const handleDhikrToggle = () => {
     if (!todayLog) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     const updatedLog = PrayerLogic.logDhikr(todayLog);
     setTodayLog(updatedLog);
     debouncedSave(updatedLog);
@@ -178,6 +207,10 @@ export default function LogPrayerScreen() {
                 ]}
                 onPress={() => handlePrayerToggle(prayer)}
                 android_ripple={{ color: '#4A7C5930' }}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: isChecked }}
+                accessibilityLabel={`${prayer} prayer`}
+                accessibilityHint={isChecked ? 'Double tap to unmark' : 'Double tap to mark as prayed'}
               >
                 <Text
                   style={[
@@ -219,6 +252,10 @@ export default function LogPrayerScreen() {
             ]}
             onPress={() => handleQuranToggle()}
             android_ripple={{ color: '#7B68AE30' }}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: todayLog.quranLogged }}
+            accessibilityLabel="Qur'an reading"
+            accessibilityHint={todayLog.quranLogged ? 'Double tap to unmark' : 'Double tap to mark as read'}
           >
             <Text
               style={[
@@ -246,6 +283,10 @@ export default function LogPrayerScreen() {
             ]}
             onPress={() => handleDhikrToggle()}
             android_ripple={{ color: '#7B68AE30' }}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: todayLog.dhikrLogged }}
+            accessibilityLabel="Dhikr practice"
+            accessibilityHint={todayLog.dhikrLogged ? 'Double tap to unmark' : 'Double tap to mark as done'}
           >
             <Text
               style={[

@@ -110,4 +110,128 @@ describe('SeasonLogic', () => {
       expect(result.newSeason).toBe('spring');
     });
   });
+
+  // ================================================================
+  // Transition edge cases
+  // ================================================================
+
+  describe('season transition edge cases', () => {
+    it('returns spring when all logs are incomplete', () => {
+      const logs = [makeLog('2026-03-01', false), makeLog('2026-02-28', false)];
+      expect(SeasonLogic.determineSeason(logs, '2026-03-01')).toBe('spring');
+    });
+
+    it('returns summer at exactly the threshold (boundary)', () => {
+      const logs = makeConsecutiveLogs(
+        '2026-03-01',
+        GAME_CONFIG.seasons.summerThreshold
+      );
+      expect(SeasonLogic.determineSeason(logs, '2026-03-01')).toBe('summer');
+    });
+
+    it('returns spring one day below the summer threshold', () => {
+      const logs = makeConsecutiveLogs(
+        '2026-03-01',
+        GAME_CONFIG.seasons.summerThreshold - 1
+      );
+      expect(SeasonLogic.determineSeason(logs, '2026-03-01')).toBe('spring');
+    });
+
+    it('returns autumn at exactly the autumn threshold gap', () => {
+      // Complete log autumnThreshold days before the current date
+      const gapDays = GAME_CONFIG.seasons.autumnThreshold;
+      const lastCompleteDate = new Date('2026-03-01');
+      lastCompleteDate.setUTCDate(lastCompleteDate.getUTCDate() - gapDays);
+      const dateStr = lastCompleteDate.toISOString().split('T')[0];
+      const logs = [makeLog(dateStr, true)];
+      expect(SeasonLogic.determineSeason(logs, '2026-03-01')).toBe('autumn');
+    });
+
+    it('returns winter at exactly the winter threshold gap', () => {
+      const gapDays = GAME_CONFIG.seasons.winterThreshold;
+      const lastCompleteDate = new Date('2026-03-01');
+      lastCompleteDate.setUTCDate(lastCompleteDate.getUTCDate() - gapDays);
+      const dateStr = lastCompleteDate.toISOString().split('T')[0];
+      const logs = [makeLog(dateStr, true)];
+      expect(SeasonLogic.determineSeason(logs, '2026-03-01')).toBe('winter');
+    });
+
+    it('summer takes priority over gap when both thresholds are met', () => {
+      // A long streak that also has a gap in older history
+      const streakLogs = makeConsecutiveLogs('2026-03-01', 14);
+      const oldLog = makeLog('2026-01-01', true); // old isolated log
+      expect(
+        SeasonLogic.determineSeason([...streakLogs, oldLog], '2026-03-01')
+      ).toBe('summer');
+    });
+
+    it('detects transition from winter to spring upon returning', () => {
+      // User returns after a long gap with a complete day today
+      const logs = [
+        makeLog('2026-01-01', true), // old log
+        makeLog('2026-03-01', true), // returned today
+      ];
+      const result = SeasonLogic.evaluateSeasonChange('winter', logs, '2026-03-01');
+      expect(result.changed).toBe(true);
+      expect(result.newSeason).toBe('spring');
+    });
+
+    it('detects transition from summer to autumn on missed days', () => {
+      // Had a great streak, then missed a few days
+      const gapDays = GAME_CONFIG.seasons.autumnThreshold;
+      const lastCompleteDate = new Date('2026-03-01');
+      lastCompleteDate.setUTCDate(lastCompleteDate.getUTCDate() - gapDays);
+      const logs = makeConsecutiveLogs(
+        lastCompleteDate.toISOString().split('T')[0],
+        20
+      );
+      const result = SeasonLogic.evaluateSeasonChange('summer', logs, '2026-03-01');
+      expect(result.changed).toBe(true);
+      expect(result.newSeason).toBe('autumn');
+    });
+  });
+
+  describe('countGapUpTo edge cases', () => {
+    it('returns 0 when the current date itself is complete', () => {
+      const logs = [makeLog('2026-03-01', true)];
+      expect(SeasonLogic.countGapUpTo(logs, '2026-03-01')).toBe(0);
+    });
+
+    it('caps scanning at 365 days to prevent infinite loops', () => {
+      // No complete logs at all — gap should max out at 366 (365 + break)
+      const logs: PrayerLog[] = [];
+      const gap = SeasonLogic.countGapUpTo(logs, '2026-03-01');
+      expect(gap).toBeLessThanOrEqual(366);
+    });
+  });
+
+  describe('countStreakUpTo edge cases', () => {
+    it('counts across a month boundary', () => {
+      const logs = [
+        makeLog('2026-03-01', true),
+        makeLog('2026-02-28', true),
+        makeLog('2026-02-27', true),
+      ];
+      expect(SeasonLogic.countStreakUpTo(logs, '2026-03-01')).toBe(3);
+    });
+
+    it('counts across a year boundary', () => {
+      const logs = [
+        makeLog('2026-01-01', true),
+        makeLog('2025-12-31', true),
+        makeLog('2025-12-30', true),
+      ];
+      expect(SeasonLogic.countStreakUpTo(logs, '2026-01-01')).toBe(3);
+    });
+
+    it('stops at a gap even with complete days before it', () => {
+      const logs = [
+        makeLog('2026-03-01', true),
+        // 2026-02-28 is missing
+        makeLog('2026-02-27', true),
+        makeLog('2026-02-26', true),
+      ];
+      expect(SeasonLogic.countStreakUpTo(logs, '2026-03-01')).toBe(1);
+    });
+  });
 });
