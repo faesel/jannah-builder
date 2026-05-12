@@ -621,6 +621,55 @@ function randomPosition(rng: () => number, occupied: Set<string>, cols: number, 
   return { x: 0, y: 0 };
 }
 
+/**
+ * Find a position adjacent to existing cluster members (street pattern).
+ * Tries cardinal neighbours at increasing distance, then falls back to random.
+ */
+function findClusteredPosition(
+  clusterPositions: Position[],
+  occupied: Set<string>,
+  cols: number,
+  rows: number
+): Position {
+  const directions = [
+    { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+  ];
+  const halfX = Math.floor(cols / 2) - 1;
+  const halfY = Math.floor(rows / 2) - 1;
+
+  for (let dist = 1; dist <= 3; dist++) {
+    for (const pos of clusterPositions) {
+      for (const dir of directions) {
+        const x = pos.x + dir.dx * dist;
+        const y = pos.y + dir.dy * dist;
+        const key = `${x},${y}`;
+        if (!occupied.has(key) && Math.abs(x) <= halfX && Math.abs(y) <= halfY) {
+          occupied.add(key);
+          return { x, y };
+        }
+      }
+    }
+  }
+
+  // Fallback: ring around cluster centroid
+  const cx = Math.round(clusterPositions.reduce((s, p) => s + p.x, 0) / clusterPositions.length);
+  const cy = Math.round(clusterPositions.reduce((s, p) => s + p.y, 0) / clusterPositions.length);
+  for (let r = 2; r < 10; r++) {
+    for (let angle = 0; angle < 8; angle++) {
+      const x = cx + Math.round(r * Math.cos((angle * Math.PI) / 4));
+      const y = cy + Math.round(r * Math.sin((angle * Math.PI) / 4));
+      const key = `${x},${y}`;
+      if (!occupied.has(key) && Math.abs(x) <= halfX && Math.abs(y) <= halfY) {
+        occupied.add(key);
+        return { x, y };
+      }
+    }
+  }
+
+  return { x: cx + 1, y: cy };
+}
+
 function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
   const now = Date.now();
   const rng = seededRng(12345);
@@ -657,14 +706,21 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
     { type: 'mansion', count: countFor(bc.mansion.threshold, bc.mansion.repeatEvery) },
     { type: 'palace', count: countFor(bc.palace.threshold, bc.palace.repeatEvery) },
   ];
-  const buildings: Building[] = buildingList.flatMap(({ type, count }) =>
-    Array.from({ length: count }, (_, i) => ({
-      id: `sim_bld_${type}_${i}`,
-      type,
-      position: randomPosition(rng, occupied, cols, rows),
-      createdAt: now,
-    }))
-  );
+  // Place buildings with same-type clustering (street pattern)
+  const buildings: Building[] = [];
+  for (const { type, count } of buildingList) {
+    for (let i = 0; i < count; i++) {
+      const sameType = buildings.filter((b) => b.type === type);
+      let position: Position;
+      if (sameType.length > 0) {
+        // Cluster: place adjacent to existing same-type buildings
+        position = findClusteredPosition(sameType.map((b) => b.position), occupied, cols, rows);
+      } else {
+        position = randomPosition(rng, occupied, cols, rows);
+      }
+      buildings.push({ id: `sim_bld_${type}_${i}`, type, position, createdAt: now });
+    }
+  }
 
   const ac = GAME_CONFIG.world.animals;
   const animalList: { type: Animal['type']; count: number }[] = [
