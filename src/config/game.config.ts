@@ -61,15 +61,15 @@ export const GAME_CONFIG = {
       quranBoost: 1.5, // Multiplier when logging Qur'an
     },
     buildings: {
-      home: { threshold: 30 }, // Trees needed
-      mansion: { threshold: 60 },
-      palace: { threshold: 100 },
+      home: { threshold: 30, repeatEvery: 20 },
+      mansion: { threshold: 60, repeatEvery: 40 },
+      palace: { threshold: 100, repeatEvery: 80 },
     },
     animals: {
-      birds: { threshold: 5 },
-      rabbits: { threshold: 15 },
-      deer: { threshold: 40 },
-      squirrels: { threshold: 25 },
+      birds: { threshold: 5, repeatEvery: 8 },
+      rabbits: { threshold: 15, repeatEvery: 15 },
+      deer: { threshold: 40, repeatEvery: 30 },
+      squirrels: { threshold: 25, repeatEvery: 20 },
     },
   },
 

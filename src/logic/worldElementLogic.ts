@@ -3,7 +3,8 @@
  * Pure functions for spawning buildings and animals based on tree milestones.
  *
  * Buildings and animals appear when total tree count crosses configured
- * thresholds. Each type spawns at most once.
+ * thresholds, with additional instances spawning every `repeatEvery` trees
+ * beyond the initial threshold.
  */
 
 import {
@@ -19,24 +20,31 @@ type AnimalType = Animal['type'];
 
 /**
  * Registry of building types and their config thresholds.
- * Add new building types here to automatically include them in evaluation.
  */
-const BUILDING_TYPES: { type: BuildingType; threshold: number }[] = [
-  { type: 'home', threshold: GAME_CONFIG.world.buildings.home.threshold },
-  { type: 'mansion', threshold: GAME_CONFIG.world.buildings.mansion.threshold },
-  { type: 'palace', threshold: GAME_CONFIG.world.buildings.palace.threshold },
+const BUILDING_TYPES: { type: BuildingType; threshold: number; repeatEvery: number }[] = [
+  { type: 'home', threshold: GAME_CONFIG.world.buildings.home.threshold, repeatEvery: GAME_CONFIG.world.buildings.home.repeatEvery },
+  { type: 'mansion', threshold: GAME_CONFIG.world.buildings.mansion.threshold, repeatEvery: GAME_CONFIG.world.buildings.mansion.repeatEvery },
+  { type: 'palace', threshold: GAME_CONFIG.world.buildings.palace.threshold, repeatEvery: GAME_CONFIG.world.buildings.palace.repeatEvery },
 ];
 
 /**
  * Registry of animal types and their config thresholds.
- * Add new animal types here to automatically include them in evaluation.
  */
-const ANIMAL_TYPES: { type: AnimalType; threshold: number }[] = [
-  { type: 'bird', threshold: GAME_CONFIG.world.animals.birds.threshold },
-  { type: 'rabbit', threshold: GAME_CONFIG.world.animals.rabbits.threshold },
-  { type: 'squirrel', threshold: GAME_CONFIG.world.animals.squirrels.threshold },
-  { type: 'deer', threshold: GAME_CONFIG.world.animals.deer.threshold },
+const ANIMAL_TYPES: { type: AnimalType; threshold: number; repeatEvery: number }[] = [
+  { type: 'bird', threshold: GAME_CONFIG.world.animals.birds.threshold, repeatEvery: GAME_CONFIG.world.animals.birds.repeatEvery },
+  { type: 'rabbit', threshold: GAME_CONFIG.world.animals.rabbits.threshold, repeatEvery: GAME_CONFIG.world.animals.rabbits.repeatEvery },
+  { type: 'squirrel', threshold: GAME_CONFIG.world.animals.squirrels.threshold, repeatEvery: GAME_CONFIG.world.animals.squirrels.repeatEvery },
+  { type: 'deer', threshold: GAME_CONFIG.world.animals.deer.threshold, repeatEvery: GAME_CONFIG.world.animals.deer.repeatEvery },
 ];
+
+/**
+ * Calculate how many of a given type should exist based on tree count.
+ * Returns 0 below threshold, 1 at threshold, then +1 per repeatEvery trees.
+ */
+function targetCount(treeCount: number, threshold: number, repeatEvery: number): number {
+  if (treeCount < threshold) return 0;
+  return 1 + Math.floor((treeCount - threshold) / repeatEvery);
+}
 
 export class WorldElementLogic {
   /**
@@ -47,11 +55,14 @@ export class WorldElementLogic {
     existingBuildings: Building[],
     existingTrees: Tree[]
   ): Building[] {
-    const existingTypes = new Set(existingBuildings.map((b) => b.type));
     const newBuildings: Building[] = [];
 
-    for (const { type, threshold } of BUILDING_TYPES) {
-      if (treeCount >= threshold && !existingTypes.has(type)) {
+    for (const { type, threshold, repeatEvery } of BUILDING_TYPES) {
+      const desired = targetCount(treeCount, threshold, repeatEvery);
+      const current = existingBuildings.filter((b) => b.type === type).length;
+      const needed = desired - current;
+
+      for (let i = 0; i < needed; i++) {
         newBuildings.push(
           this.createBuilding(type, existingTrees, existingBuildings, newBuildings)
         );
@@ -69,11 +80,14 @@ export class WorldElementLogic {
     existingAnimals: Animal[],
     existingTrees: Tree[]
   ): Animal[] {
-    const existingTypes = new Set(existingAnimals.map((a) => a.type));
     const newAnimals: Animal[] = [];
 
-    for (const { type, threshold } of ANIMAL_TYPES) {
-      if (treeCount >= threshold && !existingTypes.has(type)) {
+    for (const { type, threshold, repeatEvery } of ANIMAL_TYPES) {
+      const desired = targetCount(treeCount, threshold, repeatEvery);
+      const current = existingAnimals.filter((a) => a.type === type).length;
+      const needed = desired - current;
+
+      for (let i = 0; i < needed; i++) {
         newAnimals.push(
           this.createAnimal(type, existingTrees, existingAnimals, newAnimals)
         );
@@ -85,7 +99,6 @@ export class WorldElementLogic {
 
   /**
    * Evaluate grid expansion. Returns new grid size if growth is warranted.
-   * Grid grows by 1 for every `growthInterval` total world elements.
    */
   static evaluateMapExpansion(
     treeCount: number,
@@ -93,7 +106,7 @@ export class WorldElementLogic {
   ): { width: number; height: number } | null {
     const { initialGridSize, maxGridSize, growthInterval } = GAME_CONFIG.map;
 
-    if (growthInterval <= 0) return null; // Fixed map — no expansion
+    if (growthInterval <= 0) return null;
 
     const earned = initialGridSize + Math.floor(treeCount / growthInterval);
     const target = Math.min(maxGridSize, earned);
@@ -115,7 +128,7 @@ export class WorldElementLogic {
   ): Building {
     const now = Date.now();
     return {
-      id: `building_${type}_${now}`,
+      id: `building_${type}_${now}_${newBuildings.length}`,
       type,
       position: this.findClearPosition(
         trees.map((t) => t.position),
@@ -136,7 +149,7 @@ export class WorldElementLogic {
   ): Animal {
     const now = Date.now();
     return {
-      id: `animal_${type}_${now}`,
+      id: `animal_${type}_${now}_${newAnimals.length}`,
       type,
       position: this.findClearPosition(
         trees.map((t) => t.position),
@@ -161,7 +174,6 @@ export class WorldElementLogic {
       ...occupiedPositions.map((p) => `${p.x},${p.y}`),
     ]);
 
-    // Place near the edge of the tree cluster
     const radius = Math.max(3, Math.ceil(Math.sqrt(treePositions.length)) + 1);
 
     for (let r = radius; r < radius + 10; r++) {

@@ -27,10 +27,24 @@ describe('WorldElementLogic', () => {
 
     it('spawns home and mansion at 60 trees', () => {
       const result = WorldElementLogic.evaluateBuildings(60, [], makeTrees(60));
-      expect(result).toHaveLength(2);
-      const types = result.map((b) => b.type);
-      expect(types).toContain('home');
-      expect(types).toContain('mansion');
+      const homes = result.filter((b) => b.type === 'home');
+      const mansions = result.filter((b) => b.type === 'mansion');
+      // home: 1 + floor((60-30)/20) = 2 homes, mansion: 1
+      expect(homes).toHaveLength(2);
+      expect(mansions).toHaveLength(1);
+    });
+
+    it('scales buildings proportionally with many trees', () => {
+      const result = WorldElementLogic.evaluateBuildings(120, [], makeTrees(120));
+      const homes = result.filter((b) => b.type === 'home');
+      const mansions = result.filter((b) => b.type === 'mansion');
+      const palaces = result.filter((b) => b.type === 'palace');
+      // home: 1 + floor((120-30)/20) = 5
+      // mansion: 1 + floor((120-60)/40) = 2
+      // palace: 1 + floor((120-100)/80) = 1
+      expect(homes).toHaveLength(5);
+      expect(mansions).toHaveLength(2);
+      expect(palaces).toHaveLength(1);
     });
 
     it('does not duplicate already existing buildings', () => {
@@ -38,8 +52,11 @@ describe('WorldElementLogic', () => {
         { id: 'b1', type: 'home', position: { x: 5, y: 5 }, createdAt: 0 },
       ];
       const result = WorldElementLogic.evaluateBuildings(60, existing, makeTrees(60));
-      expect(result).toHaveLength(1);
-      expect(result[0].type).toBe('mansion');
+      // Should add 1 more home (need 2, have 1) + 1 mansion
+      const homes = result.filter((b) => b.type === 'home');
+      const mansions = result.filter((b) => b.type === 'mansion');
+      expect(homes).toHaveLength(1);
+      expect(mansions).toHaveLength(1);
     });
   });
 
@@ -55,7 +72,7 @@ describe('WorldElementLogic', () => {
       expect(result[0].type).toBe('bird');
     });
 
-    it('does not duplicate existing animals', () => {
+    it('does not exceed target count for existing animals', () => {
       const existing: Animal[] = [
         { id: 'a1', type: 'bird', position: { x: 3, y: 3 }, createdAt: 0 },
       ];
@@ -63,14 +80,27 @@ describe('WorldElementLogic', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('spawns all animals at 40+ trees', () => {
+    it('spawns multiple animals at 40+ trees', () => {
       const result = WorldElementLogic.evaluateAnimals(40, [], makeTrees(40));
-      expect(result).toHaveLength(4);
-      const types = result.map((a) => a.type);
-      expect(types).toContain('bird');
-      expect(types).toContain('rabbit');
-      expect(types).toContain('squirrel');
-      expect(types).toContain('deer');
+      const birds = result.filter((a) => a.type === 'bird');
+      const rabbits = result.filter((a) => a.type === 'rabbit');
+      const squirrels = result.filter((a) => a.type === 'squirrel');
+      const deer = result.filter((a) => a.type === 'deer');
+      // bird: 1 + floor((40-5)/8) = 5
+      // rabbit: 1 + floor((40-15)/15) = 2
+      // squirrel: 1 + floor((40-25)/20) = 1
+      // deer: 1 + floor((40-40)/30) = 1
+      expect(birds).toHaveLength(5);
+      expect(rabbits).toHaveLength(2);
+      expect(squirrels).toHaveLength(1);
+      expect(deer).toHaveLength(1);
+    });
+
+    it('scales proportionally with many trees', () => {
+      const result = WorldElementLogic.evaluateAnimals(120, [], makeTrees(120));
+      const birds = result.filter((a) => a.type === 'bird');
+      // bird: 1 + floor((120-5)/8) = 15
+      expect(birds).toHaveLength(15);
     });
   });
 

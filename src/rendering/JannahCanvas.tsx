@@ -623,51 +623,71 @@ function randomPosition(rng: () => number, occupied: Set<string>, cols: number, 
 
 function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
   const now = Date.now();
-  const rng = seededRng(12345); // fixed seed for reproducible layouts
+  const rng = seededRng(12345);
   const gridSize = GAME_CONFIG.map.initialGridSize;
   const occupied = new Set<string>();
-  // Reserve centre for signboard
   occupied.add('0,0');
 
-  const presets = {
-    days:   { trees: 3,  flowers: 0,  buildings: [] as string[],  animals: ['bird'] as string[],                  illustrious: [] as string[] },
-    months: { trees: 20, flowers: 5,  buildings: ['home'],        animals: ['bird','rabbit','squirrel'],           illustrious: ['radiant_fountain'] },
-    years:  { trees: 60, flowers: 12, buildings: ['home','mansion','palace'], animals: ['bird','rabbit','squirrel','deer'], illustrious: ['radiant_fountain','glowing_tree','floating_lantern','light_arch'] },
-  };
-  const p = presets[level];
+  const treeCounts = { days: 3, months: 20, years: 120 };
+  const treeCount = treeCounts[level];
+
+  // Helper: compute target count from config thresholds
+  const countFor = (threshold: number, repeatEvery: number) =>
+    treeCount < threshold ? 0 : 1 + Math.floor((treeCount - threshold) / repeatEvery);
 
   const stages: TreeStage[] = ['sapling', 'young', 'mature'];
-  const trees: Tree[] = Array.from({ length: p.trees }, (_, i) => ({
+  const trees: Tree[] = Array.from({ length: treeCount }, (_, i) => ({
     id: `sim_tree_${i}`,
-    stage: stages[Math.min(Math.floor(i / Math.max(1, Math.ceil(p.trees / 3))), 2)],
+    stage: stages[Math.min(Math.floor(i / Math.max(1, Math.ceil(treeCount / 3))), 2)],
     position: randomPosition(rng, occupied, cols, rows),
     createdAt: now,
     lastUpdated: now,
   }));
 
-  const flowers: Flower[] = Array.from({ length: p.flowers }, (_, i) => ({
+  const flowerCounts = { days: 0, months: 5, years: 12 };
+  const flowers: Flower[] = Array.from({ length: flowerCounts[level] }, (_, i) => ({
     id: `sim_flower_${i}`,
     position: randomPosition(rng, occupied, cols, rows),
     type: 'basic' as const,
   }));
 
-  const buildingTypes = ['home', 'mansion', 'palace'] as const;
-  const buildings: Building[] = p.buildings.map((type, i) => ({
-    id: `sim_bld_${i}`,
-    type: type as typeof buildingTypes[number],
-    position: randomPosition(rng, occupied, cols, rows),
-    createdAt: now,
-  }));
+  const bc = GAME_CONFIG.world.buildings;
+  const buildingList: { type: Building['type']; count: number }[] = [
+    { type: 'home', count: countFor(bc.home.threshold, bc.home.repeatEvery) },
+    { type: 'mansion', count: countFor(bc.mansion.threshold, bc.mansion.repeatEvery) },
+    { type: 'palace', count: countFor(bc.palace.threshold, bc.palace.repeatEvery) },
+  ];
+  const buildings: Building[] = buildingList.flatMap(({ type, count }) =>
+    Array.from({ length: count }, (_, i) => ({
+      id: `sim_bld_${type}_${i}`,
+      type,
+      position: randomPosition(rng, occupied, cols, rows),
+      createdAt: now,
+    }))
+  );
 
-  const animalTypes = ['bird', 'rabbit', 'deer', 'squirrel'] as const;
-  const animals: Animal[] = p.animals.map((type, i) => ({
-    id: `sim_animal_${i}`,
-    type: type as typeof animalTypes[number],
-    position: randomPosition(rng, occupied, cols, rows),
-    createdAt: now,
-  }));
+  const ac = GAME_CONFIG.world.animals;
+  const animalList: { type: Animal['type']; count: number }[] = [
+    { type: 'bird', count: countFor(ac.birds.threshold, ac.birds.repeatEvery) },
+    { type: 'rabbit', count: countFor(ac.rabbits.threshold, ac.rabbits.repeatEvery) },
+    { type: 'squirrel', count: countFor(ac.squirrels.threshold, ac.squirrels.repeatEvery) },
+    { type: 'deer', count: countFor(ac.deer.threshold, ac.deer.repeatEvery) },
+  ];
+  const animals: Animal[] = animalList.flatMap(({ type, count }) =>
+    Array.from({ length: count }, (_, i) => ({
+      id: `sim_animal_${type}_${i}`,
+      type,
+      position: randomPosition(rng, occupied, cols, rows),
+      createdAt: now,
+    }))
+  );
 
-  const illustriousItems: IllustriousItem[] = p.illustrious.map((type, i) => ({
+  const illustriousPresets = {
+    days: [] as string[],
+    months: ['radiant_fountain'],
+    years: ['radiant_fountain', 'glowing_tree', 'floating_lantern', 'light_arch'],
+  };
+  const illustriousItems: IllustriousItem[] = illustriousPresets[level].map((type, i) => ({
     id: `sim_illus_${i}`,
     type: type as IllustriousItemType,
     position: randomPosition(rng, occupied, cols, rows),
