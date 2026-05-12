@@ -223,25 +223,40 @@ function generateFlowers() {
 function generateBuildings() {
   console.log('\n🏠 Buildings');
 
-  // Home
+  // Home (cottage with chimney, door, windows)
   let c = newCanvas();
   let ctx = c.getContext('2d');
-  drawPixelRect(ctx, 6, 16, 20, 14, '#D4A574');
-  drawTriangle(ctx, 4, 16, 24, 10, '#A0522D');
-  drawPixelRect(ctx, 13, 22, 6, 8, '#6B4E3D');
-  drawPixelRect(ctx, 8, 19, 4, 4, '#87CEEB');
+  drawTriangle(ctx, 2, 8, 28, 12, '#A0522D');
+  drawPixelRect(ctx, 5, 18, 22, 12, '#D4A574');
+  drawPixelRect(ctx, 13, 22, 6, 8, '#5C3317');
+  drawPixelRect(ctx, 17, 26, 1, 1, '#FFD700');
+  drawPixelRect(ctx, 7, 21, 4, 4, '#87CEEB');
+  drawPixelRect(ctx, 8, 21, 1, 4, '#6B4E3D');
+  drawPixelRect(ctx, 7, 23, 4, 1, '#6B4E3D');
+  drawPixelRect(ctx, 21, 21, 4, 4, '#87CEEB');
+  drawPixelRect(ctx, 22, 21, 1, 4, '#6B4E3D');
+  drawPixelRect(ctx, 21, 23, 4, 1, '#6B4E3D');
+  drawPixelRect(ctx, 22, 4, 4, 8, '#8B4513');
+  drawPixelRect(ctx, 21, 4, 6, 2, '#6B3410');
   save(c, 'buildings', 'home.png');
 
-  // Mansion
+  // Mansion (wide with roof, columns, windows)
   c = newCanvas();
   ctx = c.getContext('2d');
-  drawPixelRect(ctx, 3, 14, 26, 16, '#E8D5B7');
-  drawTriangle(ctx, 1, 14, 30, 10, '#8B4513');
+  drawTriangle(ctx, 0, 4, 32, 10, '#8B4513');
+  drawPixelRect(ctx, 0, 13, 32, 2, '#A0522D');
+  drawPixelRect(ctx, 2, 14, 28, 16, '#E8D5B7');
+  drawPixelRect(ctx, 3, 14, 3, 16, '#C8B88A');
+  drawPixelRect(ctx, 26, 14, 3, 16, '#C8B88A');
   drawPixelRect(ctx, 12, 22, 8, 8, '#5C3D2E');
-  drawPixelRect(ctx, 5, 17, 5, 5, '#87CEEB');
-  drawPixelRect(ctx, 22, 17, 5, 5, '#87CEEB');
-  drawPixelRect(ctx, 10, 14, 2, 16, '#C8B88A');
-  drawPixelRect(ctx, 20, 14, 2, 16, '#C8B88A');
+  drawPixelRect(ctx, 15, 22, 2, 8, '#4A2E1F');
+  drawPixelRect(ctx, 12, 20, 8, 2, '#8B6B3D');
+  const wins = [{x:7,y:16},{x:21,y:16},{x:7,y:24},{x:21,y:24}];
+  wins.forEach(w => {
+    drawPixelRect(ctx, w.x, w.y, 4, 4, '#87CEEB');
+    drawPixelRect(ctx, w.x+1, w.y, 1, 4, '#6B4E3D');
+    drawPixelRect(ctx, w.x, w.y+2, 4, 1, '#6B4E3D');
+  });
   save(c, 'buildings', 'mansion.png');
 
   // Palace
