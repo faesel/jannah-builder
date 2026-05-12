@@ -9,8 +9,9 @@
 
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
-import { WorldState, Tree, Flower, Building, Animal, IllustriousItem } from '../types/models';
+import { WorldState, Tree, Flower, Building, Animal, IllustriousItem, Position } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
+import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
 import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
 
@@ -29,7 +30,11 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     return <SpriteDebugOnMap screenWidth={screenWidth} screenHeight={screenHeight} />;
   }
 
-  const gridSize = worldState.gridSize ?? GAME_CONFIG.map.initialGridSize;
+  const activeWorld = GAME_CONFIG.debug.simulateProgress
+    ? buildSimulatedWorld(GAME_CONFIG.debug.simulateProgress)
+    : worldState;
+
+  const gridSize = activeWorld.gridSize ?? GAME_CONFIG.map.initialGridSize;
 
   // Tile size: fit gridSize tiles along the shorter screen axis
   const tileSize = Math.max(
@@ -116,27 +121,27 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       </View>
 
       {/* Flowers */}
-      {worldState.flowers.map((f) => (
+      {activeWorld.flowers.map((f) => (
         <FlowerSprite key={f.id} flower={f} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Buildings */}
-      {worldState.buildings.map((b) => (
+      {activeWorld.buildings.map((b) => (
         <BuildingSprite key={b.id} building={b} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Trees */}
-      {worldState.trees.map((t) => (
+      {activeWorld.trees.map((t) => (
         <TreeSprite key={t.id} tree={t} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Animals */}
-      {worldState.animals.map((a) => (
+      {activeWorld.animals.map((a) => (
         <AnimalSprite key={a.id} animal={a} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Illustrious items */}
-      {worldState.illustriousItems.map((i) => (
+      {activeWorld.illustriousItems.map((i) => (
         <IllustriousSprite key={i.id} item={i} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
@@ -444,7 +449,93 @@ const styles = StyleSheet.create({
 });
 
 // ============================================================
-// Sprite Debug Grid — toggle with DEBUG_SHOW_ALL_SPRITES
+// Simulated Progress — debug mode world generator
+// ============================================================
+
+function spiralPosition(index: number): Position {
+  if (index === 0) return { x: 0, y: 0 };
+  let x = 0, y = 0, dx = 1, dy = 0, maxSteps = 1, steps = 0, changes = 0;
+  for (let i = 0; i < index; i++) {
+    x += dx; y += dy; steps++;
+    if (steps === maxSteps) {
+      steps = 0; changes++;
+      [dx, dy] = [-dy, dx]; // rotate 90°
+      if (changes % 2 === 0) maxSteps++;
+    }
+  }
+  return { x, y };
+}
+
+function buildSimulatedWorld(level: 'days' | 'months' | 'years'): WorldState {
+  const now = Date.now();
+  const presets = {
+    //                trees  flowers  buildings           animals                    illustrious                streak
+    days:   { trees: 3,  flowers: 0,  buildings: [] as string[],  animals: ['bird'] as string[],                  illustrious: [] as string[],                 quran: true,  dhikr: false },
+    months: { trees: 20, flowers: 5,  buildings: ['home'],        animals: ['bird','rabbit','squirrel'],           illustrious: ['radiant_fountain'],           quran: true,  dhikr: true  },
+    years:  { trees: 60, flowers: 12, buildings: ['home','mansion','palace'], animals: ['bird','rabbit','squirrel','deer'], illustrious: ['radiant_fountain','glowing_tree','floating_lantern','light_arch'], quran: true, dhikr: true },
+  };
+  const p = presets[level];
+
+  const stages: TreeStage[] = ['sapling', 'young', 'mature'];
+  const trees: Tree[] = Array.from({ length: p.trees }, (_, i) => ({
+    id: `sim_tree_${i}`,
+    stage: stages[Math.min(Math.floor(i / Math.max(1, Math.ceil(p.trees / 3))), 2)],
+    position: spiralPosition(i),
+    createdAt: now,
+    lastUpdated: now,
+  }));
+
+  // Place flowers in gaps between trees
+  const occupied = new Set(trees.map(t => `${t.position.x},${t.position.y}`));
+  const flowers: Flower[] = [];
+  let flowerIdx = 0;
+  for (let ring = 1; flowers.length < p.flowers && ring < 15; ring++) {
+    for (let angle = 0; angle < 8 && flowers.length < p.flowers; angle++) {
+      const x = Math.round(Math.cos(angle * Math.PI / 4) * ring);
+      const y = Math.round(Math.sin(angle * Math.PI / 4) * ring);
+      const key = `${x},${y}`;
+      if (!occupied.has(key)) {
+        occupied.add(key);
+        flowers.push({ id: `sim_flower_${flowerIdx++}`, position: { x, y }, type: 'basic' });
+      }
+    }
+  }
+
+  // Buildings placed outside the tree cluster
+  const buildingTypes = ['home', 'mansion', 'palace'] as const;
+  const buildings: Building[] = p.buildings.map((type, i) => {
+    const offset = (i + 1) * 3;
+    const pos = { x: -offset, y: offset };
+    occupied.add(`${pos.x},${pos.y}`);
+    return { id: `sim_bld_${i}`, type: type as typeof buildingTypes[number], position: pos, createdAt: now };
+  });
+
+  // Animals scattered around
+  const animalTypes = ['bird', 'rabbit', 'deer', 'squirrel'] as const;
+  const animals: Animal[] = p.animals.map((type, i) => {
+    const angle = (i * 2.3);
+    const radius = 4 + i * 2;
+    const pos = { x: Math.round(Math.cos(angle) * radius), y: Math.round(Math.sin(angle) * radius) };
+    return { id: `sim_animal_${i}`, type: type as typeof animalTypes[number], position: pos, createdAt: now };
+  });
+
+  // Illustrious items at prominent positions
+  const illustriousItems: IllustriousItem[] = p.illustrious.map((type, i) => {
+    const offset = (i + 1) * 4;
+    const pos = { x: offset, y: -offset + 2 };
+    return { id: `sim_illus_${i}`, type: type as IllustriousItemType, position: pos, createdAt: now, streakDays: (i + 1) * 30 };
+  });
+
+  return {
+    trees, flowers, buildings, animals, illustriousItems,
+    mapSize: { width: 20, height: 20 },
+    gridSize: 20,
+    lastUpdated: now,
+  };
+}
+
+// ============================================================
+// Sprite Debug Grid — toggle with showAllSprites
 // ============================================================
 
 const ALL_SPRITES: { label: string; source: number }[] = [

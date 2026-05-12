@@ -92,6 +92,9 @@ export const GAME_CONFIG = {
   debug: {
     showGridLines: false, // Toggle to show tile grid lines on the map
     showAllSprites: false, // Render all sprites in a labelled grid for inspection
+    // Populate the map as if you've been using the app for a while.
+    // false = off, 'days' = ~1 week, 'months' = ~3 months, 'years' = ~2 years
+    simulateProgress: false as false | 'days' | 'months' | 'years',
   },
   effects: {
     quran: {
