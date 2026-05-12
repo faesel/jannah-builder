@@ -60,6 +60,58 @@ export const ANIMAL_SPRITES = {
   squirrel: require('../../assets/sprites/animals/squirrel.png'),
 };
 
+export type AnimalDirection = 'up' | 'down' | 'left' | 'right';
+
+export const ANIMAL_FEED_SPRITES: Record<string, [number, number, number]> = {
+  bird: [
+    require('../../assets/sprites/animals/bird_feed1.png'),
+    require('../../assets/sprites/animals/bird_feed2.png'),
+    require('../../assets/sprites/animals/bird_feed3.png'),
+  ],
+  rabbit: [
+    require('../../assets/sprites/animals/rabbit_feed1.png'),
+    require('../../assets/sprites/animals/rabbit_feed2.png'),
+    require('../../assets/sprites/animals/rabbit_feed3.png'),
+  ],
+  deer: [
+    require('../../assets/sprites/animals/deer_feed1.png'),
+    require('../../assets/sprites/animals/deer_feed2.png'),
+    require('../../assets/sprites/animals/deer_feed3.png'),
+  ],
+  squirrel: [
+    require('../../assets/sprites/animals/squirrel_feed1.png'),
+    require('../../assets/sprites/animals/squirrel_feed2.png'),
+    require('../../assets/sprites/animals/squirrel_feed3.png'),
+  ],
+};
+
+export const ANIMAL_MOVE_SPRITES: Record<string, Record<AnimalDirection, number>> = {
+  bird: {
+    up: require('../../assets/sprites/animals/bird_up.png'),
+    down: require('../../assets/sprites/animals/bird_down.png'),
+    left: require('../../assets/sprites/animals/bird_left.png'),
+    right: require('../../assets/sprites/animals/bird_right.png'),
+  },
+  rabbit: {
+    up: require('../../assets/sprites/animals/rabbit_up.png'),
+    down: require('../../assets/sprites/animals/rabbit_down.png'),
+    left: require('../../assets/sprites/animals/rabbit_left.png'),
+    right: require('../../assets/sprites/animals/rabbit_right.png'),
+  },
+  deer: {
+    up: require('../../assets/sprites/animals/deer_up.png'),
+    down: require('../../assets/sprites/animals/deer_down.png'),
+    left: require('../../assets/sprites/animals/deer_left.png'),
+    right: require('../../assets/sprites/animals/deer_right.png'),
+  },
+  squirrel: {
+    up: require('../../assets/sprites/animals/squirrel_up.png'),
+    down: require('../../assets/sprites/animals/squirrel_down.png'),
+    left: require('../../assets/sprites/animals/squirrel_left.png'),
+    right: require('../../assets/sprites/animals/squirrel_right.png'),
+  },
+};
+
 // --- Illustrious Items ---
 
 export const ILLUSTRIOUS_SPRITES = {

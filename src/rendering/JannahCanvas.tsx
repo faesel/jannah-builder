@@ -7,13 +7,14 @@
  * No panning or zooming needed.
  */
 
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 import { WorldState, Tree, Flower, Building, Animal, IllustriousItem, Position } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
+import type { AnimalDirection } from './sprites';
 
 // Debug flag moved to GAME_CONFIG.debug.showAllSprites
 
@@ -30,11 +31,7 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     return <SpriteDebugOnMap screenWidth={screenWidth} screenHeight={screenHeight} />;
   }
 
-  const activeWorld = GAME_CONFIG.debug.simulateProgress
-    ? buildSimulatedWorld(GAME_CONFIG.debug.simulateProgress)
-    : worldState;
-
-  const gridSize = activeWorld.gridSize ?? GAME_CONFIG.map.initialGridSize;
+  const gridSize = (GAME_CONFIG.debug.simulateProgress ? GAME_CONFIG.map.initialGridSize : worldState.gridSize) ?? GAME_CONFIG.map.initialGridSize;
 
   // Tile size: fit gridSize tiles along the shorter screen axis
   const tileSize = Math.max(
@@ -44,6 +41,10 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
+
+  const activeWorld = GAME_CONFIG.debug.simulateProgress
+    ? buildSimulatedWorld(GAME_CONFIG.debug.simulateProgress, cols, rows)
+    : worldState;
 
   // Center of the grid in tile coordinates
   const centerCol = Math.floor(cols / 2);
@@ -101,6 +102,14 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     return lines;
   }, [cols, rows, tileSize]);
 
+  // Build occupied position set for animal collision avoidance
+  const occupiedPositions = useMemo(() => {
+    const set = new Set<string>();
+    activeWorld.buildings.forEach(b => set.add(`b:${b.position.x},${b.position.y}`));
+    activeWorld.trees.forEach(t => set.add(`t:${t.position.x},${t.position.y}`));
+    return set;
+  }, [activeWorld.buildings, activeWorld.trees]);
+
   return (
     <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grass }}>
       {/* Grass tile Views for checkerboard texture */}
@@ -137,7 +146,16 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 
       {/* Animals */}
       {activeWorld.animals.map((a) => (
-        <AnimalSprite key={a.id} animal={a} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
+        <AnimalSprite
+          key={a.id}
+          animal={a}
+          center={centerCol}
+          centerRow={centerRow}
+          tileSize={tileSize}
+          cols={cols}
+          rows={rows}
+          occupiedPositions={occupiedPositions}
+        />
       ))}
 
       {/* Illustrious items */}
@@ -222,23 +240,144 @@ function BuildingSprite({ building, center, centerRow, tileSize }: {
 }
 
 // ============================================================
-// Animals
+// Animals (animated)
 // ============================================================
 
-function AnimalSprite({ animal, center, centerRow, tileSize }: {
+type AnimalState = 'idle' | 'feeding' | 'moving';
+
+const ANIMAL_SPEED: Record<string, number> = {
+  bird: 600,     // ms per tile — fastest
+  rabbit: 900,
+  squirrel: 1000,
+  deer: 1100,    // slowest
+};
+
+const FEED_FRAME_MS = 500; // time per feeding frame
+
+function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupiedPositions }: {
   animal: Animal; center: number; centerRow: number; tileSize: number;
+  cols: number; rows: number; occupiedPositions: Set<string>;
 }) {
+  const [posX, setPosX] = useState(animal.position.x);
+  const [posY, setPosY] = useState(animal.position.y);
+  const [state, setState] = useState<AnimalState>('idle');
+  const [direction, setDirection] = useState<AnimalDirection>('down');
+  const [feedFrame, setFeedFrame] = useState(0);
+
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const posRef = useRef({ x: animal.position.x, y: animal.position.y });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const halfX = Math.floor(cols / 2) - 1;
+  const halfY = Math.floor(rows / 2) - 1;
+  const isBird = animal.type === 'bird';
+  const moveSpeed = ANIMAL_SPEED[animal.type] ?? 900;
+
+  const canMoveTo = useCallback((x: number, y: number) => {
+    if (x < -halfX || x > halfX || y < -halfY || y > halfY) return false;
+    // Buildings block everyone
+    if (occupiedPositions.has(`b:${x},${y}`)) return false;
+    // Trees block ground animals, birds can overlap trees
+    if (!isBird && occupiedPositions.has(`t:${x},${y}`)) return false;
+    return true;
+  }, [halfX, halfY, isBird, occupiedPositions]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      const roll = Math.random();
+
+      if (roll < 0.3) {
+        // Stand still for 1-4 seconds
+        setState('idle');
+        timerRef.current = setTimeout(scheduleNext, 1000 + Math.random() * 3000);
+      } else if (roll < 0.6) {
+        // Feed for 2-5 seconds
+        setState('feeding');
+        let frame = 0;
+        const feedInterval = setInterval(() => {
+          if (cancelled) { clearInterval(feedInterval); return; }
+          frame = (frame + 1) % 3;
+          setFeedFrame(frame);
+        }, FEED_FRAME_MS);
+        timerRef.current = setTimeout(() => {
+          clearInterval(feedInterval);
+          if (!cancelled) scheduleNext();
+        }, 2000 + Math.random() * 3000);
+      } else {
+        // Move 1-4 tiles in a random direction
+        const steps = 1 + Math.floor(Math.random() * 4);
+        const dirs: AnimalDirection[] = ['up', 'down', 'left', 'right'];
+        const dir = dirs[Math.floor(Math.random() * 4)];
+        setDirection(dir);
+        setState('moving');
+
+        let stepsDone = 0;
+        const moveStep = () => {
+          if (cancelled || stepsDone >= steps) {
+            if (!cancelled) scheduleNext();
+            return;
+          }
+          const dx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
+          const dy = dir === 'up' ? -1 : dir === 'down' ? 1 : 0;
+          const newX = posRef.current.x + dx;
+          const newY = posRef.current.y + dy;
+
+          if (!canMoveTo(newX, newY)) {
+            if (!cancelled) scheduleNext();
+            return;
+          }
+
+          posRef.current = { x: newX, y: newY };
+          Animated.parallel([
+            Animated.timing(translateX, { toValue: (newX - animal.position.x) * tileSize, duration: moveSpeed, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: (newY - animal.position.y) * tileSize, duration: moveSpeed, useNativeDriver: true }),
+          ]).start(() => {
+            stepsDone++;
+            setPosX(newX);
+            setPosY(newY);
+            if (!cancelled) moveStep();
+          });
+        };
+        moveStep();
+      }
+    };
+
+    // Initial random delay so animals don't all start together
+    timerRef.current = setTimeout(scheduleNext, Math.random() * 2000);
+
+    return () => {
+      cancelled = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [animal.position.x, animal.position.y, animal.type, canMoveTo, moveSpeed, tileSize, translateX, translateY]);
+
+  // Pick the right sprite
+  let spriteSource: number;
+  if (state === 'feeding') {
+    spriteSource = ANIMAL_FEED_SPRITES[animal.type][feedFrame];
+  } else if (state === 'moving') {
+    spriteSource = ANIMAL_MOVE_SPRITES[animal.type][direction];
+  } else {
+    spriteSource = ANIMAL_SPRITES[animal.type];
+  }
+
   return (
-    <Image
-      source={ANIMAL_SPRITES[animal.type]}
+    <Animated.View
       style={{
         position: 'absolute',
         left: (animal.position.x + center) * tileSize,
         top: (animal.position.y + centerRow) * tileSize,
         width: tileSize,
         height: tileSize,
+        transform: [{ translateX }, { translateY }],
       }}
-    />
+    >
+      <Image source={spriteSource} style={{ width: tileSize, height: tileSize }} />
+    </Animated.View>
   );
 }
 
@@ -452,27 +591,48 @@ const styles = StyleSheet.create({
 // Simulated Progress — debug mode world generator
 // ============================================================
 
-function spiralPosition(index: number): Position {
-  if (index === 0) return { x: 0, y: 0 };
-  let x = 0, y = 0, dx = 1, dy = 0, maxSteps = 1, steps = 0, changes = 0;
-  for (let i = 0; i < index; i++) {
-    x += dx; y += dy; steps++;
-    if (steps === maxSteps) {
-      steps = 0; changes++;
-      [dx, dy] = [-dy, dx]; // rotate 90°
-      if (changes % 2 === 0) maxSteps++;
-    }
-  }
-  return { x, y };
+// Seeded PRNG for deterministic but random-looking placement
+function seededRng(seed: number) {
+  let s = seed;
+  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-function buildSimulatedWorld(level: 'days' | 'months' | 'years'): WorldState {
+function randomPosition(rng: () => number, occupied: Set<string>, cols: number, rows: number): Position {
+  const halfX = Math.floor(cols / 2) - 1;
+  const halfY = Math.floor(rows / 2) - 1;
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const x = Math.floor(rng() * (halfX * 2 + 1)) - halfX;
+    const y = Math.floor(rng() * (halfY * 2 + 1)) - halfY;
+    const key = `${x},${y}`;
+    if (!occupied.has(key)) {
+      occupied.add(key);
+      return { x, y };
+    }
+  }
+  // Fallback: linear scan
+  for (let x = -halfX; x <= halfX; x++) {
+    for (let y = -halfY; y <= halfY; y++) {
+      if (!occupied.has(`${x},${y}`)) {
+        occupied.add(`${x},${y}`);
+        return { x, y };
+      }
+    }
+  }
+  return { x: 0, y: 0 };
+}
+
+function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
   const now = Date.now();
+  const rng = seededRng(12345); // fixed seed for reproducible layouts
+  const gridSize = GAME_CONFIG.map.initialGridSize;
+  const occupied = new Set<string>();
+  // Reserve centre for signboard
+  occupied.add('0,0');
+
   const presets = {
-    //                trees  flowers  buildings           animals                    illustrious                streak
-    days:   { trees: 3,  flowers: 0,  buildings: [] as string[],  animals: ['bird'] as string[],                  illustrious: [] as string[],                 quran: true,  dhikr: false },
-    months: { trees: 20, flowers: 5,  buildings: ['home'],        animals: ['bird','rabbit','squirrel'],           illustrious: ['radiant_fountain'],           quran: true,  dhikr: true  },
-    years:  { trees: 60, flowers: 12, buildings: ['home','mansion','palace'], animals: ['bird','rabbit','squirrel','deer'], illustrious: ['radiant_fountain','glowing_tree','floating_lantern','light_arch'], quran: true, dhikr: true },
+    days:   { trees: 3,  flowers: 0,  buildings: [] as string[],  animals: ['bird'] as string[],                  illustrious: [] as string[] },
+    months: { trees: 20, flowers: 5,  buildings: ['home'],        animals: ['bird','rabbit','squirrel'],           illustrious: ['radiant_fountain'] },
+    years:  { trees: 60, flowers: 12, buildings: ['home','mansion','palace'], animals: ['bird','rabbit','squirrel','deer'], illustrious: ['radiant_fountain','glowing_tree','floating_lantern','light_arch'] },
   };
   const p = presets[level];
 
@@ -480,56 +640,45 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years'): WorldState {
   const trees: Tree[] = Array.from({ length: p.trees }, (_, i) => ({
     id: `sim_tree_${i}`,
     stage: stages[Math.min(Math.floor(i / Math.max(1, Math.ceil(p.trees / 3))), 2)],
-    position: spiralPosition(i),
+    position: randomPosition(rng, occupied, cols, rows),
     createdAt: now,
     lastUpdated: now,
   }));
 
-  // Place flowers in gaps between trees
-  const occupied = new Set(trees.map(t => `${t.position.x},${t.position.y}`));
-  const flowers: Flower[] = [];
-  let flowerIdx = 0;
-  for (let ring = 1; flowers.length < p.flowers && ring < 15; ring++) {
-    for (let angle = 0; angle < 8 && flowers.length < p.flowers; angle++) {
-      const x = Math.round(Math.cos(angle * Math.PI / 4) * ring);
-      const y = Math.round(Math.sin(angle * Math.PI / 4) * ring);
-      const key = `${x},${y}`;
-      if (!occupied.has(key)) {
-        occupied.add(key);
-        flowers.push({ id: `sim_flower_${flowerIdx++}`, position: { x, y }, type: 'basic' });
-      }
-    }
-  }
+  const flowers: Flower[] = Array.from({ length: p.flowers }, (_, i) => ({
+    id: `sim_flower_${i}`,
+    position: randomPosition(rng, occupied, cols, rows),
+    type: 'basic' as const,
+  }));
 
-  // Buildings placed outside the tree cluster
   const buildingTypes = ['home', 'mansion', 'palace'] as const;
-  const buildings: Building[] = p.buildings.map((type, i) => {
-    const offset = (i + 1) * 3;
-    const pos = { x: -offset, y: offset };
-    occupied.add(`${pos.x},${pos.y}`);
-    return { id: `sim_bld_${i}`, type: type as typeof buildingTypes[number], position: pos, createdAt: now };
-  });
+  const buildings: Building[] = p.buildings.map((type, i) => ({
+    id: `sim_bld_${i}`,
+    type: type as typeof buildingTypes[number],
+    position: randomPosition(rng, occupied, cols, rows),
+    createdAt: now,
+  }));
 
-  // Animals scattered around
   const animalTypes = ['bird', 'rabbit', 'deer', 'squirrel'] as const;
-  const animals: Animal[] = p.animals.map((type, i) => {
-    const angle = (i * 2.3);
-    const radius = 4 + i * 2;
-    const pos = { x: Math.round(Math.cos(angle) * radius), y: Math.round(Math.sin(angle) * radius) };
-    return { id: `sim_animal_${i}`, type: type as typeof animalTypes[number], position: pos, createdAt: now };
-  });
+  const animals: Animal[] = p.animals.map((type, i) => ({
+    id: `sim_animal_${i}`,
+    type: type as typeof animalTypes[number],
+    position: randomPosition(rng, occupied, cols, rows),
+    createdAt: now,
+  }));
 
-  // Illustrious items at prominent positions
-  const illustriousItems: IllustriousItem[] = p.illustrious.map((type, i) => {
-    const offset = (i + 1) * 4;
-    const pos = { x: offset, y: -offset + 2 };
-    return { id: `sim_illus_${i}`, type: type as IllustriousItemType, position: pos, createdAt: now, streakDays: (i + 1) * 30 };
-  });
+  const illustriousItems: IllustriousItem[] = p.illustrious.map((type, i) => ({
+    id: `sim_illus_${i}`,
+    type: type as IllustriousItemType,
+    position: randomPosition(rng, occupied, cols, rows),
+    createdAt: now,
+    streakDays: (i + 1) * 30,
+  }));
 
   return {
     trees, flowers, buildings, animals, illustriousItems,
-    mapSize: { width: 20, height: 20 },
-    gridSize: 20,
+    mapSize: { width: gridSize, height: gridSize },
+    gridSize,
     lastUpdated: now,
   };
 }

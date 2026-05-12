@@ -366,15 +366,25 @@ function generateIllustriousItems() {
   save(c, 'illustrious', 'light_arch.png');
 }
 
+module.exports = {
+  TILE,
+  drawPixelRect,
+  drawPixelCircle,
+  newCanvas,
+  save,
+};
+
 // ============================================================
 // MAIN
 // ============================================================
 
-console.log('🎨 Generating placeholder sprites...');
-generateTiles();
-generateTrees();
-generateFlowers();
-generateBuildings();
-generateAnimals();
-generateIllustriousItems();
-console.log('\n✅ All sprites generated!');
+if (require.main === module) {
+  console.log('🎨 Generating placeholder sprites...');
+  generateTiles();
+  generateTrees();
+  generateFlowers();
+  generateBuildings();
+  generateAnimals();
+  generateIllustriousItems();
+  console.log('\n✅ All sprites generated!');
+}
