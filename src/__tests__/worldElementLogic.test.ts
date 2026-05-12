@@ -58,6 +58,33 @@ describe('WorldElementLogic', () => {
       expect(homes).toHaveLength(1);
       expect(mansions).toHaveLength(1);
     });
+
+    it('clusters same-type buildings adjacently', () => {
+      const result = WorldElementLogic.evaluateBuildings(120, [], makeTrees(120));
+      const homes = result.filter((b) => b.type === 'home');
+      // All homes should be within 3 tiles of at least one other home
+      for (let i = 1; i < homes.length; i++) {
+        const nearAny = homes.slice(0, i).some(
+          (h) => Math.abs(h.position.x - homes[i].position.x) + Math.abs(h.position.y - homes[i].position.y) <= 3
+        );
+        expect(nearAny).toBe(true);
+      }
+    });
+
+    it('keeps different building types in separate clusters', () => {
+      const result = WorldElementLogic.evaluateBuildings(120, [], makeTrees(120));
+      const homes = result.filter((b) => b.type === 'home');
+      const mansions = result.filter((b) => b.type === 'mansion');
+      if (homes.length > 0 && mansions.length > 0) {
+        // Centroid of each cluster should not be at the same position
+        const homeCx = homes.reduce((s, h) => s + h.position.x, 0) / homes.length;
+        const homeCy = homes.reduce((s, h) => s + h.position.y, 0) / homes.length;
+        const manCx = mansions.reduce((s, m) => s + m.position.x, 0) / mansions.length;
+        const manCy = mansions.reduce((s, m) => s + m.position.y, 0) / mansions.length;
+        const dist = Math.abs(homeCx - manCx) + Math.abs(homeCy - manCy);
+        expect(dist).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe('evaluateAnimals', () => {

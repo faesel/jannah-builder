@@ -127,18 +127,75 @@ export class WorldElementLogic {
     newBuildings: Building[]
   ): Building {
     const now = Date.now();
+    const allBuildings = [...existingBuildings, ...newBuildings];
+    const sameType = allBuildings.filter((b) => b.type === type);
+    const allOccupied = [
+      ...trees.map((t) => t.position),
+      ...allBuildings.map((b) => b.position),
+    ];
+
+    let position: Position;
+    if (sameType.length > 0) {
+      // Cluster: place adjacent to existing same-type buildings (street pattern)
+      position = this.findClusterPosition(sameType.map((b) => b.position), allOccupied);
+    } else {
+      // First of this type: place near tree cluster
+      position = this.findClearPosition(
+        trees.map((t) => t.position),
+        allBuildings.map((b) => b.position)
+      );
+    }
+
     return {
       id: `building_${type}_${now}_${newBuildings.length}`,
       type,
-      position: this.findClearPosition(
-        trees.map((t) => t.position),
-        [
-          ...existingBuildings.map((b) => b.position),
-          ...newBuildings.map((b) => b.position),
-        ]
-      ),
+      position,
       createdAt: now,
     };
+  }
+
+  /**
+   * Find a position adjacent to an existing cluster of same-type buildings.
+   * Tries immediate neighbours first (street-like), then expands outward.
+   */
+  private static findClusterPosition(
+    clusterPositions: Position[],
+    allOccupied: Position[]
+  ): Position {
+    const occupied = new Set(allOccupied.map((p) => `${p.x},${p.y}`));
+    // Cardinal directions for street-like adjacency
+    const directions = [
+      { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+    ];
+
+    // Try distance 1, then 2 from any cluster member
+    for (let dist = 1; dist <= 3; dist++) {
+      for (const pos of clusterPositions) {
+        for (const dir of directions) {
+          const x = pos.x + dir.dx * dist;
+          const y = pos.y + dir.dy * dist;
+          if (!occupied.has(`${x},${y}`)) {
+            return { x, y };
+          }
+        }
+      }
+    }
+
+    // Fallback: expand in a wider ring around the cluster centroid
+    const cx = Math.round(clusterPositions.reduce((s, p) => s + p.x, 0) / clusterPositions.length);
+    const cy = Math.round(clusterPositions.reduce((s, p) => s + p.y, 0) / clusterPositions.length);
+    for (let r = 2; r < 12; r++) {
+      for (let angle = 0; angle < 8; angle++) {
+        const x = cx + Math.round(r * Math.cos((angle * Math.PI) / 4));
+        const y = cy + Math.round(r * Math.sin((angle * Math.PI) / 4));
+        if (!occupied.has(`${x},${y}`)) {
+          return { x, y };
+        }
+      }
+    }
+
+    return { x: cx + 4, y: cy };
   }
 
   private static createAnimal(
