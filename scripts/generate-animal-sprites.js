@@ -156,15 +156,18 @@ function drawDeerUp(ctx) {
 }
 
 function drawDeerDown(ctx) {
-  drawPixelCircle(ctx, 16, 10, 4, colours.deer.body);
-  drawPixelRect(ctx, 11, 14, 10, 12, colours.deer.body);
-  drawPixelRect(ctx, 10, 16, 3, 6, colours.deer.body);
-  drawPixelRect(ctx, 19, 16, 3, 6, colours.deer.body);
-  drawPixelRect(ctx, 12, 26, 2, 4, colours.deer.legs);
-  drawPixelRect(ctx, 18, 26, 2, 4, colours.deer.legs);
-  drawPixelRect(ctx, 14, 10, 1, 1, colours.deer.eye);
-  drawPixelRect(ctx, 18, 10, 1, 1, colours.deer.eye);
-  drawPixelRect(ctx, 16, 13, 1, 1, colours.deer.nose);
+  // Walking downward (toward viewer) — body at top, head at bottom
+  drawPixelRect(ctx, 13, 2, 2, 6, colours.deer.antlers); // antlers peeking above
+  drawPixelRect(ctx, 18, 2, 2, 6, colours.deer.antlers);
+  drawPixelRect(ctx, 11, 6, 10, 12, colours.deer.body); // body top
+  drawPixelRect(ctx, 12, 4, 2, 4, colours.deer.legs); // front legs
+  drawPixelRect(ctx, 18, 4, 2, 4, colours.deer.legs);
+  drawPixelCircle(ctx, 16, 22, 4, colours.deer.body); // head at bottom
+  drawPixelRect(ctx, 14, 22, 1, 1, colours.deer.eye);
+  drawPixelRect(ctx, 18, 22, 1, 1, colours.deer.eye);
+  drawPixelRect(ctx, 16, 25, 1, 1, colours.deer.nose);
+  drawPixelRect(ctx, 12, 18, 2, 5, colours.deer.legs); // hind legs
+  drawPixelRect(ctx, 18, 18, 2, 5, colours.deer.legs);
 }
 
 function drawSquirrelSide(ctx, facing = 'right', headOffsetY = 0) {
@@ -190,15 +193,15 @@ function drawSquirrelSide(ctx, facing = 'right', headOffsetY = 0) {
 }
 
 function drawSquirrelUp(ctx) {
-  // Single tail curling up behind (viewed from back)
-  drawPixelCircle(ctx, 16, 10, 4, colours.squirrel.tail);
-  drawPixelCircle(ctx, 16, 7, 3, colours.squirrel.tail);
-  drawPixelCircle(ctx, 16, 20, 5, colours.squirrel.body);
-  drawPixelCircle(ctx, 16, 14, 3, colours.squirrel.body);
-  drawPixelRect(ctx, 13, 9, 2, 2, colours.squirrel.ear);
-  drawPixelRect(ctx, 17, 9, 2, 2, colours.squirrel.ear);
-  drawPixelRect(ctx, 14, 25, 2, 3, colours.squirrel.body);
-  drawPixelRect(ctx, 17, 25, 2, 3, colours.squirrel.body);
+  // Walking upward (away from viewer) — head at top, tail at bottom
+  drawPixelCircle(ctx, 16, 10, 3, colours.squirrel.body); // head
+  drawPixelRect(ctx, 13, 6, 2, 2, colours.squirrel.ear);
+  drawPixelRect(ctx, 17, 6, 2, 2, colours.squirrel.ear);
+  drawPixelCircle(ctx, 16, 17, 5, colours.squirrel.body); // body
+  drawPixelCircle(ctx, 16, 24, 4, colours.squirrel.tail); // tail bottom
+  drawPixelCircle(ctx, 16, 28, 3, colours.squirrel.tail); // tail tip
+  drawPixelRect(ctx, 13, 22, 2, 3, colours.squirrel.body); // feet
+  drawPixelRect(ctx, 17, 22, 2, 3, colours.squirrel.body);
 }
 
 function drawSquirrelDown(ctx) {
