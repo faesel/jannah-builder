@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 
 interface StatCardProps {
   label: string;
@@ -21,15 +21,24 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E5DD',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
     padding: 16,
     alignItems: 'center',
     minWidth: 140,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
   iconContainer: {
-    marginBottom: 4,
+    marginBottom: 6,
   },
   value: {
     fontSize: 28,

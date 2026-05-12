@@ -7,11 +7,11 @@ import {
   RefreshControl,
   Pressable,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../src/config/colors';
 import { StatCard } from '../../src/components/StatCard';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { Storage } from '../../src/persistence/storage';
@@ -155,7 +155,9 @@ export default function StatisticsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#8B9D83" />
           }
         >
-          <Ionicons name="leaf" size={64} color="#8B9D83" style={{ marginBottom: 16 }} />
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="leaf" size={40} color="#4A7C59" />
+          </View>
           <Text style={styles.emptyTitle}>Your garden awaits</Text>
           <Text style={styles.emptySubtitle}>
             Log your first prayer to begin your journey
@@ -168,7 +170,6 @@ export default function StatisticsScreen() {
   const { statistics, worldState, prayerLogs } = profile;
   const days = getLast7Days(prayerLogs);
 
-  // Compute live values from prayer logs so stats are always fresh
   const totalPrayersLogged = prayerLogs.reduce(
     (sum, log) => sum + Object.values(log.prayers).filter(Boolean).length, 0
   );
@@ -182,34 +183,34 @@ export default function StatisticsScreen() {
         contentContainerStyle={styles.scrollContent}
         bounces={true}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#8B9D83" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A8D5A2" />
         }
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Your Journey</Text>
-        </View>
-
-        {/* Streak section */}
-        <View style={styles.streakSection}>
-          <View style={styles.streakCard}>
-            <Text style={styles.streakValue}>{currentStreak}</Text>
-            <Text style={styles.streakLabel}>
-              {currentStreak === 1 ? 'day' : 'days'} continuing
-            </Text>
-          </View>
-          <View style={styles.streakDivider} />
-          <View style={styles.streakCard}>
-            <Text style={styles.streakValue}>{longestStreak}</Text>
-            <Text style={styles.streakLabel}>
-              {longestStreak === 1 ? 'day' : 'days'} longest
-            </Text>
+        {/* Header card */}
+        <View style={styles.headerCard}>
+          <Text style={styles.headerSubtitle}>Your Journey</Text>
+          <Text style={styles.headerTitle}>Statistics</Text>
+          <View style={styles.streakRow}>
+            <View style={styles.streakItem}>
+              <Text style={styles.streakValue}>{currentStreak}</Text>
+              <Text style={styles.streakLabel}>
+                {currentStreak === 1 ? 'day' : 'days'} continuing
+              </Text>
+            </View>
+            <View style={styles.streakDivider} />
+            <View style={styles.streakItem}>
+              <Text style={styles.streakValue}>{longestStreak}</Text>
+              <Text style={styles.streakLabel}>
+                {longestStreak === 1 ? 'day' : 'days'} longest
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* 7-day history */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>This Week</Text>
-          <View style={styles.weekRow}>
+          <View style={styles.weekCard}>
             {days.map((day) => (
               <View
                 key={day.date}
@@ -307,16 +308,23 @@ export default function StatisticsScreen() {
 
         {/* Season & garden age */}
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your World</Text>
           <View style={styles.worldCard}>
             <View style={styles.worldRow}>
-              <Text style={styles.worldLabel}>Season</Text>
+              <View style={styles.worldLabelRow}>
+                <Ionicons name="sunny" size={18} color="#C4A243" style={{ marginRight: 8 }} />
+                <Text style={styles.worldLabel}>Season</Text>
+              </View>
               <Text style={styles.worldValue}>
                 {SEASON_LABELS[worldState.season] ?? worldState.season}
               </Text>
             </View>
             <View style={styles.worldDivider} />
             <View style={styles.worldRow}>
-              <Text style={styles.worldLabel}>Garden age</Text>
+              <View style={styles.worldLabelRow}>
+                <Ionicons name="time" size={18} color="#7B8FA6" style={{ marginRight: 8 }} />
+                <Text style={styles.worldLabel}>Garden age</Text>
+              </View>
               <Text style={styles.worldValue}>
                 {statistics.mapAge} {statistics.mapAge === 1 ? 'day' : 'days'}
               </Text>
@@ -326,12 +334,16 @@ export default function StatisticsScreen() {
 
         {/* Reset */}
         <Pressable
-          style={styles.resetButton}
+          style={({ pressed }) => [
+            styles.resetButton,
+            pressed && styles.resetButtonPressed,
+          ]}
           onPress={handleResetGarden}
           accessibilityRole="button"
           accessibilityLabel="Reset garden and clear all data"
           accessibilityHint="Double tap to reset. You will be asked to confirm."
         >
+          <Ionicons name="refresh" size={16} color="#A06060" style={{ marginRight: 6 }} />
           <Text style={styles.resetText}>Reset Garden</Text>
         </Pressable>
       </ScrollView>
@@ -342,7 +354,7 @@ export default function StatisticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.appBackground,
+    backgroundColor: '#EFF3EC',
   },
   centerContent: {
     flex: 1,
@@ -353,25 +365,26 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  header: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#2C4A3E',
-  },
 
-  // Empty state
+  /* ── Empty state ── */
   emptyContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
   },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(74, 124, 89, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   emptyTitle: {
     fontSize: 22,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2C4A3E',
     marginBottom: 8,
   },
@@ -382,95 +395,140 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // Streak
-  streakSection: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E5DD',
-    padding: 20,
+  /* ── Header card ── */
+  headerCard: {
+    backgroundColor: '#4A7C59',
+    borderRadius: 20,
+    padding: 24,
+    paddingTop: 28,
     marginBottom: 24,
-    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: { elevation: 8 },
+    }),
   },
-  streakCard: {
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 20,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 14,
+    padding: 16,
+  },
+  streakItem: {
     flex: 1,
     alignItems: 'center',
   },
   streakValue: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#4A7C59',
+    color: '#FFFFFF',
   },
   streakLabel: {
-    fontSize: 14,
-    color: '#8B9D83',
-    marginTop: 4,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
   },
   streakDivider: {
     width: 1,
-    height: 48,
-    backgroundColor: '#E0E5DD',
-    marginHorizontal: 16,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: 12,
   },
 
-  // Sections
+  /* ── Sections ── */
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2C4A3E',
+    letterSpacing: 0.3,
     marginBottom: 12,
   },
 
-  // Toggle
+  /* ── Toggle ── */
   toggleRow: {
     flexDirection: 'row',
     backgroundColor: '#E0E5DD',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 3,
     marginBottom: 12,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     alignItems: 'center',
   },
   toggleButtonActive: {
     backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+      android: { elevation: 2 },
+    }),
   },
   toggleText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#8B9D83',
   },
   toggleTextActive: {
     color: '#2C4A3E',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
-  // 7-day history
-  weekRow: {
+  /* ── 7-day history ── */
+  weekCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E5DD',
-    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
+    paddingVertical: 18,
     paddingHorizontal: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
   dayColumn: {
     alignItems: 'center',
     flex: 1,
   },
   dayDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
@@ -481,8 +539,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   dayCount: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#8B9D83',
+    fontWeight: '500',
     marginBottom: 2,
   },
   dayLabel: {
@@ -494,7 +553,7 @@ const styles = StyleSheet.create({
     color: '#4A7C59',
   },
 
-  // Stats grid
+  /* ── Stats grid ── */
   statsGrid: {
     gap: 10,
   },
@@ -505,46 +564,66 @@ const styles = StyleSheet.create({
     width: 10,
   },
 
-  // World summary
+  /* ── World summary ── */
   worldCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E0E5DD',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
     padding: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
   worldRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
+  },
+  worldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   worldLabel: {
     fontSize: 15,
     color: '#8B9D83',
+    fontWeight: '500',
   },
   worldValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#2C4A3E',
   },
   worldDivider: {
     height: 1,
-    backgroundColor: '#E0E5DD',
+    backgroundColor: '#E8ECE5',
   },
 
-  // Reset
+  /* ── Reset ── */
   resetButton: {
+    flexDirection: 'row',
     marginTop: 16,
     paddingVertical: 14,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#D4A0A0',
+    backgroundColor: 'rgba(212, 160, 160, 0.06)',
+  },
+  resetButtonPressed: {
+    backgroundColor: 'rgba(212, 160, 160, 0.15)',
   },
   resetText: {
     fontSize: 14,
     color: '#A06060',
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
