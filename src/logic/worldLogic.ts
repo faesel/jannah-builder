@@ -2,7 +2,7 @@
  * World Logic
  * Processes daily game state updates based on prayer logs.
  *
- * This is the central orchestrator that calls into SeasonLogic,
+ * This is the central orchestrator that calls into
  * IllustriousItemLogic, WorldElementLogic, and TreeLogic to
  * produce a single DayProcessingResult for each elapsed day.
  */
@@ -10,7 +10,6 @@
 import { UserProfile, DayProcessingResult } from '../types/models';
 import { PrayerLogic } from './prayerLogic';
 import { TreeLogic } from './treeLogic';
-import { SeasonLogic } from './seasonLogic';
 import { IllustriousItemLogic } from './illustriousItemLogic';
 import { WorldElementLogic } from './worldElementLogic';
 
@@ -31,7 +30,6 @@ export class WorldLogic {
       animalsAdded: [],
       illustriousItemsAdded: [],
       illustriousItemsRemoved: [],
-      seasonChanged: false,
     };
 
     const dayLog = profile.prayerLogs.find((log) => log.date === date);
@@ -39,7 +37,7 @@ export class WorldLogic {
 
     // --- Trees: generation or decay ---
     if (dayComplete) {
-      const consecutiveDays = SeasonLogic.countStreakUpTo(
+      const consecutiveDays = PrayerLogic.countConsecutiveDaysFrom(
         profile.prayerLogs,
         date
       );
@@ -63,17 +61,6 @@ export class WorldLogic {
     const projectedTrees = this.projectTrees(profile, result);
     const projectedTreeCount = projectedTrees.length;
 
-    // --- Season ---
-    const seasonResult = SeasonLogic.evaluateSeasonChange(
-      profile.worldState.season,
-      profile.prayerLogs,
-      date
-    );
-    if (seasonResult.changed) {
-      result.seasonChanged = true;
-      result.newSeason = seasonResult.newSeason;
-    }
-
     // --- Buildings & animals ---
     result.buildingsAdded = WorldElementLogic.evaluateBuildings(
       projectedTreeCount,
@@ -87,7 +74,10 @@ export class WorldLogic {
     );
 
     // --- Illustrious items ---
-    const streak = SeasonLogic.countStreakUpTo(profile.prayerLogs, date);
+    const streak = PrayerLogic.countConsecutiveDaysFrom(
+      profile.prayerLogs,
+      date
+    );
     const illustriousResult = IllustriousItemLogic.evaluate(
       streak,
       profile.worldState.illustriousItems,
@@ -138,9 +128,6 @@ export class WorldLogic {
         profile.worldState.mapSize
       ) ?? profile.worldState.mapSize;
 
-    // Season
-    const season = result.newSeason ?? profile.worldState.season;
-
     // Statistics
     const statistics = {
       ...profile.statistics,
@@ -170,7 +157,6 @@ export class WorldLogic {
         illustriousItems: profile.worldState.illustriousItems
           .filter((item) => !result.illustriousItemsRemoved.includes(item.id))
           .concat(result.illustriousItemsAdded),
-        season,
         mapSize: newMapSize,
         gridSize: Math.max(newMapSize.width, newMapSize.height),
         lastUpdated: Date.now(),

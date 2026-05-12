@@ -4,7 +4,7 @@
  */
 
 import { UserProfile, WorldState, Statistics, StreakData, AppState, AppSettings } from '../types/models';
-import { GAME_CONFIG, Season } from '../config/game.config';
+import { GAME_CONFIG } from '../config/game.config';
 import { Storage, STORAGE_KEYS } from './storage';
 
 export class ProfileManager {
@@ -21,7 +21,6 @@ export class ProfileManager {
       buildings: [],
       animals: [],
       illustriousItems: [],
-      season: 'spring' as Season,
       mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
       gridSize: GAME_CONFIG.map.initialGridSize,
       lastUpdated: now,

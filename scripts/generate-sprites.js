@@ -77,32 +77,30 @@ function adjustBrightness(hex, amount) {
 function generateTiles() {
   console.log('\n🟩 Tiles');
 
-  const grassColors = {
-    spring: '#7EC850',
-    summer: '#5DAE3B',
-    autumn: '#C4A243',
-    winter: '#D4DFE6',
-  };
+  const grassBase = '#5DAE3B';
+  const grassDark = adjustBrightness(grassBase, -20);
 
-  // Seed random for reproducible texture
-  let seed = 42;
-  function seededRandom() {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  }
+  // 6 grass variants with different dark spot patterns
+  const variantPatches = [
+    // Each variant: array of [x, y, w, h] dark patches
+    [[3, 4, 3, 2], [14, 8, 4, 2], [24, 20, 3, 3], [8, 26, 2, 3]],
+    [[20, 3, 3, 3], [6, 12, 4, 2], [26, 16, 2, 3], [12, 24, 3, 2]],
+    [[10, 2, 2, 3], [22, 10, 3, 2], [4, 18, 3, 3], [18, 26, 4, 2]],
+    [[2, 8, 4, 2], [16, 4, 2, 3], [8, 20, 3, 2], [26, 24, 3, 3]],
+    [[14, 2, 3, 2], [4, 14, 2, 3], [22, 18, 4, 2], [10, 28, 3, 2]],
+    [[24, 6, 2, 3], [8, 10, 3, 2], [18, 22, 3, 3], [2, 26, 4, 2]],
+  ];
 
-  for (const [season, color] of Object.entries(grassColors)) {
+  for (let v = 0; v < variantPatches.length; v++) {
     const c = newCanvas();
     const ctx = c.getContext('2d');
-    fillTile(ctx, color);
-    ctx.fillStyle = adjustBrightness(color, -15);
-    seed = 42; // reset seed per season for consistent texture
-    for (let i = 0; i < 8; i++) {
-      const px = Math.floor(seededRandom() * TILE);
-      const py = Math.floor(seededRandom() * TILE);
-      ctx.fillRect(px, py, 1, 1);
+    fillTile(ctx, grassBase);
+    ctx.fillStyle = grassDark;
+    for (const [px, py, pw, ph] of variantPatches[v]) {
+      ctx.fillRect(px, py, pw, ph);
     }
-    save(c, 'tiles', `grass_${season}.png`);
+    const filename = v === 0 ? 'grass_summer.png' : `grass_v${v + 1}.png`;
+    save(c, 'tiles', filename);
   }
 
   // Path
@@ -123,6 +121,11 @@ function generateTiles() {
   save(waterCanvas, 'tiles', 'water.png');
 
   // Dirt
+  let seed = 99;
+  function seededRandom() {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  }
   const dirtCanvas = newCanvas();
   const dirtCtx = dirtCanvas.getContext('2d');
   fillTile(dirtCtx, '#8B7355');

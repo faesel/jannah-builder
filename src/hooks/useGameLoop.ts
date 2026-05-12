@@ -80,8 +80,7 @@ export function useGameLoop(): GameLoopState {
               result.buildingsAdded.length > 0 ||
               result.animalsAdded.length > 0 ||
               result.illustriousItemsAdded.length > 0 ||
-              result.illustriousItemsRemoved.length > 0 ||
-              result.seasonChanged;
+              result.illustriousItemsRemoved.length > 0;
 
             if (hasChanges) {
               currentProfile = WorldLogic.applyProcessingResult(

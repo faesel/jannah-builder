@@ -9,11 +9,12 @@
 
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { WorldState, Tree, Flower, Building, Animal, IllustriousItem } from '../types/models';
-import { Season, GAME_CONFIG } from '../config/game.config';
+import { GAME_CONFIG } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
+
+// Debug flag moved to GAME_CONFIG.debug.showAllSprites
 
 interface JannahCanvasProps {
   worldState: WorldState;
@@ -24,7 +25,10 @@ interface JannahCanvasProps {
 }
 
 export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, dhikrLogged }: JannahCanvasProps) {
-  const season = worldState.season;
+  if (GAME_CONFIG.debug.showAllSprites) {
+    return <SpriteDebugOnMap screenWidth={screenWidth} screenHeight={screenHeight} />;
+  }
+
   const gridSize = worldState.gridSize ?? GAME_CONFIG.map.initialGridSize;
 
   // Tile size: fit gridSize tiles along the shorter screen axis
@@ -40,30 +44,31 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
   const centerCol = Math.floor(cols / 2);
   const centerRow = Math.floor(rows / 2);
 
-  // Grass tiles — colored Views with subtle checkerboard for texture
+  // Grass tiles — rendered using variant sprites for natural look
+  const grassVariants = TILE_SPRITES.grass;
   const grassTiles = useMemo(() => {
     const tiles: React.ReactElement[] = [];
-    const light = COLORS.grassBySeason[season];
-    const dark = COLORS.grassDarkBySeason[season];
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
+        // Deterministic variant per tile using simple hash
+        const variant = ((row * 7) + (col * 13) + (row * col * 3)) % grassVariants.length;
         tiles.push(
-          <View
+          <Image
             key={`g${row}_${col}`}
+            source={grassVariants[variant]}
             style={{
               position: 'absolute',
               left: col * tileSize,
               top: row * tileSize,
               width: tileSize,
               height: tileSize,
-              backgroundColor: (row + col) % 2 === 0 ? light : dark,
             }}
           />,
         );
       }
     }
     return tiles;
-  }, [season, rows, cols, tileSize]);
+  }, [rows, cols, tileSize, grassVariants]);
 
   // Debug gridlines
   const gridLines = useMemo(() => {
@@ -92,7 +97,7 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
   }, [cols, rows, tileSize]);
 
   return (
-    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grassBySeason[season] }}>
+    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grass }}>
       {/* Grass tile Views for checkerboard texture */}
       {grassTiles}
 
@@ -100,17 +105,14 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 
       {/* Signboard at center */}
       <View style={[styles.signboardContainer, {
-        left: centerCol * tileSize - tileSize * 0.25,
-        top: centerRow * tileSize - tileSize * 0.5,
-        width: tileSize * 1.5,
+        left: centerCol * tileSize,
+        top: centerRow * tileSize,
+        width: tileSize,
       }]}>
         <Image
           source={LANDMARK_SPRITES.signboard}
-          style={{ width: tileSize * 1.5, height: tileSize * 1.5 }}
+          style={{ width: tileSize, height: tileSize }}
         />
-        <Text style={[styles.signboardText, { fontSize: Math.max(6, tileSize * 0.3) }]}>
-          Your Garden
-        </Text>
       </View>
 
       {/* Flowers */}
@@ -125,7 +127,7 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 
       {/* Trees */}
       {worldState.trees.map((t) => (
-        <TreeSprite key={t.id} tree={t} season={season} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
+        <TreeSprite key={t.id} tree={t} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Animals */}
@@ -138,18 +140,15 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
         <IllustriousSprite key={i.id} item={i} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
-      {/* Qur'an ambient overlay */}
+      {/* Qur'an glowing flowers */}
       {quranLogged && (
-        <QuranOverlay screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
+        <QuranFlowers cols={cols} rows={rows} tileSize={tileSize} />
       )}
 
       {/* Dhikr floating particles */}
       {dhikrLogged && (
         <DhikrParticles screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
       )}
-
-      {/* Season ambient decorations */}
-      <SeasonDecorations season={season} screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
     </View>
   );
 });
@@ -158,12 +157,12 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 // Trees
 // ============================================================
 
-function TreeSprite({ tree, season, center, centerRow, tileSize }: {
-  tree: Tree; season: Season; center: number; centerRow: number; tileSize: number;
+function TreeSprite({ tree, center, centerRow, tileSize }: {
+  tree: Tree; center: number; centerRow: number; tileSize: number;
 }) {
   return (
     <Image
-      source={TREE_SPRITES[tree.stage][season]}
+      source={TREE_SPRITES[tree.stage]}
       style={{
         position: 'absolute',
         left: (tree.position.x + center) * tileSize,
@@ -182,16 +181,15 @@ function TreeSprite({ tree, season, center, centerRow, tileSize }: {
 function FlowerSprite({ flower, center, centerRow, tileSize }: {
   flower: Flower; center: number; centerRow: number; tileSize: number;
 }) {
-  const size = tileSize * 0.5;
   return (
     <Image
       source={flower.type === 'enhanced' ? FLOWER_SPRITES.enhanced : FLOWER_SPRITES.basic}
       style={{
         position: 'absolute',
-        left: (flower.position.x + center) * tileSize + tileSize * 0.25,
-        top: (flower.position.y + centerRow) * tileSize + tileSize * 0.25,
-        width: size,
-        height: size,
+        left: (flower.position.x + center) * tileSize,
+        top: (flower.position.y + centerRow) * tileSize,
+        width: tileSize,
+        height: tileSize,
       }}
     />
   );
@@ -204,16 +202,15 @@ function FlowerSprite({ flower, center, centerRow, tileSize }: {
 function BuildingSprite({ building, center, centerRow, tileSize }: {
   building: Building; center: number; centerRow: number; tileSize: number;
 }) {
-  const size = tileSize * 2;
   return (
     <Image
       source={BUILDING_SPRITES[building.type]}
       style={{
         position: 'absolute',
-        left: (building.position.x + center) * tileSize - tileSize * 0.5,
-        top: (building.position.y + centerRow) * tileSize - tileSize,
-        width: size,
-        height: size,
+        left: (building.position.x + center) * tileSize,
+        top: (building.position.y + centerRow) * tileSize,
+        width: tileSize,
+        height: tileSize,
       }}
     />
   );
@@ -226,16 +223,15 @@ function BuildingSprite({ building, center, centerRow, tileSize }: {
 function AnimalSprite({ animal, center, centerRow, tileSize }: {
   animal: Animal; center: number; centerRow: number; tileSize: number;
 }) {
-  const size = tileSize * 0.75;
   return (
     <Image
       source={ANIMAL_SPRITES[animal.type]}
       style={{
         position: 'absolute',
-        left: (animal.position.x + center) * tileSize + tileSize * 0.125,
-        top: (animal.position.y + centerRow) * tileSize + tileSize * 0.125,
-        width: size,
-        height: size,
+        left: (animal.position.x + center) * tileSize,
+        top: (animal.position.y + centerRow) * tileSize,
+        width: tileSize,
+        height: tileSize,
       }}
     />
   );
@@ -248,7 +244,6 @@ function AnimalSprite({ animal, center, centerRow, tileSize }: {
 function IllustriousSprite({ item, center, centerRow, tileSize }: {
   item: IllustriousItem; center: number; centerRow: number; tileSize: number;
 }) {
-  const size = tileSize * 1.5;
   const pulseAnim = useRef(new Animated.Value(0.7)).current;
 
   useEffect(() => {
@@ -265,45 +260,92 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
   return (
     <Animated.View
       style={[styles.illustriousGlow, {
-        left: (item.position.x + center) * tileSize - tileSize * 0.25,
-        top: (item.position.y + centerRow) * tileSize - tileSize * 0.25,
-        width: size,
-        height: size,
+        left: (item.position.x + center) * tileSize,
+        top: (item.position.y + centerRow) * tileSize,
+        width: tileSize,
+        height: tileSize,
         opacity: pulseAnim,
       }]}
       importantForAccessibility="no"
     >
-      <Image source={ILLUSTRIOUS_SPRITES[item.type]} style={{ width: size, height: size }} />
+      <Image source={ILLUSTRIOUS_SPRITES[item.type]} style={{ width: tileSize, height: tileSize }} />
     </Animated.View>
   );
 }
 
 // ============================================================
-// Qur'an Ambient Overlay
+// Qur'an Glowing Flowers
 // ============================================================
 
-function QuranOverlay({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+const QURAN_FLOWER_COUNT = 3;
+
+function QuranFlowers({ cols, rows, tileSize }: { cols: number; rows: number; tileSize: number }) {
+  // Place flowers at fixed, visible positions spread across the map
+  const flowers = useMemo(() => {
+    const positions = [
+      { col: Math.floor(cols * 0.25), row: Math.floor(rows * 0.25) },
+      { col: Math.floor(cols * 0.75), row: Math.floor(rows * 0.35) },
+      { col: Math.floor(cols * 0.5), row: Math.floor(rows * 0.65) },
+    ];
+    return positions.map((p, i) => ({ id: i, ...p }));
+  }, [cols, rows]);
+
+  return (
+    <>
+      {flowers.map((f) => (
+        <GlowingFlower key={f.id} col={f.col} row={f.row} tileSize={tileSize} />
+      ))}
+    </>
+  );
+}
+
+function GlowingFlower({ col, row, tileSize }: { col: number; row: number; tileSize: number }) {
+  const pulseAnim = useRef(new Animated.Value(0.7)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }).start();
-    return () => fadeAnim.setValue(0);
-  }, [fadeAnim]);
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [pulseAnim]);
+
+  const size = tileSize * 2;
 
   return (
     <Animated.View
       style={{
         position: 'absolute',
-        left: 0,
-        top: 0,
-        width: screenWidth,
-        height: screenHeight,
-        backgroundColor: 'rgba(255, 235, 180, 0.10)',
-        opacity: fadeAnim,
+        left: col * tileSize - tileSize * 0.5,
+        top: row * tileSize - tileSize * 0.5,
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: pulseAnim,
       }}
-      pointerEvents="none"
       importantForAccessibility="no"
-    />
+    >
+      <View style={{
+        position: 'absolute',
+        width: size,
+        height: size,
+        borderRadius: tileSize,
+        backgroundColor: 'rgba(255, 215, 0, 0.35)',
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 16,
+        elevation: 10,
+      }} />
+      <Image
+        source={FLOWER_SPRITES.enhanced}
+        style={{ width: tileSize * 1.5, height: tileSize * 1.5 }}
+      />
+    </Animated.View>
   );
 }
 
@@ -386,56 +428,6 @@ function FloatingDot({ x, startY, size, duration, delay, screenHeight }: {
   );
 }
 
-// ============================================================
-// Season Decorations
-// ============================================================
-
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
-
-const DECORATION_ICONS: Record<Season, { name: IoniconsName; color: string; count: number }> = {
-  spring: { name: 'flower-outline', color: '#E8A0B4', count: 6 },
-  summer: { name: 'sunny-outline', color: '#F5C842', count: 3 },
-  autumn: { name: 'leaf-outline', color: '#C87941', count: 8 },
-  winter: { name: 'snow-outline', color: '#A8C8E8', count: 8 },
-};
-
-function SeasonDecorations({ season, screenWidth, screenHeight }: {
-  season: Season; screenWidth: number; screenHeight: number;
-}) {
-  const decorations = useMemo(() => {
-    const { name, color, count } = DECORATION_ICONS[season];
-    return Array.from({ length: count }, (_, i) => ({
-      id: i,
-      name,
-      color,
-      x: Math.random() * screenWidth * 0.9 + screenWidth * 0.05,
-      y: Math.random() * screenHeight * 0.9 + screenHeight * 0.05,
-      size: 12 + Math.random() * 8,
-      rotation: Math.floor(Math.random() * 360),
-    }));
-  }, [season, screenWidth, screenHeight]);
-
-  return (
-    <>
-      {decorations.map((d) => (
-        <View
-          key={d.id}
-          style={{
-            position: 'absolute',
-            left: d.x,
-            top: d.y,
-            opacity: 0.4,
-            transform: [{ rotate: `${d.rotation}deg` }],
-          }}
-          importantForAccessibility="no-hide-descendants"
-        >
-          <Ionicons name={d.name} size={d.size} color={d.color} />
-        </View>
-      ))}
-    </>
-  );
-}
-
 const styles = StyleSheet.create({
   illustriousGlow: {
     position: 'absolute',
@@ -449,9 +441,103 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
   },
-  signboardText: {
-    color: '#5C3D0E',
-    fontWeight: '600',
-    marginTop: 2,
-  },
 });
+
+// ============================================================
+// Sprite Debug Grid — toggle with DEBUG_SHOW_ALL_SPRITES
+// ============================================================
+
+const ALL_SPRITES: { label: string; source: number }[] = [
+  // Tiles
+  { label: 'grass_1', source: TILE_SPRITES.grass[0] },
+  { label: 'grass_2', source: TILE_SPRITES.grass[1] },
+  { label: 'grass_3', source: TILE_SPRITES.grass[2] },
+  { label: 'grass_4', source: TILE_SPRITES.grass[3] },
+  { label: 'grass_5', source: TILE_SPRITES.grass[4] },
+  { label: 'grass_6', source: TILE_SPRITES.grass[5] },
+  { label: 'path', source: TILE_SPRITES.path },
+  { label: 'water', source: TILE_SPRITES.water },
+  { label: 'dirt', source: TILE_SPRITES.dirt },
+  { label: 'fence_v', source: TILE_SPRITES.fence_vertical },
+  { label: 'fence_h', source: TILE_SPRITES.fence_horizontal },
+  { label: 'fence_c', source: TILE_SPRITES.fence_corner },
+  // Trees
+  { label: 'sapling', source: TREE_SPRITES.sapling },
+  { label: 'young', source: TREE_SPRITES.young },
+  { label: 'mature', source: TREE_SPRITES.mature },
+  // Flowers
+  { label: 'basic', source: FLOWER_SPRITES.basic },
+  { label: 'enhanced', source: FLOWER_SPRITES.enhanced },
+  // Buildings
+  { label: 'home', source: BUILDING_SPRITES.home },
+  { label: 'mansion', source: BUILDING_SPRITES.mansion },
+  { label: 'palace', source: BUILDING_SPRITES.palace },
+  // Animals
+  { label: 'bird', source: ANIMAL_SPRITES.bird },
+  { label: 'rabbit', source: ANIMAL_SPRITES.rabbit },
+  { label: 'deer', source: ANIMAL_SPRITES.deer },
+  { label: 'squirrel', source: ANIMAL_SPRITES.squirrel },
+  // Illustrious
+  { label: 'fountain', source: ILLUSTRIOUS_SPRITES.radiant_fountain },
+  { label: 'glow_tree', source: ILLUSTRIOUS_SPRITES.glowing_tree },
+  { label: 'lantern', source: ILLUSTRIOUS_SPRITES.floating_lantern },
+  { label: 'arch', source: ILLUSTRIOUS_SPRITES.light_arch },
+  // Landmarks
+  { label: 'signboard', source: LANDMARK_SPRITES.signboard },
+];
+
+function SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+  const gridSize = GAME_CONFIG.map.initialGridSize;
+  const tileSize = Math.max(
+    GAME_CONFIG.map.minTileSize,
+    Math.floor(Math.min(screenWidth, screenHeight) / gridSize),
+  );
+  const cols = Math.ceil(screenWidth / tileSize);
+  const rows = Math.ceil(screenHeight / tileSize);
+
+  // Grass background
+  const grassVariants = TILE_SPRITES.grass;
+  const grassTiles: React.ReactElement[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const variant = ((r * 7) + (c * 13) + (r * c * 3)) % grassVariants.length;
+      grassTiles.push(
+        <Image
+          key={`g${r}_${c}`}
+          source={grassVariants[variant]}
+          style={{ position: 'absolute', left: c * tileSize, top: r * tileSize, width: tileSize, height: tileSize }}
+        />
+      );
+    }
+  }
+
+  // Place sprites sequentially, leaving a 1-tile gap between each, wrapping rows
+  // Start at row 1, col 1 to give a margin
+  const spriteElements: React.ReactElement[] = [];
+  let col = 1;
+  let row = 1;
+  for (const sprite of ALL_SPRITES) {
+    if (col >= cols - 1) {
+      col = 1;
+      row += 2; // leave a row gap for the label
+    }
+    if (row >= rows - 1) break;
+
+    spriteElements.push(
+      <View key={sprite.label} style={{ position: 'absolute', left: col * tileSize, top: row * tileSize, alignItems: 'center' }}>
+        <Image source={sprite.source} style={{ width: tileSize, height: tileSize }} resizeMode="contain" />
+        <Text style={{ color: '#FFF', fontSize: 8, textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 2, borderRadius: 2 }}>
+          {sprite.label}
+        </Text>
+      </View>
+    );
+    col += 2; // leave a tile gap
+  }
+
+  return (
+    <View style={{ width: cols * tileSize, height: rows * tileSize }}>
+      {grassTiles}
+      {spriteElements}
+    </View>
+  );
+}

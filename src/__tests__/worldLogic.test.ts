@@ -14,7 +14,6 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
       buildings: [],
       animals: [],
       illustriousItems: [],
-      season: 'spring',
       mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
       gridSize: GAME_CONFIG.map.initialGridSize,
       lastUpdated: 0,
@@ -103,8 +102,7 @@ describe('WorldLogic', () => {
           buildings: [],
           animals: [],
           illustriousItems: [],
-          season: 'spring',
-           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
           lastUpdated: 0,
         },
@@ -113,17 +111,6 @@ describe('WorldLogic', () => {
       expect(
         result.treesDecayed.length + result.treesRemoved.length
       ).toBe(1);
-    });
-
-    it('evaluates season change', () => {
-      // Enable seasons for this test
-      (GAME_CONFIG.seasons as any).enabled = true;
-      const logs = consecutiveLogs('2026-03-14', 14);
-      const profile = makeProfile({ prayerLogs: logs });
-      const result = WorldLogic.processDay(profile, '2026-03-14');
-      expect(result.seasonChanged).toBe(true);
-      expect(result.newSeason).toBe('summer');
-      (GAME_CONFIG.seasons as any).enabled = false;
     });
   });
 
@@ -161,7 +148,6 @@ describe('WorldLogic', () => {
           buildings: [],
           animals: [],
           illustriousItems: [],
-          season: 'spring',
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
           lastUpdated: 0,
@@ -175,28 +161,10 @@ describe('WorldLogic', () => {
         animalsAdded: [],
         illustriousItemsAdded: [],
         illustriousItemsRemoved: [],
-        seasonChanged: false,
       };
       const updated = WorldLogic.applyProcessingResult(profile, result);
       expect(updated.worldState.trees).toHaveLength(0);
       expect(updated.statistics.totalTreesDecayed).toBe(1);
-    });
-
-    it('updates season in world state', () => {
-      const profile = makeProfile();
-      const result: ReturnType<typeof WorldLogic.processDay> = {
-        treesAdded: [],
-        treesDecayed: [],
-        treesRemoved: [],
-        buildingsAdded: [],
-        animalsAdded: [],
-        illustriousItemsAdded: [],
-        illustriousItemsRemoved: [],
-        seasonChanged: true,
-        newSeason: 'summer',
-      };
-      const updated = WorldLogic.applyProcessingResult(profile, result);
-      expect(updated.worldState.season).toBe('summer');
     });
   });
 });

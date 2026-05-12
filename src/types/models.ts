@@ -2,7 +2,7 @@
  * Core data model type definitions for Jannah Builder
  */
 
-import { TreeStage, Season, IllustriousItemType } from '../config/game.config';
+import { TreeStage, IllustriousItemType } from '../config/game.config';
 
 // ===== Prayer Logging =====
 
@@ -45,7 +45,6 @@ export interface WorldState {
   buildings: Building[];
   animals: Animal[];
   illustriousItems: IllustriousItem[];
-  season: Season;
   mapSize: {
     width: number;
     height: number;
@@ -140,8 +139,6 @@ export interface DayProcessingResult {
   animalsAdded: Animal[];
   illustriousItemsAdded: IllustriousItem[];
   illustriousItemsRemoved: string[]; // Item IDs
-  seasonChanged: boolean;
-  newSeason?: Season;
 }
 
 // ===== Helper Types =====

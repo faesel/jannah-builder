@@ -36,7 +36,6 @@ describe('ProfileManager', () => {
     it('initialises an empty world state', () => {
       const profile = ProfileManager.createProfile('Test');
       expect(profile.worldState.trees).toEqual([]);
-      expect(profile.worldState.season).toBe('spring');
       expect(profile.worldState.gridSize).toBe(GAME_CONFIG.map.initialGridSize);
     });
 

@@ -52,7 +52,7 @@ export default function TabLayout() {
         options={{
           title: 'View Jannah',
           tabBarLabel: 'Jannah',
-          sceneStyle: { backgroundColor: COLORS.grassBySeason.spring },
+          sceneStyle: { backgroundColor: COLORS.grass },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'leaf' : 'leaf-outline'} size={24} color={color} />
           ),

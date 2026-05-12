@@ -19,13 +19,6 @@ import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { UserProfile, PrayerLog } from '../../src/types/models';
 import { AppInitializer } from '../../src/logic/appInitializer';
 
-const SEASON_LABELS: Record<string, string> = {
-  spring: 'Spring',
-  summer: 'Summer',
-  autumn: 'Autumn',
-  winter: 'Winter',
-};
-
 type DayStatus = 'complete' | 'partial' | 'missed';
 
 interface DayInfo {
@@ -306,20 +299,10 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        {/* Season & garden age */}
+        {/* Garden age */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your World</Text>
           <View style={styles.worldCard}>
-            <View style={styles.worldRow}>
-              <View style={styles.worldLabelRow}>
-                <Ionicons name="sunny" size={18} color="#C4A243" style={{ marginRight: 8 }} />
-                <Text style={styles.worldLabel}>Season</Text>
-              </View>
-              <Text style={styles.worldValue}>
-                {SEASON_LABELS[worldState.season] ?? worldState.season}
-              </Text>
-            </View>
-            <View style={styles.worldDivider} />
             <View style={styles.worldRow}>
               <View style={styles.worldLabelRow}>
                 <Ionicons name="time" size={18} color="#7B8FA6" style={{ marginRight: 8 }} />
@@ -600,10 +583,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#2C4A3E',
-  },
-  worldDivider: {
-    height: 1,
-    backgroundColor: '#E8ECE5',
   },
 
   /* ── Reset ── */

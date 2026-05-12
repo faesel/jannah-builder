@@ -1,23 +1,25 @@
 /**
  * Sprite Manifest
  *
- * Central registry of all sprite assets, organised by category and season.
+ * Central registry of all sprite assets.
  * Uses require() for React Native static asset resolution.
  *
  * Replace placeholder PNGs with real pixel art — no code changes needed.
  */
 
-import { Season, TreeStage } from '../config/game.config';
+import { TreeStage } from '../config/game.config';
 
 // --- Tiles ---
 
 export const TILE_SPRITES = {
-  grass: {
-    spring: require('../../assets/sprites/tiles/grass_spring.png'),
-    summer: require('../../assets/sprites/tiles/grass_summer.png'),
-    autumn: require('../../assets/sprites/tiles/grass_autumn.png'),
-    winter: require('../../assets/sprites/tiles/grass_winter.png'),
-  } as Record<Season, number>,
+  grass: [
+    require('../../assets/sprites/tiles/grass_summer.png'),
+    require('../../assets/sprites/tiles/grass_v2.png'),
+    require('../../assets/sprites/tiles/grass_v3.png'),
+    require('../../assets/sprites/tiles/grass_v4.png'),
+    require('../../assets/sprites/tiles/grass_v5.png'),
+    require('../../assets/sprites/tiles/grass_v6.png'),
+  ],
   path: require('../../assets/sprites/tiles/path.png'),
   water: require('../../assets/sprites/tiles/water.png'),
   dirt: require('../../assets/sprites/tiles/dirt.png'),
@@ -28,25 +30,10 @@ export const TILE_SPRITES = {
 
 // --- Trees ---
 
-export const TREE_SPRITES: Record<TreeStage, Record<Season, number>> = {
-  sapling: {
-    spring: require('../../assets/sprites/trees/sapling_spring.png'),
-    summer: require('../../assets/sprites/trees/sapling_summer.png'),
-    autumn: require('../../assets/sprites/trees/sapling_autumn.png'),
-    winter: require('../../assets/sprites/trees/sapling_winter.png'),
-  },
-  young: {
-    spring: require('../../assets/sprites/trees/young_spring.png'),
-    summer: require('../../assets/sprites/trees/young_summer.png'),
-    autumn: require('../../assets/sprites/trees/young_autumn.png'),
-    winter: require('../../assets/sprites/trees/young_winter.png'),
-  },
-  mature: {
-    spring: require('../../assets/sprites/trees/mature_spring.png'),
-    summer: require('../../assets/sprites/trees/mature_summer.png'),
-    autumn: require('../../assets/sprites/trees/mature_autumn.png'),
-    winter: require('../../assets/sprites/trees/mature_winter.png'),
-  },
+export const TREE_SPRITES: Record<TreeStage, number> = {
+  sapling: require('../../assets/sprites/trees/sapling_summer.png'),
+  young: require('../../assets/sprites/trees/young_summer.png'),
+  mature: require('../../assets/sprites/trees/mature_summer.png'),
 };
 
 // --- Flowers ---

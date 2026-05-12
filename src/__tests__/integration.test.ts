@@ -17,7 +17,6 @@ function createFreshProfile(): UserProfile {
     buildings: [],
     animals: [],
     illustriousItems: [],
-    season: 'spring',
     mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
     gridSize: GAME_CONFIG.map.initialGridSize,
     lastUpdated: now,
@@ -200,28 +199,5 @@ describe('Integration: full game flow', () => {
     expect(profile.worldState.trees.length).toBeGreaterThanOrEqual(1);
     expect(profile.statistics.totalTreesGrown).toBeGreaterThanOrEqual(2);
     expect(profile.statistics.totalTreesDecayed).toBeGreaterThanOrEqual(1);
-  });
-
-  it('season transitions based on consistency', () => {
-    let profile = createFreshProfile();
-
-    // Start in spring
-    expect(profile.worldState.season).toBe('spring');
-
-    // Log many consecutive days to potentially shift to summer
-    const summerThreshold = GAME_CONFIG.seasons.enabled
-      ? GAME_CONFIG.seasons.summerThreshold
-      : 999;
-
-    for (let i = 0; i < summerThreshold + 1; i++) {
-      const date = dateOffset(baseDate, i);
-      profile.prayerLogs.push(makeCompleteLog(date));
-      const result = WorldLogic.processDay(profile, date);
-      profile = WorldLogic.applyProcessingResult(profile, result);
-    }
-
-    if (GAME_CONFIG.seasons.enabled) {
-      expect(profile.worldState.season).toBe('summer');
-    }
   });
 });

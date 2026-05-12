@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useGameLoop } from '../../src/hooks/useGameLoop';
-import { GAME_CONFIG, Season } from '../../src/config/game.config';
+import { GAME_CONFIG } from '../../src/config/game.config';
 import { UserProfile, WorldState } from '../../src/types/models';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { WorldLogic } from '../../src/logic/worldLogic';
@@ -21,7 +21,6 @@ const DEFAULT_WORLD: WorldState = {
   buildings: [],
   animals: [],
   illustriousItems: [],
-  season: 'spring' as Season,
   mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
   gridSize: GAME_CONFIG.map.initialGridSize,
   lastUpdated: Date.now(),
@@ -53,8 +52,7 @@ export default function JannahScreen() {
             result.buildingsAdded.length > 0 ||
             result.animalsAdded.length > 0 ||
             result.illustriousItemsAdded.length > 0 ||
-            result.illustriousItemsRemoved.length > 0 ||
-            result.seasonChanged;
+            result.illustriousItemsRemoved.length > 0;
 
           if (hasChanges) {
             current = WorldLogic.applyProcessingResult(current, result);
@@ -104,7 +102,7 @@ export default function JannahScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.grassBySeason.spring,
+    backgroundColor: COLORS.grass,
   },
   container: {
     flex: 1,

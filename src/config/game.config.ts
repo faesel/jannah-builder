@@ -35,17 +35,6 @@ export const GAME_CONFIG = {
     visualEffectsOnly: true, // Only enhance visuals
   },
 
-  // Season system
-  seasons: {
-    enabled: true, // Toggle to enable/disable season changes
-    types: ['spring', 'summer', 'autumn', 'winter'] as const,
-    springDefault: true,
-    summerThreshold: 14, // Days of sustained consistency
-    autumnThreshold: 3, // Missed days to trigger autumn
-    winterThreshold: 7, // Days of long pause
-    returnToSpring: true, // Always move back toward spring when praying
-  },
-
   // Illustrious items (streak-based)
   illustriousItems: {
     enabled: true,
@@ -101,7 +90,8 @@ export const GAME_CONFIG = {
 
   // Debug / testing
   debug: {
-    showGridLines: true, // Toggle to show tile grid lines on the map
+    showGridLines: false, // Toggle to show tile grid lines on the map
+    showAllSprites: false, // Render all sprites in a labelled grid for inspection
   },
   effects: {
     quran: {
@@ -120,5 +110,4 @@ export const GAME_CONFIG = {
 // Type exports for use throughout the app
 export type Prayer = (typeof GAME_CONFIG.prayers.dailyPrayers)[number];
 export type TreeStage = (typeof GAME_CONFIG.trees.growthStages)[number];
-export type Season = (typeof GAME_CONFIG.seasons.types)[number];
 export type IllustriousItemType = (typeof GAME_CONFIG.illustriousItems.types)[number];

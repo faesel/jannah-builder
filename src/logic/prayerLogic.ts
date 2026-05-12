@@ -88,26 +88,26 @@ export class PrayerLogic {
    * Count consecutive complete days from a list of prayer logs
    */
   static countConsecutiveDays(prayerLogs: PrayerLog[]): number {
-    // Sort by date descending (most recent first)
-    const sorted = [...prayerLogs]
-      .filter((log) => log.isComplete)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    return this.countConsecutiveDaysFrom(prayerLogs, this.getTodayDate());
+  }
 
-    if (sorted.length === 0) return 0;
+  /**
+   * Count consecutive complete days ending on or before the given date.
+   */
+  static countConsecutiveDaysFrom(prayerLogs: PrayerLog[], fromDate: string): number {
+    const completeDates = new Set(
+      prayerLogs.filter((l) => l.isComplete).map((l) => l.date)
+    );
 
-    let consecutive = 0;
-    let expectedDate = this.getTodayDate();
+    let count = 0;
+    let cursor = fromDate;
 
-    for (const log of sorted) {
-      if (log.date === expectedDate) {
-        consecutive++;
-        expectedDate = this.getPreviousDate(expectedDate);
-      } else {
-        break;
-      }
+    while (completeDates.has(cursor)) {
+      count++;
+      cursor = this.getPreviousDate(cursor);
     }
 
-    return consecutive;
+    return count;
   }
 
   /**
