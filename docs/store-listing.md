@@ -17,8 +17,8 @@ Jannah Builder is a calm, spiritually-sensitive prayer tracking app that turns y
 • No guilt, no pressure — gentle encouragement only
 • Missed a day? Only one tree is gently affected
 • No streaks displayed, no leaderboards, no comparisons
-• Seasons change with your journey — spring, summer, autumn, winter
 • Beautiful temporary items appear during long periods of consistency
+• Animated wildlife roams your garden — birds, rabbits, deer, and squirrels
 
 **Features:**
 • Five daily prayer toggles with haptic feedback

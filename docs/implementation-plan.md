@@ -2,140 +2,70 @@
 
 ## Current State Summary
 
-### Already Built
-- **Project scaffolding** — Expo SDK 54, TypeScript, Expo Router, Reanimated, Skia (dependency installed)
-- **Game config** (`src/config/game.config.ts`) — All thresholds and rules are configuration-driven
+### Completed
+- **Phase 1 — Foundation Cleanup** ✅
+- **Phase 2 — Core Game Loop** ✅
+- **Phase 3 — Pixel Art Assets** ✅ (including 6 grass variants, 28 animal animation frames, improved building sprites)
+- **Phase 4 — Map Rendering** ✅ (React Native Animated + Image-based, not Skia)
+- **Phase 5 — Visual Effects & Ambience** ✅ (Qur'an glowing flowers, Dhikr particles, illustrious items, animal animations)
+- **Phase 6 — Statistics Screen** ✅
+
+### Built Features
+- **Project scaffolding** — Expo SDK 54, TypeScript, Expo Router
+- **Game config** (`src/config/game.config.ts`) — All thresholds, rules, and debug flags are configuration-driven
 - **Data model** (`src/types/models.ts`) — Full type definitions for prayers, trees, world, profiles, statistics
 - **Prayer logic** (`src/logic/prayerLogic.ts`) — Create, log, consecutive day counting, date helpers
 - **Tree logic** (`src/logic/treeLogic.ts`) — Create, upgrade, degrade, spiral placement, decay (one tree at a time)
 - **World logic** (`src/logic/worldLogic.ts`) — Day-end processing, tree generation, decay application, stat updates
 - **Persistence** (`src/persistence/`) — AsyncStorage wrapper, profile CRUD (max 3 profiles), app state management
-- **App initializer** — Creates default profile on first launch
-- **Log Prayer screen** (`app/(tabs)/index.tsx`) — Functional UI with prayer toggles and debounced saves
-- **Tab navigation** — Expo Router tab layout (Jannah and Statistics tabs visible)
-- **ErrorBoundary** — Class-based error boundary component
+- **Log Prayer screen** (`app/(tabs)/index.tsx`) — Prayer toggles, Qur'an/Dhikr logging, haptic feedback, completion chime
+- **Jannah Map** (`src/rendering/JannahCanvas.tsx`) — Full pixel-art map with 6 grass variants, trees, flowers, buildings, animals, illustrious items, visual effects
+- **Animated animals** — Birds, rabbits, deer, squirrels with idle/feeding/movement states, per-species speed, collision avoidance
+- **Statistics screen** (`app/(tabs)/statistics.tsx`) — Streaks, 7-day history, world state vs all-time totals, garden age, reset garden
+- **Sprite generation** (`scripts/generate-sprites.js`, `scripts/generate-animal-sprites.js`) — Automated pixel-art generation via Node Canvas
+- **Debug tools** — Show grid lines, show all sprites, simulated progress (days/months/years)
 - **CI pipeline** — GitHub Actions: linting, type checks, web build validation
-- **README** — Project documentation
+- **107 unit tests** across 8 test suites — all passing
 
-### Needs Attention
-- Log Prayer tab is commented out in the tab layout
-- Jannah and Statistics screens are placeholders
-- `app/_layout.tsx` has dead commented-out JSX
-- `src/rendering/` and `src/screens/` are empty directories
-- Qur'an/Dhikr logging exists in data model and logic but has no UI
-- Day-end processing logic exists but is never triggered
-- No unit tests
+### Remaining
+- **Phase 7 — Profile Management** — Multi-profile selection, creation, switching, deletion
+- **Phase 8 — Polish & Release** — Smooth transitions, performance optimisation, expanded tests, accessibility pass, app store preparation
 
 ---
 
-## Phase 1 — Foundation Cleanup
+## Phase 1 — Foundation Cleanup ✅
 
-**Goal:** Stabilise the existing codebase, fix known issues, and complete the prayer logging experience.
-
-### Tasks
-1. **Re-enable the Log Prayer tab** in `app/(tabs)/_layout.tsx`
-2. **Remove dead commented-out code** from `app/_layout.tsx`, `app/(tabs)/jannah.tsx`, and `app/(tabs)/statistics.tsx`
-3. **Fix SafeAreaView wrappers** in the Jannah and Statistics placeholder screens
-4. **Add Qur'an & Dhikr toggle buttons** to the Log Prayer screen (simple boolean toggles — "I read Qur'an today" / "I did dhikr today")
-5. **Wire the prayer save to also persist** Qur'an and Dhikr state
-6. **Clean up empty directories** — remove `src/screens/` (screens live under `app/`) and the `.backup` file
-7. **Add a day-boundary detection hook** — determine when a new day has started since last app open, so the game loop can be triggered
-
-### Outcome
-A fully functional prayer logging screen with Qur'an/Dhikr support, clean codebase, and the scaffolding to trigger daily game logic.
+**Completed.** Prayer logging screen with Qur'an/Dhikr support, clean codebase, day-boundary detection.
 
 ---
 
-## Phase 2 — Core Game Loop
+## Phase 2 — Core Game Loop ✅
 
-**Goal:** Connect the existing pure logic to the app lifecycle so the world actually evolves.
-
-### Tasks
-1. **Implement day-end processing trigger** — On app open, detect any unprocessed days since last active and run `WorldLogic.processDayEnd()` for each
-2. **Wire tree generation** — After 3 consecutive complete days, generate a tree and persist it to the profile
-3. **Wire decay** — If a full day was missed, apply single-tree decay
-4. **Implement season transition logic** — Add a `SeasonLogic` module that evaluates current streak/gaps and transitions between Spring → Summer → Autumn → Winter per config thresholds
-5. **Implement map expansion logic** — Expand `mapSize` when tree count crosses `expansionThreshold`
-6. **Implement illustrious item logic** — Evaluate streak length against thresholds, add/remove items from world state
-7. **Implement building and animal appearance logic** — Check tree count against config thresholds, spawn buildings/animals at milestones
-8. **Add unit tests** for all pure logic modules (prayer, tree, world, season, illustrious items)
-
-### Outcome
-A complete, testable game engine where the world state evolves based on user behaviour — all driven by configuration.
+**Completed.** Day-end processing, tree generation/decay, map expansion, illustrious items, building/animal thresholds, 107 unit tests.
 
 ---
 
-## Phase 3 — Pixel Art Assets
+## Phase 3 — Pixel Art Assets ✅
 
-**Goal:** Create the visual foundation for the Jannah map.
-
-### Tasks
-1. **Design a base tile set** — Grass, path, water, dirt (top-down, 32×32 pixel tiles)
-2. **Design tree sprites** — Sapling, Young, Mature (each as a small pixel-art sprite)
-3. **Design flower sprites** — Basic and enhanced (Qur'an-boosted) variants
-4. **Design building sprites** — Home, Mansion, Palace (increasing grandeur)
-5. **Design animal sprites** — Bird, Rabbit, Deer, Squirrel (small, subtle)
-6. **Design seasonal palette variants** — Spring (green/pastel), Summer (vibrant/warm), Autumn (amber/brown), Winter (blue/white)
-7. **Design illustrious item sprites** — Radiant fountain, Glowing tree, Floating lantern, Light arch (ethereal, glowing style)
-8. **Organise assets** under `assets/sprites/` with a clear naming convention
-
-### Outcome
-A complete sprite library ready for Skia rendering across all seasons and world elements.
+**Completed.** Full sprite library: 6 grass variants, 3 tree stages, flowers (basic + enhanced), 3 building types, 4 animal species (32 sprites each with directional + feeding frames), 4 illustrious items. All generated via Node Canvas scripts (`scripts/generate-sprites.js`, `scripts/generate-animal-sprites.js`).
 
 ---
 
-## Phase 4 — Map Rendering (Skia)
+## Phase 4 — Map Rendering ✅
 
-**Goal:** Render the Jannah world as an interactive, pannable pixel-art map.
-
-### Tasks
-1. **Create a Skia canvas component** (`src/rendering/JannahCanvas.tsx`) — Full-screen canvas that renders the world
-2. **Implement tile grid rendering** — Draw the base map using the tile set, sized to `mapSize` from world state
-3. **Implement camera system** — Pan and scroll using `react-native-gesture-handler` (pinch-to-zoom optional, pan required)
-4. **Render trees** on the map at their stored positions, using the correct sprite for their growth stage
-5. **Render flowers** — Place flower sprites based on world state, with Qur'an-boosted density
-6. **Render buildings** — Place building sprites at their positions
-7. **Render animals** — Place animal sprites with subtle idle positioning
-8. **Wire the Jannah screen** (`app/(tabs)/jannah.tsx`) to load the active profile's world state and render it via the canvas
-9. **Handle map expansion** — Dynamically grow the rendered area when `mapSize` increases
-
-### Outcome
-A fully rendered, pannable pixel-art world that reflects the user's spiritual journey.
+**Completed.** Full-screen tile-based map using React Native Animated + Image components (not Skia). Renders grass grid, trees, flowers, buildings, animals, and illustrious items at world state positions. Map scales to screen size dynamically.
 
 ---
 
-## Phase 5 — Visual Effects & Ambience
+## Phase 5 — Visual Effects & Ambience ✅
 
-**Goal:** Bring the world to life with seasonal visuals, spiritual effects, and illustrious items.
-
-### Tasks
-1. **Implement season rendering** — Swap tile palette and add seasonal overlays (falling leaves in autumn, snow in winter, blossoms in spring)
-2. **Implement Qur'an visual effects** — Softer ambient lighting, increased flower density, subtle tree glow (Skia shader or overlay)
-3. **Implement Dhikr visual effects** — Floating light particles, fireflies, gentle shimmer (Skia particle system)
-4. **Render illustrious items** — Draw streak-based items with glow and soft pulse animations using Reanimated + Skia
-5. **Implement illustrious item fade-out** — Gentle disappearance animation when a streak breaks (configurable `fadeOutDuration`)
-6. **Add ambient animations** — Gentle tree sway, water shimmer, cloud drift (subtle, calming)
-7. **Implement day/night cycle** (optional) — Gradual lighting changes to make dhikr fireflies more visible at night
-
-### Outcome
-A living, breathing world with layered visual effects that reward Qur'an/Dhikr logging and long streaks — without pressure.
+**Completed.** Qur'an effects (glowing flowers with warm golden overlay), Dhikr effects (floating light particles), illustrious items with glow/pulse animations, and full animal animation system (idle, feeding with 3-frame cycles, directional movement with collision avoidance, per-species speed).
 
 ---
 
-## Phase 6 — Statistics Screen
+## Phase 6 — Statistics Screen ✅
 
-**Goal:** Provide calm, insightful reflections on the user's journey.
-
-### Tasks
-1. **Design the statistics screen layout** — Clean, minimal, soft colour palette
-2. **Display core stats** — Total prayers logged, complete days, trees grown, trees decayed, buildings, animals, map age
-3. **Display streak info** — Current streak and longest streak (no pressure language — present as "journey" not "record")
-4. **Add a simple prayer history view** — Calendar or list showing which days were complete/incomplete
-5. **Add a simple line chart** — Prayer consistency over time (calm colours, no aggressive trends)
-6. **Ensure all data pulls from the profile's `statistics` and `prayerLogs`**
-
-### Outcome
-A reflective statistics screen that provides insight without pressure, guilt, or competitive framing.
+**Completed.** Clean statistics screen with streaks, 7-day prayer history, current vs all-time world state toggle, garden age, and reset garden with two-step confirmation.
 
 ---
 
@@ -179,30 +109,28 @@ A polished, tested, accessible app ready for distribution.
 ## Dependency Graph
 
 ```
-Phase 1 (Foundation Cleanup)
+Phase 1 (Foundation Cleanup)     ✅
     │
     ▼
-Phase 2 (Core Game Loop)
+Phase 2 (Core Game Loop)         ✅
     │
     ├──────────────────┐
     ▼                  ▼
-Phase 3 (Assets)    Phase 6 (Statistics)
+Phase 3 (Assets) ✅  Phase 6 (Statistics) ✅
     │                  
     ▼                  
-Phase 4 (Map Rendering)
+Phase 4 (Map Rendering) ✅
     │
     ▼
-Phase 5 (Visual Effects)
+Phase 5 (Visual Effects) ✅
     │
     ├──────────────────┐
     ▼                  ▼
-Phase 7 (Profiles)  Phase 8 (Polish)
+Phase 7 (Profiles)  Phase 8 (Polish)    ← NEXT
 ```
 
-- Phases 3 and 6 can run in parallel after Phase 2
-- Phase 4 depends on Phase 3 (needs assets)
-- Phase 5 depends on Phase 4 (needs rendering layer)
-- Phases 7 and 8 can begin once the core experience is working (after Phase 5)
+- Phases 1–6 are complete
+- Phases 7 and 8 are the remaining work before release
 
 ---
 

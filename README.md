@@ -21,6 +21,7 @@ The app emphasises:
 - **AsyncStorage** — Local-first data persistence
 - **expo-haptics** — Subtle tactile feedback
 - **expo-av** — Completion sound effects
+- **Node Canvas** — Pixel-art sprite generation scripts
 
 ## 🎮 Features
 
@@ -32,11 +33,12 @@ The app emphasises:
 - Trees progress: Sapling → Young → Mature
 
 ### Jannah Map
-- Top-down pixel-art world rendered as a 20×20 tile grid
+- Top-down pixel-art world rendered as a tile grid (scales to screen size)
+- 6 grass tile variants with deterministic placement for natural-looking terrain
 - Trees, flowers, buildings, and animals appear as you progress
-- Visual effects for Qur'an reading (warm golden overlay) and Dhikr (floating light particles)
-- Season decorations (blossoms, sunshine, falling leaves, snowflakes)
-- Illustrious items (radiant fountains, glowing trees) appear during long streaks and fade gently when broken
+- **Animated animals** — birds, rabbits, deer, and squirrels roam the map with feeding, idle, and movement behaviours; each species moves at a different speed with collision avoidance
+- Visual effects for Qur'an reading (glowing flowers, warm golden overlay) and Dhikr (floating light particles)
+- Illustrious items (radiant fountains, glowing trees, floating lanterns, light arches) appear during long streaks and fade gently when broken
 
 ### Gentle Decay
 - Only triggered when an entire day is missed
@@ -52,14 +54,15 @@ The app emphasises:
 - Current streak and longest streak
 - 7-day prayer history with completion indicators
 - Current world state vs all-time totals (toggle view)
-- Season and garden age display
+- Garden age display
 - Reset Garden option with gentle two-step confirmation
 
-### Seasons
-- **Spring** — flowers, gentle growth (default)
-- **Summer** — sustained consistency, brighter colours
-- **Autumn** — missed days, warm falling leaves
-- **Winter** — long pauses, quiet stillness (nothing is destroyed)
+### Animated Wildlife
+- **Birds, rabbits, deer, and squirrels** roam the map independently
+- Three behaviours: idle (standing still), feeding (grazing animation), and moving (directional sprites)
+- Per-species movement speed (birds fastest, deer slowest)
+- Collision avoidance — animals cannot walk through buildings or trees (birds can perch on trees)
+- Randomised timing so animals behave naturally
 
 ## 📁 Project Structure
 
@@ -76,8 +79,16 @@ jannah-builder/
 │   ├── components/   # Reusable UI components (StatCard, ErrorBoundary)
 │   ├── types/        # TypeScript interfaces
 │   └── __tests__/    # Unit and integration tests
-├── assets/           # App icons, splash screen, sprite images
-├── docs/             # Implementation plan
+├── assets/
+│   └── sprites/      # Pixel-art sprite images
+│       ├── tiles/    # Grass (6 variants), dirt, path, water
+│       ├── trees/    # Sapling, young, mature
+│       ├── flowers/  # Basic and enhanced (Qur'an) variants
+│       ├── buildings/# Home, mansion, palace
+│       ├── animals/  # Bird, rabbit, deer, squirrel (+ animation frames)
+│       └── illustrious/ # Fountain, glowing tree, lantern, light arch
+├── scripts/          # Sprite generation scripts (Node Canvas)
+├── docs/             # Implementation plan & store listing
 └── .github/          # CI/CD workflows
 ```
 
@@ -88,9 +99,10 @@ All game mechanics are configuration-driven via `src/config/game.config.ts`:
 - **Prayer thresholds** — consecutive days per tree, daily prayer names
 - **Tree mechanics** — decay rules, growth stages
 - **Building & animal thresholds** — when homes, mansions, palaces, and animals appear
+- **Animal behaviour** — movement speed per species, idle/feeding/movement durations
 - **Illustrious items** — streak thresholds for radiant fountains, glowing trees, lanterns, arches
-- **Seasons** — enabled/disabled, transition thresholds
 - **Map** — grid size, tile size, expansion rules
+- **Debug tools** — grid lines, show all sprites, simulated progress (days/months/years)
 
 No game rules are hard-coded. Change the config to change the game.
 
