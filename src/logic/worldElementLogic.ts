@@ -99,6 +99,64 @@ export class WorldElementLogic {
   }
 
   /**
+   * Determine which buildings should be removed when trees drop below thresholds.
+   * Removes one building at a time — the most recently created one whose type
+   * now exceeds the desired count for the current tree level.
+   */
+  static decayBuildings(
+    treeCount: number,
+    existingBuildings: Building[]
+  ): string[] {
+    if (!GAME_CONFIG.decay.buildings.enabled) return [];
+
+    const removals: string[] = [];
+
+    for (const { type, threshold, repeatEvery } of BUILDING_TYPES) {
+      const desired = targetCount(treeCount, threshold, repeatEvery);
+      const ofType = existingBuildings
+        .filter((b) => b.type === type)
+        .sort((a, b) => b.createdAt - a.createdAt); // newest first
+
+      const excess = ofType.length - desired;
+      for (let i = 0; i < excess && i < 1; i++) {
+        removals.push(ofType[i].id);
+      }
+    }
+
+    // Only remove one building per missed day to keep decay gentle
+    return removals.slice(0, 1);
+  }
+
+  /**
+   * Determine which animals should be removed when trees drop below thresholds.
+   * Removes one animal at a time — the most recently created one whose type
+   * now exceeds the desired count for the current tree level.
+   */
+  static decayAnimals(
+    treeCount: number,
+    existingAnimals: Animal[]
+  ): string[] {
+    if (!GAME_CONFIG.decay.animals.enabled) return [];
+
+    const removals: string[] = [];
+
+    for (const { type, threshold, repeatEvery } of ANIMAL_TYPES) {
+      const desired = targetCount(treeCount, threshold, repeatEvery);
+      const ofType = existingAnimals
+        .filter((a) => a.type === type)
+        .sort((a, b) => b.createdAt - a.createdAt); // newest first
+
+      const excess = ofType.length - desired;
+      for (let i = 0; i < excess && i < 1; i++) {
+        removals.push(ofType[i].id);
+      }
+    }
+
+    // Only remove one animal per missed day to keep decay gentle
+    return removals.slice(0, 1);
+  }
+
+  /**
    * Evaluate grid expansion. Returns new grid size if growth is warranted.
    */
   static evaluateMapExpansion(

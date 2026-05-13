@@ -26,6 +26,14 @@ export const GAME_CONFIG = {
     treesAffectedPerMissedDay: 1, // Only one tree affected at a time
     degradationOrder: ['mature', 'young', 'sapling', 'removed'] as const,
     cascadeDecay: false, // Never cascade across multiple trees
+    buildings: {
+      enabled: true,
+      removeOnePerMissedDay: true, // Remove one building when trees drop below threshold
+    },
+    animals: {
+      enabled: true,
+      removeOnePerMissedDay: true, // Remove one animal when trees drop below threshold
+    },
   },
 
   // Qur'an & Dhikr mechanics

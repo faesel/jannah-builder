@@ -27,7 +27,9 @@ export class WorldLogic {
       treesDecayed: [],
       treesRemoved: [],
       buildingsAdded: [],
+      buildingsRemoved: [],
       animalsAdded: [],
+      animalsRemoved: [],
       riversAdded: [],
       illustriousItemsAdded: [],
       illustriousItemsRemoved: [],
@@ -61,6 +63,18 @@ export class WorldLogic {
     // Project what the tree list will look like after this day
     const projectedTrees = this.projectTrees(profile, result);
     const projectedTreeCount = projectedTrees.length;
+
+    // --- Building & animal decay (when trees drop below thresholds) ---
+    if (!dayComplete) {
+      result.buildingsRemoved = WorldElementLogic.decayBuildings(
+        projectedTreeCount,
+        profile.worldState.buildings
+      );
+      result.animalsRemoved = WorldElementLogic.decayAnimals(
+        projectedTreeCount,
+        profile.worldState.animals
+      );
+    }
 
     // --- Buildings & animals ---
     result.buildingsAdded = WorldElementLogic.evaluateBuildings(
@@ -161,8 +175,11 @@ export class WorldLogic {
         buildings: [
           ...profile.worldState.buildings,
           ...result.buildingsAdded,
-        ],
-        animals: [...profile.worldState.animals, ...result.animalsAdded],
+        ].filter((b) => !result.buildingsRemoved.includes(b.id)),
+        animals: [
+          ...profile.worldState.animals,
+          ...result.animalsAdded,
+        ].filter((a) => !result.animalsRemoved.includes(a.id)),
         rivers: [...profile.worldState.rivers, ...result.riversAdded],
         illustriousItems: profile.worldState.illustriousItems
           .filter((item) => !result.illustriousItemsRemoved.includes(item.id))

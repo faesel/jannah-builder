@@ -269,4 +269,75 @@ describe('WorldElementLogic', () => {
       }
     });
   });
+
+  describe('decayBuildings', () => {
+    it('returns empty when tree count meets threshold', () => {
+      const buildings: Building[] = [
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100 },
+      ];
+      const result = WorldElementLogic.decayBuildings(
+        GAME_CONFIG.world.buildings.home.threshold,
+        buildings
+      );
+      expect(result).toHaveLength(0);
+    });
+
+    it('removes one building when trees drop below threshold', () => {
+      const buildings: Building[] = [
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100 },
+        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200 },
+      ];
+      // Only 1 home is warranted at threshold, so 1 excess
+      const result = WorldElementLogic.decayBuildings(
+        GAME_CONFIG.world.buildings.home.threshold,
+        buildings
+      );
+      expect(result).toHaveLength(1);
+      // Should remove the newest one
+      expect(result[0]).toBe('home_2');
+    });
+
+    it('removes at most one building per call', () => {
+      const buildings: Building[] = [
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100 },
+        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200 },
+        { id: 'home_3', type: 'home', position: { x: 4, y: 4 }, createdAt: 300 },
+      ];
+      // 0 trees: 0 homes warranted, 3 excess, but only remove 1
+      const result = WorldElementLogic.decayBuildings(0, buildings);
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('decayAnimals', () => {
+    it('returns empty when tree count meets threshold', () => {
+      const animals: Animal[] = [
+        { id: 'bird_1', type: 'bird', position: { x: 0, y: 0 }, createdAt: 100 },
+      ];
+      const result = WorldElementLogic.decayAnimals(
+        GAME_CONFIG.world.animals.birds.threshold,
+        animals
+      );
+      expect(result).toHaveLength(0);
+    });
+
+    it('removes one animal when trees drop below threshold', () => {
+      const animals: Animal[] = [
+        { id: 'bird_1', type: 'bird', position: { x: 0, y: 0 }, createdAt: 100 },
+      ];
+      const result = WorldElementLogic.decayAnimals(0, animals);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe('bird_1');
+    });
+
+    it('removes at most one animal per call', () => {
+      const animals: Animal[] = [
+        { id: 'bird_1', type: 'bird', position: { x: 0, y: 0 }, createdAt: 100 },
+        { id: 'bird_2', type: 'bird', position: { x: 1, y: 1 }, createdAt: 200 },
+        { id: 'rabbit_1', type: 'rabbit', position: { x: 2, y: 2 }, createdAt: 300 },
+      ];
+      const result = WorldElementLogic.decayAnimals(0, animals);
+      expect(result).toHaveLength(1);
+    });
+  });
 });

@@ -143,7 +143,9 @@ export interface DayProcessingResult {
   treesDecayed: Tree[];
   treesRemoved: string[];
   buildingsAdded: Building[];
+  buildingsRemoved: string[];
   animalsAdded: Animal[];
+  animalsRemoved: string[];
   riversAdded: River[];
   illustriousItemsAdded: IllustriousItem[];
   illustriousItemsRemoved: string[];
