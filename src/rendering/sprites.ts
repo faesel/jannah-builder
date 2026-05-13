@@ -24,9 +24,6 @@ export const TILE_SPRITES = {
   water: require('../../assets/sprites/tiles/water.png'),
   dirt: require('../../assets/sprites/tiles/dirt.png'),
   sand: require('../../assets/sprites/tiles/sand.png'),
-  fence_vertical: require('../../assets/sprites/tiles/fence_vertical.png'),
-  fence_horizontal: require('../../assets/sprites/tiles/fence_horizontal.png'),
-  fence_corner: require('../../assets/sprites/tiles/fence_corner.png'),
 };
 
 // --- Trees ---

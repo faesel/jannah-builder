@@ -1120,9 +1120,6 @@ const ALL_SPRITES: { label: string; source: number }[] = [
   { label: 'water', source: TILE_SPRITES.water },
   { label: 'sand', source: TILE_SPRITES.sand },
   { label: 'dirt', source: TILE_SPRITES.dirt },
-  { label: 'fence_v', source: TILE_SPRITES.fence_vertical },
-  { label: 'fence_h', source: TILE_SPRITES.fence_horizontal },
-  { label: 'fence_c', source: TILE_SPRITES.fence_corner },
   // Trees
   { label: 'sapling', source: TREE_SPRITES.sapling },
   { label: 'young', source: TREE_SPRITES.young },
