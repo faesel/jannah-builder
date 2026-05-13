@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { Storage } from '../src/persistence/storage';
 import { AppInitializer } from '../src/logic/appInitializer';
 
@@ -107,6 +108,11 @@ export default function SettingsScreen() {
             </Pressable>
           </View>
         </View>
+
+        {/* Version */}
+        <Text style={styles.versionText}>
+          Jannah Builder v{Constants.expoConfig?.version ?? '1.0.0'}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -253,5 +259,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#A06060',
     fontWeight: '600',
+  },
+  versionText: {
+    fontSize: 13,
+    color: '#B0BFA8',
+    textAlign: 'center',
+    marginTop: 24,
   },
 });
