@@ -120,6 +120,35 @@ function generateTiles() {
   }
   save(waterCanvas, 'tiles', 'water.png');
 
+  // Sand — warm sandy texture with grain speckles
+  let sandSeed = 42;
+  function sandRng() {
+    sandSeed = (sandSeed * 16807) % 2147483647;
+    return (sandSeed - 1) / 2147483646;
+  }
+  const sandCanvas = newCanvas();
+  const sandCtx = sandCanvas.getContext('2d');
+  fillTile(sandCtx, '#E8D5A3');  // warm sand base
+  // Lighter grain patches
+  for (let i = 0; i < 18; i++) {
+    const sx = Math.floor(sandRng() * (TILE - 2));
+    const sy = Math.floor(sandRng() * (TILE - 2));
+    drawPixelRect(sandCtx, sx, sy, 1 + Math.floor(sandRng() * 2), 1, '#F0E0B0');
+  }
+  // Darker grain speckles
+  for (let i = 0; i < 12; i++) {
+    const sx = Math.floor(sandRng() * TILE);
+    const sy = Math.floor(sandRng() * TILE);
+    drawPixelRect(sandCtx, sx, sy, 1, 1, '#D4C090');
+  }
+  // Subtle warm highlights
+  for (let i = 0; i < 6; i++) {
+    const sx = Math.floor(sandRng() * (TILE - 1));
+    const sy = Math.floor(sandRng() * (TILE - 1));
+    drawPixelRect(sandCtx, sx, sy, 1, 1, '#F5EBCD');
+  }
+  save(sandCanvas, 'tiles', 'sand.png');
+
   // Dirt
   let seed = 99;
   function seededRandom() {
