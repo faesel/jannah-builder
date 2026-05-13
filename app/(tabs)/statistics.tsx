@@ -23,6 +23,8 @@ interface DayInfo {
   dayLabel: string;
   status: DayStatus;
   prayerCount: number;
+  quranLogged: boolean;
+  dhikrLogged: boolean;
 }
 
 function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
@@ -47,7 +49,14 @@ function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
       status = 'partial';
     }
 
-    days.unshift({ date: cursor, dayLabel, status, prayerCount });
+    days.unshift({
+      date: cursor,
+      dayLabel,
+      status,
+      prayerCount,
+      quranLogged: log?.quranLogged ?? false,
+      dhikrLogged: log?.dhikrLogged ?? false,
+    });
     cursor = PrayerLogic.getPreviousDate(cursor);
   }
 
@@ -204,6 +213,57 @@ export default function StatisticsScreen() {
                 </Text>
               </View>
             ))}
+          </View>
+
+          {/* Qur'an & Dhikr weekly trend */}
+          <View style={styles.trendCard}>
+            <View style={styles.trendRow}>
+              <View style={styles.trendLabelRow}>
+                <Ionicons name="book" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
+                <Text style={styles.trendLabel}>Qur'an</Text>
+              </View>
+              <View style={styles.trendDots}>
+                {days.map((day) => (
+                  <View
+                    key={`quran-${day.date}`}
+                    style={[
+                      styles.trendDot,
+                      day.quranLogged ? styles.trendDotActive : styles.trendDotInactive,
+                    ]}
+                    accessibilityLabel={`${day.dayLabel}: Qur'an ${day.quranLogged ? 'read' : 'not read'}`}
+                  >
+                    {day.quranLogged && <Text style={styles.trendDotCheck}>✓</Text>}
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.trendCount}>
+                {days.filter((d) => d.quranLogged).length}/7
+              </Text>
+            </View>
+            <View style={styles.trendDivider} />
+            <View style={styles.trendRow}>
+              <View style={styles.trendLabelRow}>
+                <Ionicons name="heart" size={16} color="#C4A243" style={{ marginRight: 6 }} />
+                <Text style={styles.trendLabel}>Dhikr</Text>
+              </View>
+              <View style={styles.trendDots}>
+                {days.map((day) => (
+                  <View
+                    key={`dhikr-${day.date}`}
+                    style={[
+                      styles.trendDot,
+                      day.dhikrLogged ? styles.trendDotActive : styles.trendDotInactive,
+                    ]}
+                    accessibilityLabel={`${day.dayLabel}: Dhikr ${day.dhikrLogged ? 'done' : 'not done'}`}
+                  >
+                    {day.dhikrLogged && <Text style={styles.trendDotCheck}>✓</Text>}
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.trendCount}>
+                {days.filter((d) => d.dhikrLogged).length}/7
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -508,6 +568,76 @@ const styles = StyleSheet.create({
   dayLabelToday: {
     fontWeight: '700',
     color: '#4A7C59',
+  },
+
+  /* ── Qur'an & Dhikr trend ── */
+  trendCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
+    padding: 14,
+    marginTop: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  trendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  trendLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 80,
+  },
+  trendLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2C4A3E',
+  },
+  trendDots: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  trendDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  trendDotActive: {
+    backgroundColor: '#4A7C59',
+  },
+  trendDotInactive: {
+    backgroundColor: '#E8ECE5',
+  },
+  trendDotCheck: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  trendCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8B9D83',
+    width: 32,
+    textAlign: 'right',
+  },
+  trendDivider: {
+    height: 1,
+    backgroundColor: '#F0F2EE',
+    marginVertical: 4,
   },
 
   /* ── Stats grid ── */
