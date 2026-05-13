@@ -434,80 +434,51 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
 
     switch (item.type) {
       case 'floating_lantern':
-        // Gentle vertical bob
         animations.push(
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(floatAnim, { toValue: -6, duration: 2000, useNativeDriver: true }),
-              Animated.timing(floatAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-            ])
-          ),
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-              Animated.timing(pulseAnim, { toValue: 0.75, duration: 1200, useNativeDriver: true }),
-            ])
-          )
+          Animated.loop(Animated.sequence([
+            Animated.timing(floatAnim, { toValue: -6, duration: 2000, useNativeDriver: true }),
+            Animated.timing(floatAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+          ])),
+          Animated.loop(Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 0.75, duration: 1200, useNativeDriver: true }),
+          ]))
         );
         break;
 
       case 'glowing_tree':
-        // Pulsing golden glow with gentle scale breathe
         animations.push(
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-              Animated.timing(pulseAnim, { toValue: 0.6, duration: 2000, useNativeDriver: true }),
-            ])
-          ),
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(scaleAnim, { toValue: 1.08, duration: 2500, useNativeDriver: true }),
-              Animated.timing(scaleAnim, { toValue: 1.0, duration: 2500, useNativeDriver: true }),
-            ])
-          )
+          Animated.loop(Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 0.6, duration: 2000, useNativeDriver: true }),
+          ])),
+          Animated.loop(Animated.sequence([
+            Animated.timing(scaleAnim, { toValue: 1.08, duration: 2500, useNativeDriver: true }),
+            Animated.timing(scaleAnim, { toValue: 1.0, duration: 2500, useNativeDriver: true }),
+          ]))
         );
         break;
 
       case 'radiant_fountain':
-        // Water shimmer: faster opacity ripple + subtle scale
+        // Gentle base glow — water spout handled by FountainDroplets overlay
         animations.push(
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-              Animated.timing(pulseAnim, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-            ])
-          ),
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(scaleAnim, { toValue: 1.04, duration: 1500, useNativeDriver: true }),
-              Animated.timing(scaleAnim, { toValue: 0.98, duration: 1500, useNativeDriver: true }),
-            ])
-          ),
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(floatAnim, { toValue: -2, duration: 1200, useNativeDriver: true }),
-              Animated.timing(floatAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
-            ])
-          )
+          Animated.loop(Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
+          ]))
         );
         break;
 
       case 'light_arch':
-        // Stately slow breathe with gentle glow
         animations.push(
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
-              Animated.timing(pulseAnim, { toValue: 0.65, duration: 3000, useNativeDriver: true }),
-            ])
-          ),
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(scaleAnim, { toValue: 1.05, duration: 3500, useNativeDriver: true }),
-              Animated.timing(scaleAnim, { toValue: 1.0, duration: 3500, useNativeDriver: true }),
-            ])
-          )
+          Animated.loop(Animated.sequence([
+            Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
+            Animated.timing(pulseAnim, { toValue: 0.65, duration: 3000, useNativeDriver: true }),
+          ])),
+          Animated.loop(Animated.sequence([
+            Animated.timing(scaleAnim, { toValue: 1.05, duration: 3500, useNativeDriver: true }),
+            Animated.timing(scaleAnim, { toValue: 1.0, duration: 3500, useNativeDriver: true }),
+          ]))
         );
         break;
     }
@@ -516,23 +487,124 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
     return () => animations.forEach(a => a.stop());
   }, [pulseAnim, floatAnim, scaleAnim, item.type]);
 
+  const left = (item.position.x + center) * tileSize;
+  const top = (item.position.y + centerRow) * tileSize;
+
   return (
-    <Animated.View
-      style={[styles.illustriousGlow, {
-        left: (item.position.x + center) * tileSize,
-        top: (item.position.y + centerRow) * tileSize,
+    <>
+      <Animated.View
+        style={[styles.illustriousGlow, {
+          left, top,
+          width: tileSize,
+          height: tileSize,
+          opacity: pulseAnim,
+          transform: [
+            { translateY: floatAnim },
+            { scale: scaleAnim },
+          ],
+        }]}
+        importantForAccessibility="no"
+      >
+        <Image source={ILLUSTRIOUS_SPRITES[item.type]} style={{ width: tileSize, height: tileSize }} />
+      </Animated.View>
+      {item.type === 'radiant_fountain' && (
+        <FountainDroplets left={left} top={top} tileSize={tileSize} />
+      )}
+    </>
+  );
+}
+
+/**
+ * Animated water droplets that spout upward from the fountain centre
+ * and arc outward, creating the illusion of flowing water.
+ */
+const DROPLET_COUNT = 6;
+
+function FountainDroplets({ left, top, tileSize }: {
+  left: number; top: number; tileSize: number;
+}) {
+  const droplets = useRef(
+    Array.from({ length: DROPLET_COUNT }, () => ({
+      progress: new Animated.Value(0),
+    }))
+  ).current;
+
+  useEffect(() => {
+    const animations = droplets.map((d, i) => {
+      // Stagger each droplet so they don't all fire together
+      const delay = i * (1200 / DROPLET_COUNT);
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(d.progress, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(d.progress, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+    });
+
+    animations.forEach(a => a.start());
+    return () => animations.forEach(a => a.stop());
+  }, [droplets]);
+
+  const dropletSize = Math.max(2, Math.round(tileSize * 0.08));
+  const centreX = tileSize / 2 - dropletSize / 2;
+
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left, top,
         width: tileSize,
         height: tileSize,
-        opacity: pulseAnim,
-        transform: [
-          { translateY: floatAnim },
-          { scale: scaleAnim },
-        ],
-      }]}
-      importantForAccessibility="no"
+      }}
+      pointerEvents="none"
     >
-      <Image source={ILLUSTRIOUS_SPRITES[item.type]} style={{ width: tileSize, height: tileSize }} />
-    </Animated.View>
+      {droplets.map((d, i) => {
+        // Each droplet arcs in a slightly different direction
+        const spreadAngle = ((i / DROPLET_COUNT) * Math.PI * 0.8) + Math.PI * 0.1;
+        const arcX = Math.cos(spreadAngle) * tileSize * 0.35;
+        const peakY = -tileSize * 0.45;
+
+        // Parabolic arc: translateX goes 0 → arcX, translateY goes 0 → peakY → 0
+        const translateX = d.progress.interpolate({
+          inputRange: [0, 0.5, 1],
+          outputRange: [0, arcX * 0.6, arcX],
+        });
+        const translateY = d.progress.interpolate({
+          inputRange: [0, 0.35, 0.7, 1],
+          outputRange: [0, peakY, peakY * 0.3, tileSize * 0.05],
+        });
+        const opacity = d.progress.interpolate({
+          inputRange: [0, 0.15, 0.7, 1],
+          outputRange: [0, 0.9, 0.7, 0],
+        });
+
+        return (
+          <Animated.View
+            key={i}
+            style={{
+              position: 'absolute',
+              left: centreX,
+              top: tileSize * 0.35,
+              width: dropletSize,
+              height: dropletSize,
+              borderRadius: dropletSize / 2,
+              backgroundColor: '#7BC0F5',
+              opacity,
+              transform: [{ translateX }, { translateY }],
+            }}
+          />
+        );
+      })}
+    </View>
   );
 }
 
