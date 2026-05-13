@@ -121,6 +121,39 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 
       {gridLines}
 
+      {/* Sand border around river tiles */}
+      {useMemo(() => {
+        const waterSet = new Set<string>();
+        activeWorld.rivers.forEach(r => r.tiles.forEach(t => waterSet.add(`${t.x},${t.y}`)));
+        const sandPositions = new Set<string>();
+        const neighbours = [
+          { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+          { dx: 1, dy: 1 }, { dx: -1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: -1 },
+        ];
+        activeWorld.rivers.forEach(r => r.tiles.forEach(t => {
+          for (const n of neighbours) {
+            const key = `${t.x + n.dx},${t.y + n.dy}`;
+            if (!waterSet.has(key)) sandPositions.add(key);
+          }
+        }));
+        return Array.from(sandPositions).map(key => {
+          const [x, y] = key.split(',').map(Number);
+          return (
+            <Image
+              key={`sand_${key}`}
+              source={TILE_SPRITES.sand}
+              style={{
+                position: 'absolute',
+                left: (x + centerCol) * tileSize,
+                top: (y + centerRow) * tileSize,
+                width: tileSize,
+                height: tileSize,
+              }}
+            />
+          );
+        });
+      }, [activeWorld.rivers, centerCol, centerRow, tileSize])}
+
       {/* River tiles */}
       {activeWorld.rivers.map((r) =>
         r.tiles.map((tile, idx) => (
@@ -1085,6 +1118,7 @@ const ALL_SPRITES: { label: string; source: number }[] = [
   { label: 'grass_6', source: TILE_SPRITES.grass[5] },
   { label: 'path', source: TILE_SPRITES.path },
   { label: 'water', source: TILE_SPRITES.water },
+  { label: 'sand', source: TILE_SPRITES.sand },
   { label: 'dirt', source: TILE_SPRITES.dirt },
   { label: 'fence_v', source: TILE_SPRITES.fence_vertical },
   { label: 'fence_h', source: TILE_SPRITES.fence_horizontal },
