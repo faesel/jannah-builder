@@ -151,15 +151,61 @@ npm run type-check    # TypeScript compiler check
 npm test              # Jest test suite
 ```
 
-## 📦 Building a Release APK
+## 📦 Releases
 
-### Prerequisites
+### Creating a Release
 
-- **JDK 17** — download from [Adoptium](https://adoptium.net/) and extract (e.g. to `~/jdk17/`)
-- **Android SDK** — install via Android Studio or standalone SDK tools (`~/Library/Android/sdk`)
+Releases are built and published via GitHub Actions. The workflow builds the APK, runs all checks, and creates a GitHub Release with the APK attached.
+
+#### 1. Bump the version
+
+Update the `version` field in `app.json`:
+
+```json
+{
+  "expo": {
+    "version": "2.2.0"
+  }
+}
+```
+
+Use [semantic versioning](https://semver.org/):
+- **Patch** (2.1.1 → 2.1.2) — bug fixes, minor tweaks
+- **Minor** (2.1.2 → 2.2.0) — new features, visual changes
+- **Major** (2.2.0 → 3.0.0) — breaking changes, major redesigns
+
+Commit and push the version bump to `main`.
+
+#### 2. Trigger the release workflow
+
+1. Go to **Actions** → **Release** in the GitHub repository
+2. Click **Run workflow**
+3. Enter the version number (must match `app.json`)
+4. Click **Run workflow**
+
+The workflow will:
+- Validate the version format and match against `app.json`
+- Run lint, type checks, and all tests
+- Build the Android APK
+- Create a GitHub Release tagged `v{version}` with the APK attached
+
+#### 3. Download the APK
+
+Once the workflow completes, the APK is available:
+- On the **Releases** page as `jannah-builder-v{version}.apk`
+- As a build artifact on the workflow run
+
+### Building Locally
+
+If you need to build the APK on your machine:
+
+#### Prerequisites
+
+- **JDK 17** — download from [Adoptium](https://adoptium.net/)
+- **Android SDK** — install via Android Studio or standalone SDK tools
 - **Node.js** — version 18+
 
-### Steps
+#### Steps
 
 ```bash
 # 1. Clean prebuild to generate the android/ directory
@@ -178,9 +224,9 @@ ANDROID_HOME=~/Library/Android/sdk \
 ./gradlew app:assembleRelease
 ```
 
-The signed APK will be at `android/app/build/outputs/apk/release/app-release.apk`.
+The APK will be at `android/app/build/outputs/apk/release/app-release.apk`.
 
-> **Note:** Adjust `JAVA_HOME` to match your JDK 17 installation path. JDK 24+ is not supported by the current Gradle version.
+> **Note:** Adjust `JAVA_HOME` to match your JDK 17 path. JDK 24+ is not supported by the current Gradle version.
 
 ## 🎨 Design Philosophy
 
