@@ -155,28 +155,56 @@ npm test              # Jest test suite
 
 ### Creating a Release
 
-Releases are built and published via GitHub Actions. The workflow builds the APK, runs all checks, and creates a GitHub Release with the APK attached.
+Releases are built and published via GitHub Actions. The workflow builds both an AAB (for Google Play) and APK (for sideloading), runs all checks, and creates a GitHub Release.
 
 #### 1. Bump the version
 
-Update the `version` field in `app.json`:
+Update **both** fields in `app.json`:
 
 ```json
 {
   "expo": {
-    "version": "2.2.0"
+    "version": "2.2.0",
+    "android": {
+      "versionCode": 2
+    }
   }
 }
 ```
 
-Use [semantic versioning](https://semver.org/):
-- **Patch** (2.1.1 → 2.1.2) — bug fixes, minor tweaks
-- **Minor** (2.1.2 → 2.2.0) — new features, visual changes
-- **Major** (2.2.0 → 3.0.0) — breaking changes, major redesigns
+- **`version`** — semver string displayed to users
+  - **Patch** (2.1.2 → 2.1.3) — bug fixes, minor tweaks
+  - **Minor** (2.1.3 → 2.2.0) — new features, visual changes
+  - **Major** (2.2.0 → 3.0.0) — breaking changes, major redesigns
+- **`versionCode`** — integer that **must increment** with every Play Store upload (1, 2, 3, …)
 
 Commit and push the version bump to `main`.
 
-#### 2. Trigger the release workflow
+#### 2. Set up signing (first time only)
+
+To sign releases for Google Play, add these repository secrets in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `KEYSTORE_BASE64` | Base64-encoded release keystore file |
+| `KEYSTORE_PASSWORD` | Keystore password |
+| `KEY_ALIAS` | Key alias within the keystore |
+| `KEY_PASSWORD` | Key password |
+
+To generate a keystore:
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 \
+  -keystore release.keystore -alias jannah-builder \
+  -keyalg RSA -keysize 2048 -validity 10000
+
+# Encode for GitHub secret
+base64 -i release.keystore | pbcopy
+```
+
+> **Important:** Keep your keystore safe. If lost, you cannot update the app on Google Play.
+
+#### 3. Trigger the release workflow
 
 1. Go to **Actions** → **Release** in the GitHub repository
 2. Click **Run workflow**
@@ -186,18 +214,21 @@ Commit and push the version bump to `main`.
 The workflow will:
 - Validate the version format and match against `app.json`
 - Run lint, type checks, and all tests
-- Build the Android APK
-- Create a GitHub Release tagged `v{version}` with the APK attached
+- Build the AAB (Play Store) and APK (sideloading)
+- Sign both if keystore secrets are configured
+- Create a GitHub Release tagged `v{version}` with both files attached
 
-#### 3. Download the APK
+#### 4. Publish to Google Play
 
-Once the workflow completes, the APK is available:
-- On the **Releases** page as `jannah-builder-v{version}.apk`
-- As a build artifact on the workflow run
+1. Download the `.aab` file from the GitHub Release
+2. Go to [Google Play Console](https://play.google.com/console)
+3. Select your app → **Production** → **Create new release**
+4. Upload the `.aab` file
+5. Add release notes and submit for review
 
 ### Building Locally
 
-If you need to build the APK on your machine:
+If you need to build on your machine:
 
 #### Prerequisites
 
@@ -217,14 +248,18 @@ npx expo export --platform android
 # 3. Copy the exported bundle into the Android project
 cp -r dist/* android/app/src/main/assets/
 
-# 4. Build the release APK
+# 4. Build the release AAB (for Play Store)
 cd android
 JAVA_HOME=~/jdk17/jdk-17.0.19+10/Contents/Home \
 ANDROID_HOME=~/Library/Android/sdk \
+./gradlew app:bundleRelease
+
+# 5. Or build APK (for sideloading)
 ./gradlew app:assembleRelease
 ```
 
-The APK will be at `android/app/build/outputs/apk/release/app-release.apk`.
+- AAB: `android/app/build/outputs/bundle/release/app-release.aab`
+- APK: `android/app/build/outputs/apk/release/app-release.apk`
 
 > **Note:** Adjust `JAVA_HOME` to match your JDK 17 path. JDK 24+ is not supported by the current Gradle version.
 
