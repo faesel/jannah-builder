@@ -42,20 +42,34 @@ The app emphasises:
 
 ### Gentle Decay
 - Only triggered when an entire day is missed
-- Affects one tree at a time
-- Gradual degradation (never cascades)
+- Affects one tree at a time (gradual degradation, never cascades)
+- Buildings and animals also gently disappear when trees drop below their thresholds
+- Newest elements are removed first, preserving older progress
 
 ### Supportive Practices
 - **Qur'an logging** — simple "I read Qur'an today" toggle
 - **Dhikr logging** — simple "I did dhikr today" toggle
 - These enhance visual ambience but never generate or destroy trees
 
+### Rivers
+- Rivers snake across the map as your garden grows (threshold: 35 trees)
+- Water tiles follow a snake constraint — no two edges may touch
+- Rivers cannot overlap trees or buildings
+- Ground animals cannot cross water (birds can fly over but not land)
+- Sand borders automatically surround every body of water
+
 ### Statistics
 - Current streak and longest streak
 - 7-day prayer history with completion indicators
+- **Qur'an and Dhikr weekly trends** — visual dot indicators showing consistency
 - Current world state vs all-time totals (toggle view)
 - Garden age display
-- Reset Garden option with gentle two-step confirmation
+
+### Settings
+- Accessible from Statistics page (not in bottom navigation)
+- **About section** — describes the app as a motivational tool for Muslims
+- **Reset Garden** — gentle two-step confirmation to clear all data
+- **Version number** — displayed from app config
 
 ### Animated Wildlife
 - **Birds, rabbits, deer, and squirrels** roam the map independently
@@ -69,7 +83,8 @@ The app emphasises:
 ```
 jannah-builder/
 ├── app/              # Expo Router screens
-│   └── (tabs)/       # Tab navigation (Prayer, Jannah, Stats)
+│   ├── (tabs)/       # Tab navigation (Prayer, Jannah, Stats)
+│   └── settings.tsx  # Settings page (accessed from Stats)
 ├── src/
 │   ├── config/       # Game configuration & colour palette
 │   ├── logic/        # Pure game mechanics (testable, deterministic)
@@ -135,6 +150,37 @@ npm run lint          # ESLint
 npm run type-check    # TypeScript compiler check
 npm test              # Jest test suite
 ```
+
+## 📦 Building a Release APK
+
+### Prerequisites
+
+- **JDK 17** — download from [Adoptium](https://adoptium.net/) and extract (e.g. to `~/jdk17/`)
+- **Android SDK** — install via Android Studio or standalone SDK tools (`~/Library/Android/sdk`)
+- **Node.js** — version 18+
+
+### Steps
+
+```bash
+# 1. Clean prebuild to generate the android/ directory
+npx expo prebuild --platform android --clean
+
+# 2. Export the JS bundle and assets
+npx expo export --platform android
+
+# 3. Copy the exported bundle into the Android project
+cp -r dist/* android/app/src/main/assets/
+
+# 4. Build the release APK
+cd android
+JAVA_HOME=~/jdk17/jdk-17.0.19+10/Contents/Home \
+ANDROID_HOME=~/Library/Android/sdk \
+./gradlew app:assembleRelease
+```
+
+The signed APK will be at `android/app/build/outputs/apk/release/app-release.apk`.
+
+> **Note:** Adjust `JAVA_HOME` to match your JDK 17 installation path. JDK 24+ is not supported by the current Gradle version.
 
 ## 🎨 Design Philosophy
 
