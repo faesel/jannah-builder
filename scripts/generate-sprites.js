@@ -467,6 +467,66 @@ module.exports = {
 };
 
 // ============================================================
+// LANDMARKS
+// ============================================================
+
+function generateLandmarks() {
+  console.log('\n🪧 Landmarks');
+
+  // Signboard — wooden post with sign panel and pixelated text
+  const c = newCanvas();
+  const ctx = c.getContext('2d');
+  fillTile(ctx, 'rgba(0,0,0,0)');
+
+  const woodDark = '#6B4226';
+  const woodMid = '#8B5E3C';
+  const woodLight = '#A67C52';
+  const boardBg = '#D4B888';
+  const boardEdge = '#A67C52';
+  const textColor = '#4A3520';
+  const textLight = '#6B5540';
+
+  // Wooden post (centred, bottom half)
+  drawPixelRect(ctx, 14, 16, 4, 14, woodDark);
+  drawPixelRect(ctx, 15, 16, 2, 14, woodMid);
+  // Post base
+  drawPixelRect(ctx, 12, 28, 8, 2, woodDark);
+  drawPixelRect(ctx, 13, 29, 6, 2, woodMid);
+
+  // Sign panel (wide rectangle near top)
+  drawPixelRect(ctx, 4, 4, 24, 14, boardEdge);   // border
+  drawPixelRect(ctx, 5, 5, 22, 12, boardBg);      // fill
+  // Top edge highlight
+  drawPixelRect(ctx, 5, 5, 22, 1, woodLight);
+  // Bottom edge shadow
+  drawPixelRect(ctx, 5, 16, 22, 1, woodDark);
+
+  // Pixelated unreadable text — 3 rows of broken dashes/dots
+  // Row 1
+  drawPixelRect(ctx, 7, 7, 3, 2, textColor);
+  drawPixelRect(ctx, 11, 7, 5, 2, textColor);
+  drawPixelRect(ctx, 17, 7, 2, 2, textLight);
+  drawPixelRect(ctx, 20, 7, 4, 2, textColor);
+
+  // Row 2
+  drawPixelRect(ctx, 7, 10, 4, 2, textLight);
+  drawPixelRect(ctx, 13, 10, 2, 2, textColor);
+  drawPixelRect(ctx, 16, 10, 6, 2, textColor);
+  drawPixelRect(ctx, 23, 10, 2, 2, textLight);
+
+  // Row 3
+  drawPixelRect(ctx, 8, 13, 5, 2, textColor);
+  drawPixelRect(ctx, 14, 13, 3, 2, textLight);
+  drawPixelRect(ctx, 19, 13, 4, 2, textColor);
+
+  // Nail/pin detail
+  drawPixelRect(ctx, 6, 10, 1, 1, '#3A2510');
+  drawPixelRect(ctx, 25, 10, 1, 1, '#3A2510');
+
+  save(c, 'landmarks', 'signboard.png');
+}
+
+// ============================================================
 // MAIN
 // ============================================================
 
@@ -478,5 +538,6 @@ if (require.main === module) {
   generateBuildings();
   generateAnimals();
   generateIllustriousItems();
+  generateLandmarks();
   console.log('\n✅ All sprites generated!');
 }
