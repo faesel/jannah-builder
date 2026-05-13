@@ -426,17 +426,95 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
   item: IllustriousItem; center: number; centerRow: number; tileSize: number;
 }) {
   const pulseAnim = useRef(new Animated.Value(0.7)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [pulseAnim]);
+    const animations: Animated.CompositeAnimation[] = [];
+
+    switch (item.type) {
+      case 'floating_lantern':
+        // Gentle vertical bob
+        animations.push(
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(floatAnim, { toValue: -6, duration: 2000, useNativeDriver: true }),
+              Animated.timing(floatAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+            ])
+          ),
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+              Animated.timing(pulseAnim, { toValue: 0.75, duration: 1200, useNativeDriver: true }),
+            ])
+          )
+        );
+        break;
+
+      case 'glowing_tree':
+        // Pulsing golden glow with gentle scale breathe
+        animations.push(
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+              Animated.timing(pulseAnim, { toValue: 0.6, duration: 2000, useNativeDriver: true }),
+            ])
+          ),
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(scaleAnim, { toValue: 1.08, duration: 2500, useNativeDriver: true }),
+              Animated.timing(scaleAnim, { toValue: 1.0, duration: 2500, useNativeDriver: true }),
+            ])
+          )
+        );
+        break;
+
+      case 'radiant_fountain':
+        // Water shimmer: faster opacity ripple + subtle scale
+        animations.push(
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+              Animated.timing(pulseAnim, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+            ])
+          ),
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(scaleAnim, { toValue: 1.04, duration: 1500, useNativeDriver: true }),
+              Animated.timing(scaleAnim, { toValue: 0.98, duration: 1500, useNativeDriver: true }),
+            ])
+          ),
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(floatAnim, { toValue: -2, duration: 1200, useNativeDriver: true }),
+              Animated.timing(floatAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
+            ])
+          )
+        );
+        break;
+
+      case 'light_arch':
+        // Stately slow breathe with gentle glow
+        animations.push(
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
+              Animated.timing(pulseAnim, { toValue: 0.65, duration: 3000, useNativeDriver: true }),
+            ])
+          ),
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(scaleAnim, { toValue: 1.05, duration: 3500, useNativeDriver: true }),
+              Animated.timing(scaleAnim, { toValue: 1.0, duration: 3500, useNativeDriver: true }),
+            ])
+          )
+        );
+        break;
+    }
+
+    animations.forEach(a => a.start());
+    return () => animations.forEach(a => a.stop());
+  }, [pulseAnim, floatAnim, scaleAnim, item.type]);
 
   return (
     <Animated.View
@@ -446,6 +524,10 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
         width: tileSize,
         height: tileSize,
         opacity: pulseAnim,
+        transform: [
+          { translateY: floatAnim },
+          { scale: scaleAnim },
+        ],
       }]}
       importantForAccessibility="no"
     >

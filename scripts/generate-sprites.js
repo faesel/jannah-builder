@@ -336,15 +336,35 @@ function generateAnimals() {
 function generateIllustriousItems() {
   console.log('\n✨ Illustrious Items');
 
-  // Radiant Fountain
+  // Radiant Fountain — ornate basin with water jets and sparkle
   let c = newCanvas();
   let ctx = c.getContext('2d');
-  drawPixelCircle(ctx, 16, 22, 8, '#B0C4DE');
-  drawPixelCircle(ctx, 16, 22, 6, '#6BB3F0');
-  drawPixelRect(ctx, 15, 10, 2, 12, '#B0C4DE');
-  drawPixelCircle(ctx, 16, 8, 3, 'rgba(107, 179, 240, 0.7)');
-  drawPixelRect(ctx, 12, 6, 1, 4, 'rgba(107, 179, 240, 0.5)');
-  drawPixelRect(ctx, 19, 6, 1, 4, 'rgba(107, 179, 240, 0.5)');
+  // Outer glow
+  drawPixelCircle(ctx, 16, 18, 14, 'rgba(100, 180, 255, 0.08)');
+  // Basin (wide stone bowl)
+  drawPixelRect(ctx, 6, 22, 20, 3, '#8899AA');   // basin rim
+  drawPixelRect(ctx, 8, 25, 16, 4, '#778899');    // basin base
+  drawPixelRect(ctx, 10, 29, 12, 2, '#667788');   // pedestal
+  // Water in basin
+  drawPixelCircle(ctx, 16, 23, 7, '#5BA3E6');
+  drawPixelCircle(ctx, 16, 23, 5, '#7BC0F5');
+  // Central pillar
+  drawPixelRect(ctx, 14, 14, 4, 9, '#99AABB');
+  drawPixelRect(ctx, 15, 12, 2, 3, '#AABBCC');
+  // Water jets — centre
+  drawPixelRect(ctx, 15, 4, 2, 9, 'rgba(120, 200, 255, 0.8)');
+  drawPixelRect(ctx, 16, 2, 1, 3, 'rgba(160, 220, 255, 0.6)');
+  // Water jets — side arcs
+  drawPixelRect(ctx, 11, 10, 1, 4, 'rgba(120, 200, 255, 0.6)');
+  drawPixelRect(ctx, 10, 12, 1, 3, 'rgba(120, 200, 255, 0.4)');
+  drawPixelRect(ctx, 20, 10, 1, 4, 'rgba(120, 200, 255, 0.6)');
+  drawPixelRect(ctx, 21, 12, 1, 3, 'rgba(120, 200, 255, 0.4)');
+  // Sparkles
+  drawPixelRect(ctx, 12, 6, 1, 1, '#FFFFFF');
+  drawPixelRect(ctx, 20, 8, 1, 1, '#FFFFFF');
+  drawPixelRect(ctx, 16, 1, 1, 1, '#FFFFFF');
+  drawPixelRect(ctx, 8, 20, 1, 1, 'rgba(255,255,255,0.7)');
+  drawPixelRect(ctx, 23, 21, 1, 1, 'rgba(255,255,255,0.7)');
   save(c, 'illustrious', 'radiant_fountain.png');
 
   // Glowing Tree
@@ -367,17 +387,45 @@ function generateIllustriousItems() {
   drawPixelRect(ctx, 15, 4, 2, 4, '#8B7355');
   save(c, 'illustrious', 'floating_lantern.png');
 
-  // Light Arch
+  // Light Arch — ornamental golden arch with gemstone and light rays
   c = newCanvas();
   ctx = c.getContext('2d');
-  drawPixelCircle(ctx, 16, 16, 14, 'rgba(255, 255, 200, 0.1)');
-  drawPixelRect(ctx, 4, 14, 4, 16, '#DAA520');
-  drawPixelRect(ctx, 24, 14, 4, 16, '#DAA520');
-  for (let angle = 0; angle <= Math.PI; angle += 0.15) {
+  // Outer glow
+  drawPixelCircle(ctx, 16, 14, 15, 'rgba(255, 230, 150, 0.06)');
+  // Left pillar with detail
+  drawPixelRect(ctx, 4, 12, 5, 19, '#C8962E');    // pillar body
+  drawPixelRect(ctx, 5, 12, 3, 19, '#DAA520');     // pillar highlight
+  drawPixelRect(ctx, 4, 12, 5, 2, '#E8B830');      // capital
+  drawPixelRect(ctx, 4, 29, 5, 2, '#B8860B');      // base
+  // Right pillar with detail
+  drawPixelRect(ctx, 23, 12, 5, 19, '#C8962E');
+  drawPixelRect(ctx, 24, 12, 3, 19, '#DAA520');
+  drawPixelRect(ctx, 23, 12, 5, 2, '#E8B830');
+  drawPixelRect(ctx, 23, 29, 5, 2, '#B8860B');
+  // Arch curve (smoother, thicker)
+  for (let angle = 0; angle <= Math.PI; angle += 0.08) {
     const ax = Math.round(16 + Math.cos(angle) * 12);
-    const ay = Math.round(14 - Math.sin(angle) * 10);
-    drawPixelRect(ctx, ax, ay, 2, 2, '#FFD700');
+    const ay = Math.round(12 - Math.sin(angle) * 10);
+    drawPixelRect(ctx, ax - 1, ay, 3, 3, '#DAA520');
   }
+  // Inner arch highlight
+  for (let angle = 0.1; angle <= Math.PI - 0.1; angle += 0.12) {
+    const ax = Math.round(16 + Math.cos(angle) * 10);
+    const ay = Math.round(12 - Math.sin(angle) * 8);
+    drawPixelRect(ctx, ax, ay + 1, 1, 1, '#FFE680');
+  }
+  // Keystone gem at top
+  drawPixelCircle(ctx, 16, 2, 3, '#FF6B6B');
+  drawPixelCircle(ctx, 16, 2, 2, '#FF8888');
+  drawPixelRect(ctx, 16, 1, 1, 1, '#FFFFFF');  // sparkle
+  // Light rays from keystone
+  drawPixelRect(ctx, 16, 5, 1, 3, 'rgba(255, 220, 100, 0.5)');
+  drawPixelRect(ctx, 13, 4, 1, 2, 'rgba(255, 220, 100, 0.3)');
+  drawPixelRect(ctx, 19, 4, 1, 2, 'rgba(255, 220, 100, 0.3)');
+  // Ground sparkles
+  drawPixelRect(ctx, 10, 28, 1, 1, 'rgba(255,215,0,0.5)');
+  drawPixelRect(ctx, 22, 27, 1, 1, 'rgba(255,215,0,0.5)');
+  drawPixelRect(ctx, 16, 26, 1, 1, 'rgba(255,255,200,0.6)');
   save(c, 'illustrious', 'light_arch.png');
 }
 
