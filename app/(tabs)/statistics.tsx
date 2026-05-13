@@ -6,18 +6,15 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
-  Alert,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StatCard } from '../../src/components/StatCard';
 import { ProfileManager } from '../../src/persistence/profileManager';
-import { Storage } from '../../src/persistence/storage';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { UserProfile, PrayerLog } from '../../src/types/models';
-import { AppInitializer } from '../../src/logic/appInitializer';
 
 type DayStatus = 'complete' | 'partial' | 'missed';
 
@@ -78,6 +75,7 @@ const STATUS_LABELS: Record<DayStatus, string> = {
 type StatsView = 'allTime' | 'current';
 
 export default function StatisticsScreen() {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,29 +102,6 @@ export default function StatisticsScreen() {
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     loadProfile();
-  }, [loadProfile]);
-
-  const handleResetGarden = useCallback(() => {
-    Alert.alert(
-      'Reset your garden?',
-      'All prayers, trees, and progress will be removed. This cannot be undone.',
-      [
-        { text: 'Keep my garden', style: 'cancel' },
-        {
-          text: 'Reset everything',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await Storage.clear();
-              await AppInitializer.initialize();
-              await loadProfile();
-            } catch (err) {
-              console.error('[StatisticsScreen] Error resetting:', err);
-            }
-          },
-        },
-      ]
-    );
   }, [loadProfile]);
 
   if (loading) {
@@ -315,19 +290,18 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        {/* Reset */}
+        {/* Settings */}
         <Pressable
           style={({ pressed }) => [
-            styles.resetButton,
-            pressed && styles.resetButtonPressed,
+            styles.settingsButton,
+            pressed && styles.settingsButtonPressed,
           ]}
-          onPress={handleResetGarden}
+          onPress={() => router.push('/settings')}
           accessibilityRole="button"
-          accessibilityLabel="Reset garden and clear all data"
-          accessibilityHint="Double tap to reset. You will be asked to confirm."
+          accessibilityLabel="Open settings"
         >
-          <Ionicons name="refresh" size={16} color="#A06060" style={{ marginRight: 6 }} />
-          <Text style={styles.resetText}>Reset Garden</Text>
+          <Ionicons name="settings-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
+          <Text style={styles.settingsText}>Settings</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -585,8 +559,8 @@ const styles = StyleSheet.create({
     color: '#2C4A3E',
   },
 
-  /* ── Reset ── */
-  resetButton: {
+  /* ── Settings ── */
+  settingsButton: {
     flexDirection: 'row',
     marginTop: 16,
     paddingVertical: 14,
@@ -594,15 +568,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#D4A0A0',
-    backgroundColor: 'rgba(212, 160, 160, 0.06)',
+    borderColor: '#C4D4B8',
+    backgroundColor: 'rgba(74, 124, 89, 0.04)',
   },
-  resetButtonPressed: {
-    backgroundColor: 'rgba(212, 160, 160, 0.15)',
+  settingsButtonPressed: {
+    backgroundColor: 'rgba(74, 124, 89, 0.12)',
   },
-  resetText: {
+  settingsText: {
     fontSize: 14,
-    color: '#A06060',
+    color: '#4A7C59',
     fontWeight: '600',
   },
 });

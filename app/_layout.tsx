@@ -64,6 +64,7 @@ export default function RootLayout() {
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
+              <Stack.Screen name="settings" options={{ headerShown: false, animation: 'slide_from_right' }} />
             </Stack>
           </ThemeProvider>
         </ErrorBoundary>
