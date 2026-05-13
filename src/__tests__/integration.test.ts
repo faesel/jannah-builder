@@ -16,6 +16,7 @@ function createFreshProfile(): UserProfile {
     flowers: [],
     buildings: [],
     animals: [],
+    rivers: [],
     illustriousItems: [],
     mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
     gridSize: GAME_CONFIG.map.initialGridSize,

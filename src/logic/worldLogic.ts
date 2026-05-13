@@ -28,6 +28,7 @@ export class WorldLogic {
       treesRemoved: [],
       buildingsAdded: [],
       animalsAdded: [],
+      riversAdded: [],
       illustriousItemsAdded: [],
       illustriousItemsRemoved: [],
     };
@@ -71,6 +72,14 @@ export class WorldLogic {
       projectedTreeCount,
       profile.worldState.animals,
       projectedTrees
+    );
+
+    // --- Rivers ---
+    result.riversAdded = WorldElementLogic.evaluateRivers(
+      projectedTreeCount,
+      profile.worldState.rivers,
+      projectedTrees,
+      [...profile.worldState.buildings, ...result.buildingsAdded]
     );
 
     // --- Illustrious items ---
@@ -154,6 +163,7 @@ export class WorldLogic {
           ...result.buildingsAdded,
         ],
         animals: [...profile.worldState.animals, ...result.animalsAdded],
+        rivers: [...profile.worldState.rivers, ...result.riversAdded],
         illustriousItems: profile.worldState.illustriousItems
           .filter((item) => !result.illustriousItemsRemoved.includes(item.id))
           .concat(result.illustriousItemsAdded),

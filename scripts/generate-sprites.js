@@ -167,9 +167,9 @@ function generateTrees() {
     // Young
     c = newCanvas();
     ctx = c.getContext('2d');
-    drawPixelRect(ctx, 14, 18, 4, 12, '#6B4E3D');
-    drawTriangle(ctx, 6, 6, 20, 14, dark);
-    drawTriangle(ctx, 8, 2, 16, 12, light);
+    drawPixelRect(ctx, 14, 20, 4, 10, '#6B4E3D');
+    drawPixelCircle(ctx, 16, 14, 7, dark);
+    drawPixelCircle(ctx, 15, 12, 5, light);
     save(c, 'trees', `young_${season}.png`);
 
     // Mature

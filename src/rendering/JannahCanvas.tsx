@@ -9,7 +9,7 @@
 
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
-import { WorldState, Tree, Flower, Building, Animal, IllustriousItem, Position } from '../types/models';
+import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Position } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
@@ -42,9 +42,12 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
 
-  const activeWorld = GAME_CONFIG.debug.simulateProgress
-    ? buildSimulatedWorld(GAME_CONFIG.debug.simulateProgress, cols, rows)
-    : worldState;
+  const activeWorld = useMemo(() =>
+    GAME_CONFIG.debug.simulateProgress
+      ? buildSimulatedWorld(GAME_CONFIG.debug.simulateProgress, cols, rows)
+      : worldState,
+    [GAME_CONFIG.debug.simulateProgress, cols, rows, worldState],
+  );
 
   // Center of the grid in tile coordinates
   const centerCol = Math.floor(cols / 2);
@@ -107,8 +110,9 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     const set = new Set<string>();
     activeWorld.buildings.forEach(b => set.add(`b:${b.position.x},${b.position.y}`));
     activeWorld.trees.forEach(t => set.add(`t:${t.position.x},${t.position.y}`));
+    activeWorld.rivers.forEach(r => r.tiles.forEach(t => set.add(`w:${t.x},${t.y}`)));
     return set;
-  }, [activeWorld.buildings, activeWorld.trees]);
+  }, [activeWorld.buildings, activeWorld.trees, activeWorld.rivers]);
 
   return (
     <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grass }}>
@@ -116,6 +120,23 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       {grassTiles}
 
       {gridLines}
+
+      {/* River tiles */}
+      {activeWorld.rivers.map((r) =>
+        r.tiles.map((tile, idx) => (
+          <Image
+            key={`${r.id}_${idx}`}
+            source={TILE_SPRITES.water}
+            style={{
+              position: 'absolute',
+              left: (tile.x + centerCol) * tileSize,
+              top: (tile.y + centerRow) * tileSize,
+              width: tileSize,
+              height: tileSize,
+            }}
+          />
+        ))
+      )}
 
       {/* Signboard at center */}
       <View style={[styles.signboardContainer, {
@@ -258,8 +279,8 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
   animal: Animal; center: number; centerRow: number; tileSize: number;
   cols: number; rows: number; occupiedPositions: Set<string>;
 }) {
-  const [posX, setPosX] = useState(animal.position.x);
-  const [posY, setPosY] = useState(animal.position.y);
+  const [, setPosX] = useState(animal.position.x);
+  const [, setPosY] = useState(animal.position.y);
   const [state, setState] = useState<AnimalState>('idle');
   const [direction, setDirection] = useState<AnimalDirection>('down');
   const [feedFrame, setFeedFrame] = useState(0);
@@ -280,8 +301,17 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
     if (occupiedPositions.has(`b:${x},${y}`)) return false;
     // Trees block ground animals, birds can overlap trees
     if (!isBird && occupiedPositions.has(`t:${x},${y}`)) return false;
+    // Water blocks ground animals entirely
+    if (!isBird && occupiedPositions.has(`w:${x},${y}`)) return false;
     return true;
   }, [halfX, halfY, isBird, occupiedPositions]);
+
+  // Birds can fly over water but cannot land (idle/feed) on it
+  const canStopAt = useCallback((x: number, y: number) => {
+    if (!canMoveTo(x, y)) return false;
+    if (isBird && occupiedPositions.has(`w:${x},${y}`)) return false;
+    return true;
+  }, [canMoveTo, isBird, occupiedPositions]);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,6 +357,13 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
           const newY = posRef.current.y + dy;
 
           if (!canMoveTo(newX, newY)) {
+            if (!cancelled) scheduleNext();
+            return;
+          }
+
+          // If this is the last step, ensure the animal can stop here
+          // (birds can fly over water but cannot idle/feed on it)
+          if (stepsDone + 1 >= steps && !canStopAt(newX, newY)) {
             if (!cancelled) scheduleNext();
             return;
           }
@@ -420,8 +457,6 @@ function IllustriousSprite({ item, center, centerRow, tileSize }: {
 // ============================================================
 // Qur'an Glowing Flowers
 // ============================================================
-
-const QURAN_FLOWER_COUNT = 3;
 
 function QuranFlowers({ cols, rows, tileSize }: { cols: number; rows: number; tileSize: number }) {
   // Place flowers at fixed, visible positions spread across the map
@@ -670,6 +705,37 @@ function findClusteredPosition(
   return { x: cx + 1, y: cy };
 }
 
+/**
+ * Group positions into clusters based on Manhattan distance proximity (≤ 4).
+ */
+function groupPositionsIntoClusters(positions: Position[]): Position[][] {
+  const clusters: Position[][] = [];
+  const assigned = new Set<number>();
+
+  for (let i = 0; i < positions.length; i++) {
+    if (assigned.has(i)) continue;
+    const cluster: Position[] = [positions[i]];
+    assigned.add(i);
+
+    const queue = [positions[i]];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      for (let j = 0; j < positions.length; j++) {
+        if (assigned.has(j)) continue;
+        const dist = Math.abs(positions[j].x - current.x) + Math.abs(positions[j].y - current.y);
+        if (dist <= 4) {
+          cluster.push(positions[j]);
+          assigned.add(j);
+          queue.push(positions[j]);
+        }
+      }
+    }
+    clusters.push(cluster);
+  }
+
+  return clusters;
+}
+
 function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
   const now = Date.now();
   const rng = seededRng(12345);
@@ -706,15 +772,32 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
     { type: 'mansion', count: countFor(bc.mansion.threshold, bc.mansion.repeatEvery) },
     { type: 'palace', count: countFor(bc.palace.threshold, bc.palace.repeatEvery) },
   ];
-  // Place buildings with same-type clustering (street pattern)
+  // Place buildings with same-type clustering and cluster size limits
   const buildings: Building[] = [];
+  const clusterLimits: Record<string, number> = {}; // track current cluster limit per type
   for (const { type, count } of buildingList) {
+    const cfg = bc[type as keyof typeof bc];
+    // Set initial cluster limit
+    if (!clusterLimits[type]) {
+      clusterLimits[type] = cfg.clusterSize.min +
+        Math.floor(rng() * (cfg.clusterSize.max - cfg.clusterSize.min + 1));
+    }
     for (let i = 0; i < count; i++) {
       const sameType = buildings.filter((b) => b.type === type);
       let position: Position;
       if (sameType.length > 0) {
-        // Cluster: place adjacent to existing same-type buildings
-        position = findClusteredPosition(sameType.map((b) => b.position), occupied, cols, rows);
+        // Group into clusters by proximity
+        const clusters = groupPositionsIntoClusters(sameType.map((b) => b.position));
+        const latestCluster = clusters[clusters.length - 1];
+        if (latestCluster.length >= clusterLimits[type]) {
+          // Start a new cluster elsewhere
+          position = randomPosition(rng, occupied, cols, rows);
+          // Roll a new random limit for the next cluster
+          clusterLimits[type] = cfg.clusterSize.min +
+            Math.floor(rng() * (cfg.clusterSize.max - cfg.clusterSize.min + 1));
+        } else {
+          position = findClusteredPosition(latestCluster, occupied, cols, rows);
+        }
       } else {
         position = randomPosition(rng, occupied, cols, rows);
       }
@@ -738,6 +821,81 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
     }))
   );
 
+  // Generate rivers using seeded random walk
+  const rc = GAME_CONFIG.world.rivers;
+  const riverCount = countFor(rc.threshold, rc.repeatEvery);
+  const rivers: River[] = [];
+  const halfGrid = Math.floor(cols / 2) - 1;
+  const directions = [
+    { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+  ];
+
+  for (let ri = 0; ri < riverCount; ri++) {
+    const extraLen = Math.floor(Math.max(0, treeCount - rc.threshold) * rc.lengthGrowth);
+    const targetLen = Math.min(
+      rc.length.min + Math.floor(rng() * (rc.length.max - rc.length.min + 1)) + extraLen,
+      rc.maxLength
+    );
+
+    // Find a start on the edge
+    let start: Position | null = null;
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const edge = Math.floor(rng() * 4);
+      const pos = Math.floor(rng() * (halfGrid * 2 + 1)) - halfGrid;
+      const candidate: Position = edge === 0 ? { x: pos, y: -halfGrid }
+        : edge === 1 ? { x: pos, y: halfGrid }
+        : edge === 2 ? { x: -halfGrid, y: pos }
+        : { x: halfGrid, y: pos };
+      if (!occupied.has(`${candidate.x},${candidate.y}`)) {
+        start = candidate;
+        break;
+      }
+    }
+    if (!start) continue;
+
+    // Walk the path with snake constraint
+    const path: Position[] = [start];
+    const pathSet = new Set<string>([`${start.x},${start.y}`]);
+
+    for (let step = 1; step < targetLen; step++) {
+      const current = path[path.length - 1];
+      const shuffled = [...directions].sort(() => rng() - 0.5);
+      let moved = false;
+      for (const dir of shuffled) {
+        const nx = current.x + dir.dx;
+        const ny = current.y + dir.dy;
+        const key = `${nx},${ny}`;
+        if (Math.abs(nx) > halfGrid || Math.abs(ny) > halfGrid) continue;
+        if (occupied.has(key) || pathSet.has(key)) continue;
+        // Snake constraint: check no cardinal adjacency to non-consecutive path tiles
+        let violation = false;
+        for (const d of directions) {
+          const ax = nx + d.dx;
+          const ay = ny + d.dy;
+          for (let pi = 0; pi < path.length - 1; pi++) {
+            if (path[pi].x === ax && path[pi].y === ay) {
+              violation = true;
+              break;
+            }
+          }
+          if (violation) break;
+        }
+        if (violation) continue;
+        path.push({ x: nx, y: ny });
+        pathSet.add(key);
+        moved = true;
+        break;
+      }
+      if (!moved) break;
+    }
+
+    if (path.length >= 3) {
+      path.forEach(p => occupied.add(`${p.x},${p.y}`));
+      rivers.push({ id: `sim_river_${ri}`, tiles: path, createdAt: now });
+    }
+  }
+
   const illustriousPresets = {
     days: [] as string[],
     months: ['radiant_fountain'],
@@ -752,7 +910,7 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
   }));
 
   return {
-    trees, flowers, buildings, animals, illustriousItems,
+    trees, flowers, buildings, animals, rivers, illustriousItems,
     mapSize: { width: gridSize, height: gridSize },
     gridSize,
     lastUpdated: now,

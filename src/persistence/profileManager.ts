@@ -20,6 +20,7 @@ export class ProfileManager {
       flowers: [],
       buildings: [],
       animals: [],
+      rivers: [],
       illustriousItems: [],
       mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
       gridSize: GAME_CONFIG.map.initialGridSize,
@@ -62,7 +63,14 @@ export class ProfileManager {
    */
   static async loadProfiles(): Promise<UserProfile[]> {
     const profiles = await Storage.get<UserProfile[]>(STORAGE_KEYS.PROFILES);
-    return profiles || [];
+    // Migrate older profiles that may lack newer fields
+    return (profiles || []).map(p => ({
+      ...p,
+      worldState: {
+        ...p.worldState,
+        rivers: p.worldState.rivers ?? [],
+      },
+    }));
   }
 
   /**

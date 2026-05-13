@@ -44,6 +44,7 @@ export interface WorldState {
   flowers: Flower[];
   buildings: Building[];
   animals: Animal[];
+  rivers: River[];
   illustriousItems: IllustriousItem[];
   mapSize: {
     width: number;
@@ -71,6 +72,12 @@ export interface Animal {
   id: string;
   type: 'bird' | 'rabbit' | 'deer' | 'squirrel';
   position: Position;
+  createdAt: number;
+}
+
+export interface River {
+  id: string;
+  tiles: Position[]; // Ordered sequence of cardinally-connected water tiles
   createdAt: number;
 }
 
@@ -134,11 +141,12 @@ export interface AppSettings {
 export interface DayProcessingResult {
   treesAdded: Tree[];
   treesDecayed: Tree[];
-  treesRemoved: string[]; // Tree IDs
+  treesRemoved: string[];
   buildingsAdded: Building[];
   animalsAdded: Animal[];
+  riversAdded: River[];
   illustriousItemsAdded: IllustriousItem[];
-  illustriousItemsRemoved: string[]; // Item IDs
+  illustriousItemsRemoved: string[];
 }
 
 // ===== Helper Types =====

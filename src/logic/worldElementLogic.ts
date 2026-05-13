@@ -10,6 +10,7 @@
 import {
   Building,
   Animal,
+  River,
   Tree,
   Position,
 } from '../types/models';
@@ -136,8 +137,23 @@ export class WorldElementLogic {
 
     let position: Position;
     if (sameType.length > 0) {
-      // Cluster: place adjacent to existing same-type buildings (street pattern)
-      position = this.findClusterPosition(sameType.map((b) => b.position), allOccupied);
+      // Check if current cluster has reached its random size limit
+      const config = GAME_CONFIG.world.buildings[type];
+      const clusters = this.groupIntoClusters(sameType.map((b) => b.position));
+      const latestCluster = clusters[clusters.length - 1];
+      const clusterLimit = config.clusterSize.min +
+        Math.floor(Math.random() * (config.clusterSize.max - config.clusterSize.min + 1));
+
+      if (latestCluster.length >= clusterLimit) {
+        // Start a new cluster away from existing ones
+        position = this.findClearPosition(
+          trees.map((t) => t.position),
+          allBuildings.map((b) => b.position)
+        );
+      } else {
+        // Continue current cluster (street pattern)
+        position = this.findClusterPosition(latestCluster, allOccupied);
+      }
     } else {
       // First of this type: place near tree cluster
       position = this.findClearPosition(
@@ -152,6 +168,39 @@ export class WorldElementLogic {
       position,
       createdAt: now,
     };
+  }
+
+  /**
+   * Group positions into clusters based on proximity (within distance 4).
+   * Returns an array of clusters, each being an array of positions.
+   */
+  private static groupIntoClusters(positions: Position[]): Position[][] {
+    const clusters: Position[][] = [];
+    const assigned = new Set<number>();
+
+    for (let i = 0; i < positions.length; i++) {
+      if (assigned.has(i)) continue;
+      const cluster: Position[] = [positions[i]];
+      assigned.add(i);
+
+      // BFS to find all connected positions within distance 4
+      const queue = [positions[i]];
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        for (let j = 0; j < positions.length; j++) {
+          if (assigned.has(j)) continue;
+          const dist = Math.abs(positions[j].x - current.x) + Math.abs(positions[j].y - current.y);
+          if (dist <= 4) {
+            cluster.push(positions[j]);
+            assigned.add(j);
+            queue.push(positions[j]);
+          }
+        }
+      }
+      clusters.push(cluster);
+    }
+
+    return clusters;
   }
 
   /**
@@ -245,5 +294,183 @@ export class WorldElementLogic {
     }
 
     return { x: radius + 1, y: 0 };
+  }
+
+  // --- River logic ---
+
+  /**
+   * Evaluate how many rivers should exist and return any new ones to add.
+   */
+  static evaluateRivers(
+    treeCount: number,
+    existingRivers: River[],
+    trees: Tree[],
+    buildings: Building[]
+  ): River[] {
+    const rc = GAME_CONFIG.world.rivers;
+    const desired = targetCount(treeCount, rc.threshold, rc.repeatEvery);
+    const needed = desired - existingRivers.length;
+    if (needed <= 0) return [];
+
+    const occupied = new Set<string>([
+      ...trees.map((t) => `${t.position.x},${t.position.y}`),
+      ...buildings.map((b) => `${b.position.x},${b.position.y}`),
+      ...existingRivers.flatMap((r) => r.tiles.map((t) => `${t.x},${t.y}`)),
+    ]);
+
+    // River length scales with tree count
+    const extraLength = Math.floor((treeCount - rc.threshold) * rc.lengthGrowth);
+    const riverLength = Math.min(
+      rc.length.min + Math.floor(Math.random() * (rc.length.max - rc.length.min + 1)) + extraLength,
+      rc.maxLength
+    );
+
+    const newRivers: River[] = [];
+    for (let i = 0; i < needed; i++) {
+      const river = this.generateRiver(riverLength, occupied);
+      if (river) {
+        river.tiles.forEach((t) => occupied.add(`${t.x},${t.y}`));
+        newRivers.push(river);
+      }
+    }
+    return newRivers;
+  }
+
+  /**
+   * Generate a single river with a snaking path.
+   * The snake constraint: no water tile may be cardinally adjacent to a
+   * non-consecutive tile in the path (prevents thick/blobby water).
+   */
+  private static generateRiver(
+    targetLength: number,
+    occupied: Set<string>
+  ): River | null {
+    const now = Date.now();
+    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
+    const maxAttempts = 10;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const start = this.findRiverStart(gridHalf, occupied);
+      if (!start) continue;
+
+      const path = this.walkRiverPath(start, targetLength, gridHalf, occupied);
+      if (path.length >= Math.max(3, Math.floor(targetLength * 0.5))) {
+        return {
+          id: `river_${now}_${attempt}`,
+          tiles: path,
+          createdAt: now,
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Find a starting position for a river near the map edge.
+   */
+  private static findRiverStart(
+    gridHalf: number,
+    occupied: Set<string>
+  ): Position | null {
+    // Try random positions along the map edges
+    const edges: Position[] = [];
+    for (let i = -gridHalf; i <= gridHalf; i++) {
+      edges.push({ x: i, y: -gridHalf }); // top
+      edges.push({ x: i, y: gridHalf });  // bottom
+      edges.push({ x: -gridHalf, y: i }); // left
+      edges.push({ x: gridHalf, y: i });  // right
+    }
+    // Shuffle edges
+    for (let i = edges.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [edges[i], edges[j]] = [edges[j], edges[i]];
+    }
+    for (const pos of edges) {
+      if (!occupied.has(`${pos.x},${pos.y}`)) {
+        return pos;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Random-walk to build a snaking river path.
+   * At each step, picks a random cardinal direction that:
+   *  - is within bounds
+   *  - is not occupied
+   *  - does not cardinally touch any earlier path tile except the previous one
+   */
+  private static walkRiverPath(
+    start: Position,
+    targetLength: number,
+    gridHalf: number,
+    occupied: Set<string>
+  ): Position[] {
+    const path: Position[] = [start];
+    const pathSet = new Set<string>([`${start.x},${start.y}`]);
+    const directions = [
+      { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+    ];
+
+    for (let step = 1; step < targetLength; step++) {
+      const current = path[path.length - 1];
+      // Shuffle directions for randomness
+      const shuffled = [...directions].sort(() => Math.random() - 0.5);
+
+      let moved = false;
+      for (const dir of shuffled) {
+        const nx = current.x + dir.dx;
+        const ny = current.y + dir.dy;
+        const key = `${nx},${ny}`;
+
+        // Bounds check
+        if (Math.abs(nx) > gridHalf || Math.abs(ny) > gridHalf) continue;
+        // Already occupied by tree/building/other river
+        if (occupied.has(key)) continue;
+        // Already in this path
+        if (pathSet.has(key)) continue;
+        // Snake constraint: new tile must not be cardinally adjacent to any
+        // path tile except the current one (the previous in the path)
+        if (this.violatesSnakeConstraint(nx, ny, path, path.length - 1)) continue;
+
+        path.push({ x: nx, y: ny });
+        pathSet.add(key);
+        moved = true;
+        break;
+      }
+
+      if (!moved) break; // Dead end — stop growing
+    }
+
+    return path;
+  }
+
+  /**
+   * Check if placing water at (x,y) would cardinally touch a path tile
+   * other than the one at `allowIndex` (the current head).
+   */
+  private static violatesSnakeConstraint(
+    x: number,
+    y: number,
+    path: Position[],
+    allowIndex: number
+  ): boolean {
+    const cardinals = [
+      { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+    ];
+    for (const dir of cardinals) {
+      const ax = x + dir.dx;
+      const ay = y + dir.dy;
+      for (let i = 0; i < path.length; i++) {
+        if (i === allowIndex) continue;
+        if (path[i].x === ax && path[i].y === ay) {
+          // Adjacent to a non-consecutive path tile — violation
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }

@@ -61,15 +61,22 @@ export const GAME_CONFIG = {
       quranBoost: 1.5, // Multiplier when logging Qur'an
     },
     buildings: {
-      home: { threshold: 30, repeatEvery: 20 },
-      mansion: { threshold: 60, repeatEvery: 40 },
-      palace: { threshold: 100, repeatEvery: 80 },
+      home: { threshold: 30, repeatEvery: 20, clusterSize: { min: 3, max: 6 } },
+      mansion: { threshold: 60, repeatEvery: 40, clusterSize: { min: 2, max: 4 } },
+      palace: { threshold: 100, repeatEvery: 80, clusterSize: { min: 1, max: 2 } },
     },
     animals: {
       birds: { threshold: 5, repeatEvery: 8 },
       rabbits: { threshold: 15, repeatEvery: 15 },
       deer: { threshold: 40, repeatEvery: 30 },
       squirrels: { threshold: 25, repeatEvery: 20 },
+    },
+    rivers: {
+      threshold: 35, // Trees needed before first river appears
+      repeatEvery: 30, // Additional river per N trees beyond threshold
+      length: { min: 6, max: 10 }, // Base river length in tiles
+      lengthGrowth: 0.1, // Extra tiles per tree above threshold
+      maxLength: 25, // Cap on river length
     },
   },
 
