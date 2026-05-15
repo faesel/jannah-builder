@@ -70,7 +70,7 @@ export interface Building {
 
 export interface Animal {
   id: string;
-  type: 'bird' | 'rabbit' | 'deer' | 'squirrel';
+  type: 'bird' | 'rabbit' | 'deer' | 'squirrel' | 'black_cat';
   position: Position;
   createdAt: number;
 }

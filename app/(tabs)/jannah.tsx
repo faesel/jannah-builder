@@ -51,7 +51,10 @@ export default function JannahScreen() {
             result.treesDecayed.length > 0 ||
             result.treesRemoved.length > 0 ||
             result.buildingsAdded.length > 0 ||
+            result.buildingsRemoved.length > 0 ||
             result.animalsAdded.length > 0 ||
+            result.animalsRemoved.length > 0 ||
+            result.riversAdded.length > 0 ||
             result.illustriousItemsAdded.length > 0 ||
             result.illustriousItemsRemoved.length > 0;
 
@@ -81,7 +84,16 @@ export default function JannahScreen() {
 
   // Find today's prayer log to drive visual effects
   const today = PrayerLogic.getTodayDate();
+  const yesterday = PrayerLogic.getPreviousDate(today);
   const todayLog = profile?.prayerLogs.find((l) => l.date === today);
+  const yesterdayLog = profile?.prayerLogs.find((l) => l.date === yesterday);
+
+  // Qur'an glowing flowers persist for 2 days
+  const quranLoggedDate = todayLog?.quranLogged
+    ? today
+    : yesterdayLog?.quranLogged
+      ? yesterday
+      : undefined;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -91,7 +103,8 @@ export default function JannahScreen() {
             worldState={worldState}
             screenWidth={layout.width}
             screenHeight={layout.height}
-            quranLogged={todayLog?.quranLogged}
+            quranLogged={Boolean(quranLoggedDate)}
+            quranLoggedDate={quranLoggedDate}
             dhikrLogged={todayLog?.dhikrLogged}
           />
         )}

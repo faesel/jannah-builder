@@ -177,6 +177,19 @@ export class WorldElementLogic {
     return null;
   }
 
+  /**
+   * Find a position for a new animal (public helper for ad-hoc spawns like black_cat).
+   */
+  static findPositionForAnimal(
+    trees: Tree[],
+    existingAnimals: Animal[]
+  ): Position {
+    return this.findClearPosition(
+      trees.map((t) => t.position),
+      existingAnimals.map((a) => a.position)
+    );
+  }
+
   // --- Private helpers ---
 
   private static createBuilding(

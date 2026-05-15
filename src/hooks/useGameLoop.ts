@@ -78,7 +78,10 @@ export function useGameLoop(): GameLoopState {
               result.treesDecayed.length > 0 ||
               result.treesRemoved.length > 0 ||
               result.buildingsAdded.length > 0 ||
+              result.buildingsRemoved.length > 0 ||
               result.animalsAdded.length > 0 ||
+              result.animalsRemoved.length > 0 ||
+              result.riversAdded.length > 0 ||
               result.illustriousItemsAdded.length > 0 ||
               result.illustriousItemsRemoved.length > 0;
 

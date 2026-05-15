@@ -23,10 +23,11 @@ interface JannahCanvasProps {
   screenWidth: number;
   screenHeight: number;
   quranLogged?: boolean;
+  quranLoggedDate?: string;
   dhikrLogged?: boolean;
 }
 
-export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, dhikrLogged }: JannahCanvasProps) {
+export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, quranLoggedDate, dhikrLogged }: JannahCanvasProps) {
   if (GAME_CONFIG.debug.showAllSprites) {
     return <SpriteDebugOnMap screenWidth={screenWidth} screenHeight={screenHeight} />;
   }
@@ -219,7 +220,7 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 
       {/* Qur'an glowing flowers */}
       {quranLogged && (
-        <QuranFlowers cols={cols} rows={rows} tileSize={tileSize} />
+        <QuranFlowers cols={cols} rows={rows} tileSize={tileSize} seed={quranLoggedDate ?? 'default'} />
       )}
 
       {/* Dhikr floating particles */}
@@ -304,6 +305,7 @@ const ANIMAL_SPEED: Record<string, number> = {
   rabbit: 900,
   squirrel: 1000,
   deer: 1100,    // slowest
+  black_cat: 1100, // same behaviour as deer
 };
 
 const FEED_FRAME_MS = 500; // time per feeding frame
@@ -645,16 +647,38 @@ function FountainDroplets({ left, top, tileSize }: {
 // Qur'an Glowing Flowers
 // ============================================================
 
-function QuranFlowers({ cols, rows, tileSize }: { cols: number; rows: number; tileSize: number }) {
-  // Place flowers at fixed, visible positions spread across the map
+/**
+ * Simple deterministic hash for seeding flower positions from a date string.
+ */
+function hashSeed(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function QuranFlowers({ cols, rows, tileSize, seed }: { cols: number; rows: number; tileSize: number; seed: string }) {
+  // Generate random but deterministic positions based on the seed (date)
   const flowers = useMemo(() => {
-    const positions = [
-      { col: Math.floor(cols * 0.25), row: Math.floor(rows * 0.25) },
-      { col: Math.floor(cols * 0.75), row: Math.floor(rows * 0.35) },
-      { col: Math.floor(cols * 0.5), row: Math.floor(rows * 0.65) },
-    ];
-    return positions.map((p, i) => ({ id: i, ...p }));
-  }, [cols, rows]);
+    // Determine count: 1-4 flowers, deterministic from seed
+    const countSeed = hashSeed(seed + '_count');
+    const count = 1 + (countSeed % 4); // 1 to 4
+    const positions: { id: number; col: number; row: number }[] = [];
+
+    for (let i = 0; i < count; i++) {
+      // Use hash + index to create pseudo-random but stable positions
+      const colSeed = hashSeed(`${seed}_col_${i}`);
+      const rowSeed = hashSeed(`${seed}_row_${i}`);
+      // Keep 10% margin from edges
+      const margin = 0.1;
+      const col = Math.floor((margin + ((colSeed % 1000) / 1000) * (1 - 2 * margin)) * cols);
+      const row = Math.floor((margin + ((rowSeed % 1000) / 1000) * (1 - 2 * margin)) * rows);
+      positions.push({ id: i, col, row });
+    }
+    return positions;
+  }, [cols, rows, seed]);
 
   return (
     <>
@@ -666,13 +690,13 @@ function QuranFlowers({ cols, rows, tileSize }: { cols: number; rows: number; ti
 }
 
 function GlowingFlower({ col, row, tileSize }: { col: number; row: number; tileSize: number }) {
-  const pulseAnim = useRef(new Animated.Value(0.7)).current;
+  const pulseAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.7, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
       ])
     );
     anim.start();
@@ -700,12 +724,12 @@ function GlowingFlower({ col, row, tileSize }: { col: number; row: number; tileS
         width: size,
         height: size,
         borderRadius: tileSize,
-        backgroundColor: 'rgba(255, 215, 0, 0.35)',
+        backgroundColor: 'rgba(255, 215, 0, 0.55)',
         shadowColor: '#FFD700',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
-        shadowRadius: 16,
-        elevation: 10,
+        shadowRadius: 24,
+        elevation: 12,
       }} />
       <Image
         source={FLOWER_SPRITES.enhanced}

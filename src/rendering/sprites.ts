@@ -56,6 +56,7 @@ export const ANIMAL_SPRITES = {
   rabbit: require('../../assets/sprites/animals/rabbit.png'),
   deer: require('../../assets/sprites/animals/deer.png'),
   squirrel: require('../../assets/sprites/animals/squirrel.png'),
+  black_cat: require('../../assets/sprites/animals/black_cat.png'),
 };
 
 export type AnimalDirection = 'up' | 'down' | 'left' | 'right';
@@ -80,6 +81,11 @@ export const ANIMAL_FEED_SPRITES: Record<string, [number, number, number]> = {
     require('../../assets/sprites/animals/squirrel_feed1.png'),
     require('../../assets/sprites/animals/squirrel_feed2.png'),
     require('../../assets/sprites/animals/squirrel_feed3.png'),
+  ],
+  black_cat: [
+    require('../../assets/sprites/animals/black_cat_feed1.png'),
+    require('../../assets/sprites/animals/black_cat_feed2.png'),
+    require('../../assets/sprites/animals/black_cat_feed3.png'),
   ],
 };
 
@@ -107,6 +113,12 @@ export const ANIMAL_MOVE_SPRITES: Record<string, Record<AnimalDirection, number>
     down: require('../../assets/sprites/animals/squirrel_down.png'),
     left: require('../../assets/sprites/animals/squirrel_left.png'),
     right: require('../../assets/sprites/animals/squirrel_right.png'),
+  },
+  black_cat: {
+    up: require('../../assets/sprites/animals/black_cat_up.png'),
+    down: require('../../assets/sprites/animals/black_cat_down.png'),
+    left: require('../../assets/sprites/animals/black_cat_left.png'),
+    right: require('../../assets/sprites/animals/black_cat_right.png'),
   },
 };
 

@@ -16,6 +16,7 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { PrayerLog } from '../../src/types/models';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
+import { WorldLogic } from '../../src/logic/worldLogic';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { GAME_CONFIG } from '../../src/config/game.config';
 
@@ -187,6 +188,14 @@ export default function LogPrayerScreen() {
         (l) => l.date === log.date
       );
 
+      // Count newly logged prayers (false → true transitions)
+      const previousLog = existingLogIndex >= 0 ? profile.prayerLogs[existingLogIndex] : null;
+      const newPrayersLogged = previousLog
+        ? Object.keys(log.prayers).filter(
+            (p) => log.prayers[p as keyof typeof log.prayers] && !previousLog.prayers[p as keyof typeof previousLog.prayers]
+          ).length
+        : Object.values(log.prayers).filter(Boolean).length;
+
       const updatedPrayerLogs = [...profile.prayerLogs];
       if (existingLogIndex >= 0) {
         updatedPrayerLogs[existingLogIndex] = log;
@@ -194,10 +203,17 @@ export default function LogPrayerScreen() {
         updatedPrayerLogs.push(log);
       }
 
-      await ProfileManager.updateProfile({
+      let updatedProfile = {
         ...profile,
         prayerLogs: updatedPrayerLogs,
-      });
+      };
+
+      // Roll for black cat spawn — once per newly logged prayer
+      for (let i = 0; i < newPrayersLogged; i++) {
+        updatedProfile = WorldLogic.trySpawnBlackCat(updatedProfile);
+      }
+
+      await ProfileManager.updateProfile(updatedProfile);
     } catch (err) {
       console.error('[LogPrayerScreen] Error saving prayer:', err);
     }

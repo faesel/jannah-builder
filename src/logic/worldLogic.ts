@@ -8,6 +8,7 @@
  */
 
 import { UserProfile, DayProcessingResult } from '../types/models';
+import { GAME_CONFIG } from '../config/game.config';
 import { PrayerLogic } from './prayerLogic';
 import { TreeLogic } from './treeLogic';
 import { IllustriousItemLogic } from './illustriousItemLogic';
@@ -53,6 +54,20 @@ export class WorldLogic {
           treesNeeded,
           profile.worldState.trees
         );
+      }
+
+      // First-day seedling incentive: plant one sapling on the user's very first complete day
+      if (
+        GAME_CONFIG.trees.firstDaySeedling &&
+        profile.worldState.trees.length === 0 &&
+        result.treesAdded.length === 0
+      ) {
+        const completeLogs = profile.prayerLogs.filter((l) => l.isComplete);
+        const isFirstCompleteDay =
+          completeLogs.length === 1 && completeLogs[0].date === date;
+        if (isFirstCompleteDay) {
+          result.treesAdded = TreeLogic.generateTrees(1, profile.worldState.trees);
+        }
       }
     } else {
       const decayResult = TreeLogic.applyDecay(profile.worldState.trees);
@@ -108,6 +123,24 @@ export class WorldLogic {
     );
     result.illustriousItemsAdded = illustriousResult.itemsToAdd;
     result.illustriousItemsRemoved = illustriousResult.itemIdsToRemove;
+
+    // --- Black cat expiry (temporary animals with duration) ---
+    const blackCatConfig = GAME_CONFIG.world.animals.black_cat;
+    const expiredBlackCats = profile.worldState.animals
+      .filter((a) => a.type === 'black_cat')
+      .filter((a) => {
+        const createdDate = new Date(a.createdAt).toISOString().split('T')[0];
+        const daysDiff = this.daysBetween(createdDate, date);
+        return daysDiff >= blackCatConfig.durationDays;
+      })
+      .map((a) => a.id);
+
+    if (expiredBlackCats.length > 0) {
+      result.animalsRemoved = Array.from(new Set([
+        ...result.animalsRemoved,
+        ...expiredBlackCats,
+      ]));
+    }
 
     return result;
   }
@@ -247,5 +280,52 @@ export class WorldLogic {
     }
 
     return trees.filter((t) => !result.treesRemoved.includes(t.id));
+  }
+
+  /**
+   * Calculate the number of days between two ISO date strings.
+   */
+  private static daysBetween(dateA: string, dateB: string): number {
+    const a = new Date(dateA + 'T00:00:00Z').getTime();
+    const b = new Date(dateB + 'T00:00:00Z').getTime();
+    return Math.floor(Math.abs(b - a) / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * Attempt to spawn a black cat (8% chance per prayer logged).
+   * Returns the updated profile with the cat added if the roll succeeds.
+   */
+  static trySpawnBlackCat(profile: UserProfile): UserProfile {
+    const config = GAME_CONFIG.world.animals.black_cat;
+    if (Math.random() >= config.spawnChance) return profile;
+
+    // Only allow one active black cat at a time
+    const existingCat = profile.worldState.animals.find((a) => a.type === 'black_cat');
+    if (existingCat) return profile;
+
+    const now = Date.now();
+    const position = WorldElementLogic.findPositionForAnimal(
+      profile.worldState.trees,
+      profile.worldState.animals
+    );
+
+    const cat = {
+      id: `animal_black_cat_${now}`,
+      type: 'black_cat' as const,
+      position,
+      createdAt: now,
+    };
+
+    return {
+      ...profile,
+      worldState: {
+        ...profile.worldState,
+        animals: [...profile.worldState.animals, cat],
+      },
+      statistics: {
+        ...profile.statistics,
+        totalAnimalsAppeared: profile.statistics.totalAnimalsAppeared + 1,
+      },
+    };
   }
 }

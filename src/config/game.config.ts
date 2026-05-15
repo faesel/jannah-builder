@@ -19,6 +19,7 @@ export const GAME_CONFIG = {
     daysForNewTree: 3, // Consecutive full days needed to generate one tree
     growthStages: ['sapling', 'young', 'mature'] as const,
     maxTrees: 100, // Reasonable upper limit for performance
+    firstDaySeedling: true, // Plant a sapling on the user's very first complete day
   },
 
   // Decay mechanics
@@ -78,6 +79,7 @@ export const GAME_CONFIG = {
       rabbits: { threshold: 15, repeatEvery: 15 },
       deer: { threshold: 40, repeatEvery: 30 },
       squirrels: { threshold: 25, repeatEvery: 20 },
+      black_cat: { spawnChance: 0.08, durationDays: 2 },
     },
     rivers: {
       threshold: 35, // Trees needed before first river appears
@@ -116,6 +118,7 @@ export const GAME_CONFIG = {
       ambientLightBoost: 1.3,
       flowerDensity: 1.5,
       treeGlow: true,
+      flowerDurationDays: 2, // Glowing flowers persist for this many days
     },
     dhikr: {
       particleCount: 20,

@@ -28,6 +28,15 @@ const colours = {
     nose: '#7B3F00',
     ear: '#D18A3F',
   },
+  black_cat: {
+    body: '#1A1A1A',
+    belly: '#2D2D2D',
+    eye: '#44CC44',
+    nose: '#FF6B8A',
+    ear: '#333333',
+    tail: '#111111',
+    whisker: '#666666',
+  },
 };
 
 function withContext(drawFn) {
@@ -263,12 +272,119 @@ function generateSquirrelSprites() {
   save(withContext((ctx) => drawSquirrelSide(ctx, 'right')), 'animals', 'squirrel_right.png');
 }
 
+function drawBlackCatSide(ctx, facing = 'right', headOffsetY = 0) {
+  const isRight = facing === 'right';
+  const headX = isRight ? 22 : 10;
+  const tailBaseX = isRight ? 7 : 25;
+  const tailTipX = isRight ? 5 : 27;
+  const eyeX = isRight ? 23 : 9;
+  const noseX = isRight ? 25 : 7;
+  const earX = isRight ? 20 : 9;
+
+  // Body — low and elongated like a cat
+  drawPixelRect(ctx, 9, 19, 14, 6, colours.black_cat.body);
+  drawPixelRect(ctx, 10, 20, 12, 4, colours.black_cat.belly);
+
+  // Legs — thin
+  drawPixelRect(ctx, 11, 25, 2, 4, colours.black_cat.body);
+  drawPixelRect(ctx, 19, 25, 2, 4, colours.black_cat.body);
+
+  // Tail — curving upward
+  drawPixelRect(ctx, tailBaseX, 17, 2, 4, colours.black_cat.tail);
+  drawPixelRect(ctx, tailTipX, 15, 2, 3, colours.black_cat.tail);
+
+  // Head — round
+  drawPixelCircle(ctx, headX, 15 + headOffsetY, 4, colours.black_cat.body);
+
+  // Ears — pointed triangles
+  drawPixelRect(ctx, earX, 9 + headOffsetY, 2, 3, colours.black_cat.ear);
+  drawPixelRect(ctx, isRight ? earX + 3 : earX - 3, 9 + headOffsetY, 2, 3, colours.black_cat.ear);
+
+  // Eyes — green, glowing
+  drawPixelRect(ctx, eyeX, 14 + headOffsetY, 2, 1, colours.black_cat.eye);
+
+  // Nose
+  drawPixelRect(ctx, noseX, 16 + headOffsetY, 1, 1, colours.black_cat.nose);
+
+  // Whiskers
+  drawPixelRect(ctx, isRight ? noseX + 1 : noseX - 3, 16 + headOffsetY, 3, 1, colours.black_cat.whisker);
+}
+
+function drawBlackCatUp(ctx) {
+  // Body
+  drawPixelRect(ctx, 11, 12, 10, 14, colours.black_cat.body);
+  drawPixelRect(ctx, 12, 14, 8, 10, colours.black_cat.belly);
+
+  // Head at top
+  drawPixelCircle(ctx, 16, 9, 4, colours.black_cat.body);
+
+  // Ears — pointed
+  drawPixelRect(ctx, 12, 3, 2, 4, colours.black_cat.ear);
+  drawPixelRect(ctx, 18, 3, 2, 4, colours.black_cat.ear);
+
+  // Tail curving from back
+  drawPixelRect(ctx, 15, 26, 2, 3, colours.black_cat.tail);
+  drawPixelRect(ctx, 17, 28, 2, 2, colours.black_cat.tail);
+
+  // Legs
+  drawPixelRect(ctx, 12, 26, 2, 4, colours.black_cat.body);
+  drawPixelRect(ctx, 18, 26, 2, 4, colours.black_cat.body);
+}
+
+function drawBlackCatDown(ctx) {
+  // Body
+  drawPixelRect(ctx, 11, 8, 10, 14, colours.black_cat.body);
+
+  // Head at bottom (facing viewer)
+  drawPixelCircle(ctx, 16, 22, 4, colours.black_cat.body);
+
+  // Ears at top of head
+  drawPixelRect(ctx, 12, 17, 2, 3, colours.black_cat.ear);
+  drawPixelRect(ctx, 18, 17, 2, 3, colours.black_cat.ear);
+
+  // Eyes — green
+  drawPixelRect(ctx, 14, 21, 2, 1, colours.black_cat.eye);
+  drawPixelRect(ctx, 18, 21, 2, 1, colours.black_cat.eye);
+
+  // Nose
+  drawPixelRect(ctx, 16, 23, 1, 1, colours.black_cat.nose);
+
+  // Whiskers
+  drawPixelRect(ctx, 11, 23, 3, 1, colours.black_cat.whisker);
+  drawPixelRect(ctx, 19, 23, 3, 1, colours.black_cat.whisker);
+
+  // Tail peeking behind
+  drawPixelRect(ctx, 15, 4, 2, 4, colours.black_cat.tail);
+  drawPixelRect(ctx, 13, 3, 2, 2, colours.black_cat.tail);
+
+  // Legs
+  drawPixelRect(ctx, 12, 22, 2, 5, colours.black_cat.body);
+  drawPixelRect(ctx, 18, 22, 2, 5, colours.black_cat.body);
+}
+
+function generateBlackCatSprites() {
+  // Idle sprite (side-facing right)
+  save(withContext((ctx) => drawBlackCatSide(ctx, 'right')), 'animals', 'black_cat.png');
+
+  // Feed frames (head bobbing)
+  [1, 3, 1].forEach((offset, index) => {
+    save(withContext((ctx) => drawBlackCatSide(ctx, 'right', offset)), 'animals', `black_cat_feed${index + 1}.png`);
+  });
+
+  // Directional movement
+  save(withContext((ctx) => drawBlackCatUp(ctx)), 'animals', 'black_cat_up.png');
+  save(withContext((ctx) => drawBlackCatDown(ctx)), 'animals', 'black_cat_down.png');
+  save(withContext((ctx) => drawBlackCatSide(ctx, 'left')), 'animals', 'black_cat_left.png');
+  save(withContext((ctx) => drawBlackCatSide(ctx, 'right')), 'animals', 'black_cat_right.png');
+}
+
 function generateAnimalSprites() {
   console.log('🎨 Generating animal animation sprites...');
   generateBirdSprites();
   generateRabbitSprites();
   generateDeerSprites();
   generateSquirrelSprites();
+  generateBlackCatSprites();
   console.log('✅ Animal animation sprites generated!');
 }
 
