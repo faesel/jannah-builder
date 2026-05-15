@@ -47,6 +47,24 @@ export class PrayerLogic {
   }
 
   /**
+   * Unmark a prayer (undo logging)
+   */
+  static unlogPrayer(prayerLog: PrayerLog, prayer: Prayer): PrayerLog {
+    const updatedPrayers = {
+      ...prayerLog.prayers,
+      [prayer]: false,
+    };
+
+    const isComplete = this.checkIfComplete(updatedPrayers);
+
+    return {
+      ...prayerLog,
+      prayers: updatedPrayers,
+      isComplete,
+    };
+  }
+
+  /**
    * Log Qur'an reading for the day
    */
   static logQuran(prayerLog: PrayerLog): PrayerLog {

@@ -83,6 +83,31 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Tips section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tips</Text>
+          <View style={styles.tipsCard}>
+            <View style={styles.tipRow}>
+              <Ionicons name="hand-left-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Undo a prayer:</Text> Long-press on a logged prayer to undo it. You'll be asked to confirm before it's unmarked.
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <Ionicons name="book-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Qur'an &amp; Dhikr:</Text> Tap the Qur'an or Dhikr icons to log them for today. These add gentle visual effects to your garden but don't affect tree growth.
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <Ionicons name="leaf-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Growing trees:</Text> Complete all 5 prayers for 3 consecutive days to grow a new tree. On your very first complete day, you'll receive a seedling as encouragement.
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Danger zone */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
@@ -212,6 +237,39 @@ const styles = StyleSheet.create({
     color: '#8B9D83',
     textAlign: 'right',
     marginBottom: 4,
+  },
+
+  /* ── Tips card ── */
+  tipsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4A5E52',
+    lineHeight: 20,
+  },
+  tipBold: {
+    fontWeight: '600',
+    color: '#2C4A3E',
   },
 
   /* ── Danger zone ── */

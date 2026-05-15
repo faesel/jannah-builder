@@ -26,7 +26,9 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
       totalTreesGrown: 0,
       totalTreesDecayed: 0,
       totalBuildingsCreated: 0,
+      totalBuildingsReturned: 0,
       totalAnimalsAppeared: 0,
+      totalAnimalsReturned: 0,
       mapAge: 0,
       currentStreak: 0,
       longestStreak: 0,
@@ -161,6 +163,7 @@ describe('WorldLogic', () => {
         treesDecayed: [],
         treesRemoved: ['tree_to_remove'],
         buildingsAdded: [],
+        buildingsDecayed: [],
         buildingsRemoved: [],
         animalsAdded: [],
         animalsRemoved: [],
@@ -179,6 +182,7 @@ describe('WorldLogic', () => {
         type: 'home' as const,
         position: { x: 5, y: 5 },
         createdAt: 1000,
+        condition: 'good' as const,
       };
       const profile = makeProfile({
         worldState: {
@@ -198,6 +202,7 @@ describe('WorldLogic', () => {
         treesDecayed: [],
         treesRemoved: [],
         buildingsAdded: [],
+        buildingsDecayed: [],
         buildingsRemoved: ['home_1'],
         animalsAdded: [],
         animalsRemoved: [],
@@ -234,6 +239,7 @@ describe('WorldLogic', () => {
         treesDecayed: [],
         treesRemoved: [],
         buildingsAdded: [],
+        buildingsDecayed: [],
         buildingsRemoved: [],
         animalsAdded: [],
         animalsRemoved: ['bird_1'],

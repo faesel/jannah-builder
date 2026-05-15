@@ -28,6 +28,7 @@ export class WorldLogic {
       treesDecayed: [],
       treesRemoved: [],
       buildingsAdded: [],
+      buildingsDecayed: [],
       buildingsRemoved: [],
       animalsAdded: [],
       animalsRemoved: [],
@@ -81,10 +82,12 @@ export class WorldLogic {
 
     // --- Building & animal decay (when trees drop below thresholds) ---
     if (!dayComplete) {
-      result.buildingsRemoved = WorldElementLogic.decayBuildings(
+      const buildingDecayResult = WorldElementLogic.decayBuildings(
         projectedTreeCount,
         profile.worldState.buildings
       );
+      result.buildingsDecayed = buildingDecayResult.degraded;
+      result.buildingsRemoved = buildingDecayResult.removed;
       result.animalsRemoved = WorldElementLogic.decayAnimals(
         projectedTreeCount,
         profile.worldState.animals
@@ -177,6 +180,18 @@ export class WorldLogic {
       (tree) => !result.treesRemoved.includes(tree.id)
     );
 
+    // Update degraded buildings (good → dilapidated)
+    const updatedBuildings = [...profile.worldState.buildings, ...result.buildingsAdded];
+    for (const degraded of result.buildingsDecayed) {
+      const idx = updatedBuildings.findIndex((b) => b.id === degraded.id);
+      if (idx !== -1) {
+        updatedBuildings[idx] = degraded;
+      }
+    }
+    const filteredBuildings = updatedBuildings.filter(
+      (b) => !result.buildingsRemoved.includes(b.id)
+    );
+
     // Map expansion
     const newMapSize =
       WorldElementLogic.evaluateMapExpansion(
@@ -185,8 +200,13 @@ export class WorldLogic {
       ) ?? profile.worldState.mapSize;
 
     // Statistics
+    const mapAge = Math.max(
+      0,
+      Math.floor((Date.now() - profile.createdAt) / (1000 * 60 * 60 * 24))
+    );
     const statistics = {
       ...profile.statistics,
+      mapAge,
       totalTreesGrown:
         profile.statistics.totalTreesGrown + result.treesAdded.length,
       totalTreesDecayed:
@@ -195,8 +215,12 @@ export class WorldLogic {
         result.treesRemoved.length,
       totalBuildingsCreated:
         profile.statistics.totalBuildingsCreated + result.buildingsAdded.length,
+      totalBuildingsReturned:
+        profile.statistics.totalBuildingsReturned + result.buildingsRemoved.length,
       totalAnimalsAppeared:
         profile.statistics.totalAnimalsAppeared + result.animalsAdded.length,
+      totalAnimalsReturned:
+        profile.statistics.totalAnimalsReturned + result.animalsRemoved.length,
     };
 
     return {
@@ -205,10 +229,7 @@ export class WorldLogic {
         ...profile.worldState,
         trees: filteredTrees,
         flowers: profile.worldState.flowers,
-        buildings: [
-          ...profile.worldState.buildings,
-          ...result.buildingsAdded,
-        ].filter((b) => !result.buildingsRemoved.includes(b.id)),
+        buildings: filteredBuildings,
         animals: [
           ...profile.worldState.animals,
           ...result.animalsAdded,

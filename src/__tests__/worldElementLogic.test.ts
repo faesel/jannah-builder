@@ -49,7 +49,7 @@ describe('WorldElementLogic', () => {
 
     it('does not duplicate already existing buildings', () => {
       const existing: Building[] = [
-        { id: 'b1', type: 'home', position: { x: 5, y: 5 }, createdAt: 0 },
+        { id: 'b1', type: 'home', position: { x: 5, y: 5 }, createdAt: 0, condition: 'good' },
       ];
       const result = WorldElementLogic.evaluateBuildings(60, existing, makeTrees(60));
       // Should add 1 more home (need 2, have 1) + 1 mansion
@@ -256,7 +256,7 @@ describe('WorldElementLogic', () => {
     it('does not overlap trees or buildings', () => {
       const trees = makeTrees(50);
       const buildings = [
-        { id: 'b1', type: 'home' as const, position: { x: -5, y: -5 }, createdAt: 0 },
+        { id: 'b1', type: 'home' as const, position: { x: -5, y: -5 }, createdAt: 0, condition: 'good' as const },
       ];
       const result = WorldElementLogic.evaluateRivers(50, [], trees, buildings);
       const treePositions = new Set(trees.map((t) => `${t.position.x},${t.position.y}`));
@@ -273,39 +273,55 @@ describe('WorldElementLogic', () => {
   describe('decayBuildings', () => {
     it('returns empty when tree count meets threshold', () => {
       const buildings: Building[] = [
-        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100 },
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100, condition: 'good' },
       ];
       const result = WorldElementLogic.decayBuildings(
         GAME_CONFIG.world.buildings.home.threshold,
         buildings
       );
-      expect(result).toHaveLength(0);
+      expect(result.degraded).toHaveLength(0);
+      expect(result.removed).toHaveLength(0);
     });
 
-    it('removes one building when trees drop below threshold', () => {
+    it('degrades a good building to dilapidated when trees drop below threshold', () => {
       const buildings: Building[] = [
-        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100 },
-        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200 },
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100, condition: 'good' },
+        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200, condition: 'good' },
       ];
       // Only 1 home is warranted at threshold, so 1 excess
       const result = WorldElementLogic.decayBuildings(
         GAME_CONFIG.world.buildings.home.threshold,
         buildings
       );
-      expect(result).toHaveLength(1);
-      // Should remove the newest one
-      expect(result[0]).toBe('home_2');
+      expect(result.degraded).toHaveLength(1);
+      expect(result.removed).toHaveLength(0);
+      expect(result.degraded[0].id).toBe('home_2');
+      expect(result.degraded[0].condition).toBe('dilapidated');
     });
 
-    it('removes at most one building per call', () => {
+    it('removes a dilapidated building on next decay', () => {
       const buildings: Building[] = [
-        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100 },
-        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200 },
-        { id: 'home_3', type: 'home', position: { x: 4, y: 4 }, createdAt: 300 },
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100, condition: 'good' },
+        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200, condition: 'dilapidated' },
       ];
-      // 0 trees: 0 homes warranted, 3 excess, but only remove 1
+      const result = WorldElementLogic.decayBuildings(
+        GAME_CONFIG.world.buildings.home.threshold,
+        buildings
+      );
+      expect(result.degraded).toHaveLength(0);
+      expect(result.removed).toHaveLength(1);
+      expect(result.removed[0]).toBe('home_2');
+    });
+
+    it('affects at most one building per call', () => {
+      const buildings: Building[] = [
+        { id: 'home_1', type: 'home', position: { x: 0, y: 0 }, createdAt: 100, condition: 'good' },
+        { id: 'home_2', type: 'home', position: { x: 2, y: 2 }, createdAt: 200, condition: 'good' },
+        { id: 'home_3', type: 'home', position: { x: 4, y: 4 }, createdAt: 300, condition: 'good' },
+      ];
+      // 0 trees: 0 homes warranted, 3 excess, but only affect 1
       const result = WorldElementLogic.decayBuildings(0, buildings);
-      expect(result).toHaveLength(1);
+      expect(result.degraded.length + result.removed.length).toBe(1);
     });
   });
 

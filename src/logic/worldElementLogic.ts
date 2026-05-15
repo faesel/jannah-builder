@@ -99,17 +99,18 @@ export class WorldElementLogic {
   }
 
   /**
-   * Determine which buildings should be removed when trees drop below thresholds.
-   * Removes one building at a time — the most recently created one whose type
-   * now exceeds the desired count for the current tree level.
+   * Determine building decay when trees drop below thresholds.
+   * Buildings degrade: good → dilapidated → removed.
+   * Only one building is affected per missed day.
    */
   static decayBuildings(
     treeCount: number,
     existingBuildings: Building[]
-  ): string[] {
-    if (!GAME_CONFIG.decay.buildings.enabled) return [];
+  ): { degraded: Building[]; removed: string[] } {
+    if (!GAME_CONFIG.decay.buildings.enabled) return { degraded: [], removed: [] };
 
-    const removals: string[] = [];
+    const degraded: Building[] = [];
+    const removed: string[] = [];
 
     for (const { type, threshold, repeatEvery } of BUILDING_TYPES) {
       const desired = targetCount(treeCount, threshold, repeatEvery);
@@ -118,13 +119,18 @@ export class WorldElementLogic {
         .sort((a, b) => b.createdAt - a.createdAt); // newest first
 
       const excess = ofType.length - desired;
-      for (let i = 0; i < excess && i < 1; i++) {
-        removals.push(ofType[i].id);
+      if (excess > 0) {
+        const target = ofType[0];
+        if (target.condition === 'dilapidated') {
+          removed.push(target.id);
+        } else {
+          degraded.push({ ...target, condition: 'dilapidated' });
+        }
+        break; // Only one building affected per missed day
       }
     }
 
-    // Only remove one building per missed day to keep decay gentle
-    return removals.slice(0, 1);
+    return { degraded, removed };
   }
 
   /**
@@ -238,6 +244,7 @@ export class WorldElementLogic {
       type,
       position,
       createdAt: now,
+      condition: 'good' as const,
     };
   }
 

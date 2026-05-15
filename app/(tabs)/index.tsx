@@ -131,7 +131,7 @@ export default function LogPrayerScreen() {
           text: 'Undo',
           style: 'destructive',
           onPress: () => {
-            const updatedLog = PrayerLogic.logPrayer(
+            const updatedLog = PrayerLogic.unlogPrayer(
               todayLog,
               prayer as typeof GAME_CONFIG.prayers.dailyPrayers[number]
             );

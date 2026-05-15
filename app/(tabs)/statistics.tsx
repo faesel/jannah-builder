@@ -145,6 +145,11 @@ export default function StatisticsScreen() {
   }
 
   const { statistics, worldState, prayerLogs } = profile;
+
+  const gardenAge = Math.max(
+    0,
+    Math.floor((Date.now() - profile.createdAt) / (1000 * 60 * 60 * 24))
+  );
   const days = getLast7Days(prayerLogs);
 
   const totalPrayersLogged = prayerLogs.reduce(
@@ -327,7 +332,12 @@ export default function StatisticsScreen() {
                 <View style={styles.statsRow}>
                   <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={statistics.totalBuildingsCreated} />
                   <View style={styles.gridGap} />
+                  <StatCard icon={<Ionicons name="home-outline" size={24} color="#9BAAB8" />} label="Buildings Returned" value={statistics.totalBuildingsReturned ?? 0} />
+                </View>
+                <View style={styles.statsRow}>
                   <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={statistics.totalAnimalsAppeared} />
+                  <View style={styles.gridGap} />
+                  <StatCard icon={<Ionicons name="paw-outline" size={24} color="#B8A08A" />} label="Animals Returned" value={statistics.totalAnimalsReturned ?? 0} />
                 </View>
               </>
             )}
@@ -344,7 +354,7 @@ export default function StatisticsScreen() {
                 <Text style={styles.worldLabel}>Garden age</Text>
               </View>
               <Text style={styles.worldValue}>
-                {statistics.mapAge} {statistics.mapAge === 1 ? 'day' : 'days'}
+                {gardenAge} {gardenAge === 1 ? 'day' : 'days'}
               </Text>
             </View>
           </View>

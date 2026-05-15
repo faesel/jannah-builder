@@ -280,17 +280,28 @@ function FlowerSprite({ flower, center, centerRow, tileSize }: {
 function BuildingSprite({ building, center, centerRow, tileSize }: {
   building: Building; center: number; centerRow: number; tileSize: number;
 }) {
+  const isDilapidated = building.condition === 'dilapidated';
+
   return (
-    <Image
-      source={BUILDING_SPRITES[building.type]}
+    <View
       style={{
         position: 'absolute',
         left: (building.position.x + center) * tileSize,
         top: (building.position.y + centerRow) * tileSize,
         width: tileSize,
         height: tileSize,
+        opacity: isDilapidated ? 0.5 : 1,
       }}
-    />
+    >
+      <Image
+        source={BUILDING_SPRITES[building.type]}
+        style={{
+          width: tileSize,
+          height: tileSize,
+          tintColor: isDilapidated ? '#8B7355' : undefined,
+        }}
+      />
+    </View>
   );
 }
 
@@ -1012,7 +1023,7 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
       } else {
         position = randomPosition(rng, occupied, cols, rows);
       }
-      buildings.push({ id: `sim_bld_${type}_${i}`, type, position, createdAt: now });
+      buildings.push({ id: `sim_bld_${type}_${i}`, type, position, createdAt: now, condition: 'good' as const });
     }
   }
 

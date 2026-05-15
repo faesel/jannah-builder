@@ -66,6 +66,7 @@ export interface Building {
   type: 'home' | 'mansion' | 'palace';
   position: Position;
   createdAt: number;
+  condition: 'good' | 'dilapidated';
 }
 
 export interface Animal {
@@ -108,7 +109,9 @@ export interface Statistics {
   totalTreesGrown: number;
   totalTreesDecayed: number;
   totalBuildingsCreated: number;
+  totalBuildingsReturned: number;
   totalAnimalsAppeared: number;
+  totalAnimalsReturned: number;
   mapAge: number; // Days since first prayer
   currentStreak: number;
   longestStreak: number;
@@ -143,6 +146,7 @@ export interface DayProcessingResult {
   treesDecayed: Tree[];
   treesRemoved: string[];
   buildingsAdded: Building[];
+  buildingsDecayed: Building[]; // Buildings degraded to dilapidated state
   buildingsRemoved: string[];
   animalsAdded: Animal[];
   animalsRemoved: string[];
