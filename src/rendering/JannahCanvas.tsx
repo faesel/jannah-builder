@@ -701,13 +701,13 @@ function QuranFlowers({ cols, rows, tileSize, seed }: { cols: number; rows: numb
 }
 
 function GlowingFlower({ col, row, tileSize }: { col: number; row: number; tileSize: number }) {
-  const pulseAnim = useRef(new Animated.Value(0.8)).current;
+  const pulseAnim = useRef(new Animated.Value(0.05)).current;
 
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 0.8, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.05, duration: 1500, useNativeDriver: true }),
       ])
     );
     anim.start();

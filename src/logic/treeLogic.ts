@@ -94,47 +94,28 @@ export class TreeLogic {
       allTrees.map((t) => `${t.position.x},${t.position.y}`)
     );
 
-    // Start from center and spiral outward
-    let x = 0;
-    let y = 0;
-    let dx = 0;
-    let dy = -1;
-    let maxSteps = 1;
-    let steps = 0;
-    let stepChanges = 0;
+    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
 
-    // Spiral search up to reasonable limit
-    for (let i = 0; i < 1000; i++) {
+    // Try random positions within the grid
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const x = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
+      const y = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
       const key = `${x},${y}`;
       if (!occupied.has(key)) {
         return { x, y };
       }
+    }
 
-      x += dx;
-      y += dy;
-      steps++;
-
-      if (steps === maxSteps) {
-        steps = 0;
-        stepChanges++;
-
-        // Change direction
-        const temp = dx;
-        dx = -dy;
-        dy = temp;
-
-        if (stepChanges === 2) {
-          maxSteps++;
-          stepChanges = 0;
+    // Fallback: scan for any free position
+    for (let x = -gridHalf; x <= gridHalf; x++) {
+      for (let y = -gridHalf; y <= gridHalf; y++) {
+        if (!occupied.has(`${x},${y}`)) {
+          return { x, y };
         }
       }
     }
 
-    // Fallback to random position if spiral fails
-    return {
-      x: Math.floor(Math.random() * 20) - 10,
-      y: Math.floor(Math.random() * 20) - 10,
-    };
+    return { x: 0, y: 0 };
   }
 
   /**

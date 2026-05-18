@@ -66,13 +66,13 @@ export const GAME_CONFIG = {
   // World elements
   world: {
     flowers: {
-      baseThreshold: 10, // Trees needed before flowers appear
+      baseThreshold: 4, // Trees needed before flowers appear
       quranBoost: 1.5, // Multiplier when logging Qur'an
     },
     buildings: {
-      home: { threshold: 30, repeatEvery: 20, clusterSize: { min: 3, max: 6 } },
-      mansion: { threshold: 60, repeatEvery: 40, clusterSize: { min: 2, max: 4 } },
-      palace: { threshold: 100, repeatEvery: 80, clusterSize: { min: 1, max: 2 } },
+      home: { threshold: 12, repeatEvery: 10, clusterSize: { min: 3, max: 6 } },
+      mansion: { threshold: 35, repeatEvery: 40, clusterSize: { min: 2, max: 4 } },
+      palace: { threshold: 70, repeatEvery: 80, clusterSize: { min: 1, max: 2 } },
     },
     animals: {
       birds: { threshold: 5, repeatEvery: 8 },
@@ -82,7 +82,7 @@ export const GAME_CONFIG = {
       black_cat: { spawnChance: 0.08, durationDays: 2 },
     },
     rivers: {
-      threshold: 35, // Trees needed before first river appears
+      threshold: 18, // Trees needed before first river appears
       repeatEvery: 30, // Additional river per N trees beyond threshold
       length: { min: 6, max: 10 }, // Base river length in tiles
       lengthGrowth: 0.1, // Extra tiles per tree above threshold
