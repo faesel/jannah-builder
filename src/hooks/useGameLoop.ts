@@ -96,8 +96,11 @@ export function useGameLoop(): GameLoopState {
             }
           }
 
-          currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
-          await ProfileManager.updateProfile(currentProfile);
+          // Only persist if missed days actually produced changes
+          if (processed > 0) {
+            currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
+            await ProfileManager.updateProfile(currentProfile);
+          }
           await markProcessed();
 
           setProfile(currentProfile);
