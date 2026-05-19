@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   RefreshControl,
@@ -16,7 +17,13 @@ import { ProfileManager } from '../../src/persistence/profileManager';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { UserProfile, PrayerLog } from '../../src/types/models';
 
-type DayStatus = 'complete' | 'partial' | 'missed';
+const WEEK_ROW_ICONS = {
+  prayer: require('../../assets/prayers/prayer.png'),
+  quran: require('../../assets/quran.png'),
+  dhikr: require('../../assets/dhikr.png'),
+};
+
+type DayStatus = 'complete' | 'partial' | 'missed' | 'pending';
 
 interface DayInfo {
   date: string;
@@ -42,7 +49,7 @@ function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
     const prayerCount = log
       ? Object.values(log.prayers).filter(Boolean).length
       : 0;
-    let status: DayStatus = 'missed';
+    let status: DayStatus = cursor === today ? 'pending' : 'missed';
     if (log?.isComplete) {
       status = 'complete';
     } else if (prayerCount > 0) {
@@ -65,20 +72,23 @@ function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
 
 const STATUS_COLOURS: Record<DayStatus, string> = {
   complete: '#4A7C59',
-  partial: '#C4A243',
-  missed: '#D4D9D0',
+  partial: '#D4A017',
+  missed: '#C0392B',
+  pending: '#D4D9D0',
 };
 
 const STATUS_ICONS: Record<DayStatus, string> = {
   complete: '✓',
-  partial: '½',
-  missed: '—',
+  partial: '!',
+  missed: '✕',
+  pending: '·',
 };
 
 const STATUS_LABELS: Record<DayStatus, string> = {
   complete: 'All prayers logged',
-  partial: 'Some prayers logged',
-  missed: 'No prayers logged',
+  partial: 'Some prayers missed',
+  missed: 'All prayers missed',
+  pending: 'In progress',
 };
 
 type StatsView = 'allTime' | 'current';
@@ -193,81 +203,96 @@ export default function StatisticsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>This Week</Text>
           <View style={styles.weekCard}>
-            {days.map((day) => (
-              <View
-                key={day.date}
-                style={styles.dayColumn}
-                accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}, ${day.prayerCount} of 5`}
-              >
-                <View
+            {/* Day labels row */}
+            <View style={styles.weekRow}>
+              <View style={styles.weekRowLabel} />
+              {days.map((day) => (
+                <Text
+                  key={`label-${day.date}`}
                   style={[
-                    styles.dayDot,
-                    { backgroundColor: STATUS_COLOURS[day.status] },
+                    styles.weekDayLabel,
+                    day.dayLabel === 'Today' && styles.dayLabelToday,
                   ]}
                 >
-                  <Text style={styles.dayDotText}>
-                    {STATUS_ICONS[day.status]}
-                  </Text>
-                </View>
-                <Text style={styles.dayCount}>{day.prayerCount}/5</Text>
-                <Text style={[
-                  styles.dayLabel,
-                  day.dayLabel === 'Today' && styles.dayLabelToday,
-                ]}>
                   {day.dayLabel}
                 </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Qur'an & Dhikr weekly trend */}
-          <View style={styles.trendCard}>
-            <View style={styles.trendRow}>
-              <View style={styles.trendLabelRow}>
-                <Ionicons name="book" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
-                <Text style={styles.trendLabel}>Qur'an</Text>
-              </View>
-              <View style={styles.trendDots}>
-                {days.map((day) => (
-                  <View
-                    key={`quran-${day.date}`}
-                    style={[
-                      styles.trendDot,
-                      day.quranLogged ? styles.trendDotActive : styles.trendDotInactive,
-                    ]}
-                    accessibilityLabel={`${day.dayLabel}: Qur'an ${day.quranLogged ? 'read' : 'not read'}`}
-                  >
-                    {day.quranLogged && <Text style={styles.trendDotCheck}>✓</Text>}
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.trendCount}>
-                {days.filter((d) => d.quranLogged).length}/7
-              </Text>
+              ))}
             </View>
-            <View style={styles.trendDivider} />
-            <View style={styles.trendRow}>
-              <View style={styles.trendLabelRow}>
-                <Ionicons name="heart" size={16} color="#C4A243" style={{ marginRight: 6 }} />
-                <Text style={styles.trendLabel}>Dhikr</Text>
+
+            {/* Prayer row */}
+            <View style={styles.weekRow}>
+              <View style={styles.weekRowLabel}>
+                <Image source={WEEK_ROW_ICONS.prayer} style={styles.weekRowIcon} />
               </View>
-              <View style={styles.trendDots}>
-                {days.map((day) => (
+              {days.map((day) => (
+                <View
+                  key={`prayer-${day.date}`}
+                  style={styles.weekCell}
+                  accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}, ${day.prayerCount} of 5`}
+                >
                   <View
-                    key={`dhikr-${day.date}`}
                     style={[
-                      styles.trendDot,
-                      day.dhikrLogged ? styles.trendDotActive : styles.trendDotInactive,
+                      styles.dayDot,
+                      { backgroundColor: STATUS_COLOURS[day.status] },
                     ]}
-                    accessibilityLabel={`${day.dayLabel}: Dhikr ${day.dhikrLogged ? 'done' : 'not done'}`}
                   >
-                    {day.dhikrLogged && <Text style={styles.trendDotCheck}>✓</Text>}
+                    <Text style={styles.dayDotText}>
+                      {STATUS_ICONS[day.status]}
+                    </Text>
                   </View>
-                ))}
+                  <Text style={styles.dayCount}>{day.prayerCount}/5</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Qur'an row */}
+            <View style={styles.weekRow}>
+              <View style={styles.weekRowLabel}>
+                <Image source={WEEK_ROW_ICONS.quran} style={styles.weekRowIcon} />
               </View>
-              <Text style={styles.trendCount}>
-                {days.filter((d) => d.dhikrLogged).length}/7
-              </Text>
+              {days.map((day) => (
+                <View
+                  key={`quran-${day.date}`}
+                  style={styles.weekCell}
+                  accessibilityLabel={`${day.dayLabel}: Qur'an ${day.quranLogged ? 'read' : 'not read'}`}
+                >
+                  <View
+                    style={[
+                      styles.weekIndicator,
+                      day.quranLogged ? styles.weekIndicatorActive : styles.weekIndicatorInactive,
+                    ]}
+                  >
+                    {day.quranLogged && (
+                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Dhikr row */}
+            <View style={styles.weekRow}>
+              <View style={styles.weekRowLabel}>
+                <Image source={WEEK_ROW_ICONS.dhikr} style={styles.weekRowIcon} />
+              </View>
+              {days.map((day) => (
+                <View
+                  key={`dhikr-${day.date}`}
+                  style={styles.weekCell}
+                  accessibilityLabel={`${day.dayLabel}: Dhikr ${day.dhikrLogged ? 'done' : 'not done'}`}
+                >
+                  <View
+                    style={[
+                      styles.weekIndicator,
+                      day.dhikrLogged ? styles.weekIndicatorDhikrActive : styles.weekIndicatorInactive,
+                    ]}
+                  >
+                    {day.dhikrLogged && (
+                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                    )}
+                  </View>
+                </View>
+              ))}
             </View>
           </View>
         </View>
@@ -530,14 +555,12 @@ const styles = StyleSheet.create({
 
   /* ── 7-day history ── */
   weekCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E8ECE5',
-    paddingVertical: 18,
-    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     ...Platform.select({
       ios: {
         shadowColor: '#2C4A3E',
@@ -548,106 +571,67 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  dayColumn: {
+  weekRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 10,
+  },
+  weekRowLabel: {
+    width: 28,
+    alignItems: 'center',
+  },
+  weekRowIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  weekCell: {
     flex: 1,
+    alignItems: 'center',
+  },
+  weekDayLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    color: '#8B9D83',
   },
   dayDot: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   dayDotText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   dayCount: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#8B9D83',
     fontWeight: '500',
-    marginBottom: 2,
-  },
-  dayLabel: {
-    fontSize: 11,
-    color: '#8B9D83',
   },
   dayLabelToday: {
     fontWeight: '700',
     color: '#4A7C59',
   },
-
-  /* ── Qur'an & Dhikr trend ── */
-  trendCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E8ECE5',
-    padding: 14,
-    marginTop: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#2C4A3E',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: { elevation: 3 },
-    }),
-  },
-  trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  trendLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 80,
-  },
-  trendLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2C4A3E',
-  },
-  trendDots: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-  },
-  trendDot: {
+  weekIndicator: {
     width: 22,
     height: 22,
     borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  trendDotActive: {
+  weekIndicatorActive: {
     backgroundColor: '#4A7C59',
   },
-  trendDotInactive: {
+  weekIndicatorDhikrActive: {
+    backgroundColor: '#C4A243',
+  },
+  weekIndicatorInactive: {
     backgroundColor: '#E8ECE5',
-  },
-  trendDotCheck: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  trendCount: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8B9D83',
-    width: 32,
-    textAlign: 'right',
-  },
-  trendDivider: {
-    height: 1,
-    backgroundColor: '#F0F2EE',
-    marginVertical: 4,
   },
 
   /* ── Stats grid ── */
