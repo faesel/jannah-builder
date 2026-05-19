@@ -65,8 +65,9 @@ export function useGameLoop(): GameLoopState {
             }
           }
 
-          // Read latest values from refs (not stale closure)
-          const datesToProcess = [...missedDatesRef.current, todayRef.current];
+          // Only process past missed days — today is still in progress and
+          // will be evaluated when the user navigates to the Jannah tab.
+          const datesToProcess = [...missedDatesRef.current];
 
           let processed = 0;
 
