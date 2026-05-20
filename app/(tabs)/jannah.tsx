@@ -62,6 +62,9 @@ export default function JannahScreen() {
           if (hasChanges) {
             current = WorldLogic.applyProcessingResult(current, result);
           }
+
+          // Reconcile: ensure tree count matches what the streak entitles
+          current = WorldLogic.reconcileTrees(current);
           current = WorldLogic.updateStatisticsForPrayer(current);
           await ProfileManager.updateProfile(current);
           setProfile(current);

@@ -94,6 +94,12 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <View style={styles.tipRow}>
+              <Ionicons name="calendar-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Missed a day?</Text> Long-press on a past day in the Statistics screen to complete all prayers for that day.
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
               <Ionicons name="book-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
               <Text style={styles.tipText}>
                 <Text style={styles.tipBold}>Qur'an &amp; Dhikr:</Text> Tap the Qur'an or Dhikr icons to log them for today. These add gentle visual effects to your garden but don't affect tree growth.

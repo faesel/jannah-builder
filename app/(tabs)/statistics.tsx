@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Pressable,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatCard } from '../../src/components/StatCard';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
+import { WorldLogic } from '../../src/logic/worldLogic';
 import { UserProfile, PrayerLog } from '../../src/types/models';
 
 const WEEK_ROW_ICONS = {
@@ -123,6 +125,54 @@ export default function StatisticsScreen() {
     loadProfile();
   }, [loadProfile]);
 
+  const handleDayLongPress = useCallback((date: string, status: DayStatus) => {
+    if (!profile) return;
+    const today = PrayerLogic.getTodayDate();
+    if (date === today) return; // Use the prayer screen for today
+    if (status === 'complete') return; // Already complete
+
+    const dateObj = new Date(date + 'T12:00:00');
+    const label = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+
+    Alert.alert(
+      'Complete all prayers?',
+      `Mark all 5 prayers as complete for ${label}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Complete',
+          onPress: async () => {
+            try {
+              let log = PrayerLogic.getOrCreatePrayerLog(profile.prayerLogs, date);
+              // Mark all prayers
+              const prayers: Array<'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha'> =
+                ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+              for (const prayer of prayers) {
+                log = PrayerLogic.logPrayer(log, prayer);
+              }
+
+              // Update profile prayer logs
+              const existingIndex = profile.prayerLogs.findIndex((l) => l.date === date);
+              const updatedLogs = [...profile.prayerLogs];
+              if (existingIndex >= 0) {
+                updatedLogs[existingIndex] = log;
+              } else {
+                updatedLogs.push(log);
+              }
+
+              let updatedProfile: UserProfile = { ...profile, prayerLogs: updatedLogs };
+              updatedProfile = WorldLogic.updateStatisticsForPrayer(updatedProfile);
+              await ProfileManager.updateProfile(updatedProfile);
+              setProfile(updatedProfile);
+            } catch (err) {
+              console.error('[StatisticsScreen] Error completing day:', err);
+            }
+          },
+        },
+      ]
+    );
+  }, [profile]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -225,10 +275,16 @@ export default function StatisticsScreen() {
                 <Image source={WEEK_ROW_ICONS.prayer} style={styles.weekRowIcon} />
               </View>
               {days.map((day) => (
-                <View
+                <Pressable
                   key={`prayer-${day.date}`}
                   style={styles.weekCell}
+                  onLongPress={() => handleDayLongPress(day.date, day.status)}
                   accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}, ${day.prayerCount} of 5`}
+                  accessibilityHint={
+                    day.status !== 'complete' && day.dayLabel !== 'Today'
+                      ? 'Long press to complete all prayers'
+                      : undefined
+                  }
                 >
                   <View
                     style={[
@@ -241,7 +297,7 @@ export default function StatisticsScreen() {
                     </Text>
                   </View>
                   <Text style={styles.dayCount}>{day.prayerCount}/5</Text>
-                </View>
+                </Pressable>
               ))}
             </View>
 
@@ -284,7 +340,7 @@ export default function StatisticsScreen() {
                   <View
                     style={[
                       styles.weekIndicator,
-                      day.dhikrLogged ? styles.weekIndicatorDhikrActive : styles.weekIndicatorInactive,
+                      day.dhikrLogged ? styles.weekIndicatorActive : styles.weekIndicatorInactive,
                     ]}
                   >
                     {day.dhikrLogged && (
@@ -626,9 +682,6 @@ const styles = StyleSheet.create({
   },
   weekIndicatorActive: {
     backgroundColor: '#4A7C59',
-  },
-  weekIndicatorDhikrActive: {
-    backgroundColor: '#C4A243',
   },
   weekIndicatorInactive: {
     backgroundColor: '#E8ECE5',
