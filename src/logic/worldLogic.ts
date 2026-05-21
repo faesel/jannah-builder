@@ -220,7 +220,8 @@ export class WorldLogic {
       totalAnimalsAppeared:
         profile.statistics.totalAnimalsAppeared + result.animalsAdded.length,
       totalAnimalsReturned:
-        profile.statistics.totalAnimalsReturned + result.animalsRemoved.length,
+        profile.statistics.totalAnimalsReturned +
+        result.animalsRemoved.filter((id) => !id.startsWith('animal_black_cat_')).length,
     };
 
     return {
