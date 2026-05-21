@@ -13,25 +13,48 @@ import { TreeStage } from '../config/game.config';
 
 export const TILE_SPRITES = {
   grass: [
-    require('../../assets/sprites/tiles/grass_summer.png'),
+    require('../../assets/sprites/tiles/grass_v1.png'),
     require('../../assets/sprites/tiles/grass_v2.png'),
     require('../../assets/sprites/tiles/grass_v3.png'),
     require('../../assets/sprites/tiles/grass_v4.png'),
     require('../../assets/sprites/tiles/grass_v5.png'),
     require('../../assets/sprites/tiles/grass_v6.png'),
+    require('../../assets/sprites/tiles/grass_clear.png'),
   ],
   path: require('../../assets/sprites/tiles/path.png'),
-  water: require('../../assets/sprites/tiles/water.png'),
+  water: [
+    require('../../assets/sprites/tiles/water_v1.png'),
+    require('../../assets/sprites/tiles/water_v2.png'),
+    require('../../assets/sprites/tiles/water_v3.png'),
+    require('../../assets/sprites/tiles/water_v4.png'),
+  ],
   dirt: require('../../assets/sprites/tiles/dirt.png'),
   sand: require('../../assets/sprites/tiles/sand.png'),
+  sandCorners: {
+    topLeft: require('../../assets/sprites/tiles/sand_corner_top_left.png'),
+    topRight: require('../../assets/sprites/tiles/sand_corner_top_right.png'),
+    bottomLeft: require('../../assets/sprites/tiles/sand_corner_bottom_left.png'),
+    bottomRight: require('../../assets/sprites/tiles/sand_corner_bottom_right.png'),
+  },
 };
+
+// --- Rocks & Stones (decorative, scattered randomly on map) ---
+
+export const ROCK_SPRITES = [
+  require('../../assets/sprites/rocks/stone_grey_1.png'),
+  require('../../assets/sprites/rocks/stone_grey_2.png'),
+  require('../../assets/sprites/rocks/stone_grey_3.png'),
+  require('../../assets/sprites/rocks/stone_grey_4.png'),
+  require('../../assets/sprites/rocks/stone_grey_5.png'),
+  require('../../assets/sprites/rocks/stone_grey_6.png'),
+];
 
 // --- Trees ---
 
 export const TREE_SPRITES: Record<TreeStage, number> = {
-  sapling: require('../../assets/sprites/trees/sapling_summer.png'),
-  young: require('../../assets/sprites/trees/young_summer.png'),
-  mature: require('../../assets/sprites/trees/mature_summer.png'),
+  sapling: require('../../assets/sprites/trees/sapling.png'),
+  young: require('../../assets/sprites/trees/young.png'),
+  mature: require('../../assets/sprites/trees/mature.png'),
 };
 
 // --- Flowers ---
@@ -39,6 +62,7 @@ export const TREE_SPRITES: Record<TreeStage, number> = {
 export const FLOWER_SPRITES = {
   basic: require('../../assets/sprites/flowers/basic.png'),
   enhanced: require('../../assets/sprites/flowers/enhanced.png'),
+  bush: require('../../assets/sprites/flowers/bush.png'),
 };
 
 // --- Buildings ---

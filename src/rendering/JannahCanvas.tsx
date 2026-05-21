@@ -13,7 +13,7 @@ import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Pos
 import { GAME_CONFIG } from '../config/game.config';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES } from './sprites';
 import type { AnimalDirection } from './sprites';
 
 // Debug flag moved to GAME_CONFIG.debug.showAllSprites
@@ -50,22 +50,53 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     [GAME_CONFIG.debug.simulateProgress, cols, rows, worldState],
   );
 
+  // When simulating, force-enable quran and dhikr visuals
+  const effectiveQuranLogged = GAME_CONFIG.debug.simulateProgress ? true : quranLogged;
+  const effectiveDhikrLogged = GAME_CONFIG.debug.simulateProgress ? true : dhikrLogged;
+
   // Center of the grid in tile coordinates
   const centerCol = Math.floor(cols / 2);
   const centerRow = Math.floor(rows / 2);
 
   // Grass tiles — rendered using variant sprites for natural look
-  const grassVariants = TILE_SPRITES.grass;
+  // Weighted: clear + v1 + v5 dominate; v2, v3, v4, v6 are rare accents
+  const grassWeighted = useMemo(() => [
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[6], // clear
+    TILE_SPRITES.grass[0], // v1
+    TILE_SPRITES.grass[0], // v1
+    TILE_SPRITES.grass[0], // v1
+    TILE_SPRITES.grass[0], // v1
+    TILE_SPRITES.grass[4], // v5
+    TILE_SPRITES.grass[4], // v5
+    TILE_SPRITES.grass[4], // v5
+    TILE_SPRITES.grass[4], // v5
+    TILE_SPRITES.grass[1], // v2 (rare)
+    TILE_SPRITES.grass[2], // v3 (rare)
+    TILE_SPRITES.grass[3], // v4 (rare)
+    TILE_SPRITES.grass[5], // v6 (rare)
+  ], []);
   const grassTiles = useMemo(() => {
     const tiles: React.ReactElement[] = [];
+    // Seeded pseudo-random number generator for deterministic but non-repeating pattern
+    let seed = 48271;
+    const nextRand = () => {
+      seed = (seed * 16807 + 0) % 2147483647;
+      return seed;
+    };
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        // Deterministic variant per tile using simple hash
-        const variant = ((row * 7) + (col * 13) + (row * col * 3)) % grassVariants.length;
+        const idx = nextRand() % grassWeighted.length;
         tiles.push(
           <Image
             key={`g${row}_${col}`}
-            source={grassVariants[variant]}
+            source={grassWeighted[idx]}
             style={{
               position: 'absolute',
               left: col * tileSize,
@@ -78,7 +109,34 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       }
     }
     return tiles;
-  }, [rows, cols, tileSize, grassVariants]);
+  }, [rows, cols, tileSize, grassWeighted]);
+
+  // Scattered rocks — deterministic placement based on grid size
+  const rockDecorations = useMemo(() => {
+    const rocks: React.ReactElement[] = [];
+    const rockCount = Math.max(3, Math.floor((rows * cols) * 0.02));
+    for (let i = 0; i < rockCount; i++) {
+      // Deterministic pseudo-random positions using simple hash
+      const hash = ((i * 31) + (i * i * 7) + 53) % (rows * cols);
+      const rockRow = Math.floor(hash / cols);
+      const rockCol = hash % cols;
+      const spriteIdx = ((i * 13) + 5) % ROCK_SPRITES.length;
+      rocks.push(
+        <Image
+          key={`rock_${i}`}
+          source={ROCK_SPRITES[spriteIdx]}
+          style={{
+            position: 'absolute',
+            left: rockCol * tileSize,
+            top: rockRow * tileSize,
+            width: tileSize,
+            height: tileSize,
+          }}
+        />,
+      );
+    }
+    return rocks;
+  }, [rows, cols, tileSize]);
 
   // Debug gridlines
   const gridLines = useMemo(() => {
@@ -120,57 +178,77 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       {/* Grass tile Views for checkerboard texture */}
       {grassTiles}
 
+      {/* Scattered rock decorations */}
+      {rockDecorations}
+
       {gridLines}
 
       {/* Sand border around river tiles */}
       {useMemo(() => {
         const waterSet = new Set<string>();
         activeWorld.rivers.forEach(r => r.tiles.forEach(t => waterSet.add(`${t.x},${t.y}`)));
-        const sandPositions = new Set<string>();
-        const neighbours = [
-          { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
-          { dx: 1, dy: 1 }, { dx: -1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: -1 },
-        ];
+        const sandElements: React.ReactElement[] = [];
+        const processed = new Set<string>();
+
+        // First pass: mark all cardinal neighbours as full sand
         activeWorld.rivers.forEach(r => r.tiles.forEach(t => {
-          for (const n of neighbours) {
+          const cardinals = [
+            { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+          ];
+          for (const n of cardinals) {
             const key = `${t.x + n.dx},${t.y + n.dy}`;
-            if (!waterSet.has(key)) sandPositions.add(key);
+            if (!waterSet.has(key) && !processed.has(key)) {
+              processed.add(key);
+              sandElements.push(
+                <Image
+                  key={`sand_${key}`}
+                  source={TILE_SPRITES.sand}
+                  style={{
+                    position: 'absolute',
+                    left: (t.x + n.dx + centerCol) * tileSize,
+                    top: (t.y + n.dy + centerRow) * tileSize,
+                    width: tileSize,
+                    height: tileSize,
+                  }}
+                />
+              );
+            }
           }
         }));
-        return Array.from(sandPositions).map(key => {
-          const [x, y] = key.split(',').map(Number);
-          return (
-            <Image
-              key={`sand_${key}`}
-              source={TILE_SPRITES.sand}
-              style={{
-                position: 'absolute',
-                left: (x + centerCol) * tileSize,
-                top: (y + centerRow) * tileSize,
-                width: tileSize,
-                height: tileSize,
-              }}
-            />
-          );
-        });
+
+        // Second pass: diagonal corners only where not already processed (not cardinal to any water)
+        activeWorld.rivers.forEach(r => r.tiles.forEach(t => {
+          const diagonals = [
+            { dx: -1, dy: -1, corner: 'bottomRight' as const },
+            { dx: 1, dy: -1, corner: 'bottomLeft' as const },
+            { dx: -1, dy: 1, corner: 'topRight' as const },
+            { dx: 1, dy: 1, corner: 'topLeft' as const },
+          ];
+          for (const d of diagonals) {
+            const key = `${t.x + d.dx},${t.y + d.dy}`;
+            if (!waterSet.has(key) && !processed.has(key)) {
+              processed.add(key);
+              sandElements.push(
+                <Image
+                  key={`sandc_${key}`}
+                  source={TILE_SPRITES.sandCorners[d.corner]}
+                  style={{
+                    position: 'absolute',
+                    left: (t.x + d.dx + centerCol) * tileSize,
+                    top: (t.y + d.dy + centerRow) * tileSize,
+                    width: tileSize,
+                    height: tileSize,
+                  }}
+                />
+              );
+            }
+          }
+        }));
+        return sandElements;
       }, [activeWorld.rivers, centerCol, centerRow, tileSize])}
 
-      {/* River tiles */}
-      {activeWorld.rivers.map((r) =>
-        r.tiles.map((tile, idx) => (
-          <Image
-            key={`${r.id}_${idx}`}
-            source={TILE_SPRITES.water}
-            style={{
-              position: 'absolute',
-              left: (tile.x + centerCol) * tileSize,
-              top: (tile.y + centerRow) * tileSize,
-              width: tileSize,
-              height: tileSize,
-            }}
-          />
-        ))
-      )}
+      {/* River tiles (animated water) */}
+      <WaterTiles rivers={activeWorld.rivers} centerCol={centerCol} centerRow={centerRow} tileSize={tileSize} />
 
       {/* Signboard at center */}
       <View style={[styles.signboardContainer, {
@@ -189,17 +267,49 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
         <FlowerSprite key={f.id} flower={f} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
+      {/* Berry bushes — appear once flower threshold is met */}
+      {useMemo(() => {
+        const treeCount = activeWorld.trees.length;
+        const threshold = GAME_CONFIG.world.flowers.baseThreshold;
+        if (treeCount < threshold) return null;
+        const bushCount = Math.min(6, 1 + Math.floor((treeCount - threshold) / 3));
+        const bushes: React.ReactElement[] = [];
+        let seed = 7919;
+        const nextRand = () => { seed = (seed * 16807) % 2147483647; return seed; };
+        for (let i = 0; i < bushCount; i++) {
+          const bx = (nextRand() % cols) - Math.floor(cols / 2);
+          const by = (nextRand() % rows) - Math.floor(rows / 2);
+          bushes.push(
+            <Image
+              key={`bush_${i}`}
+              source={FLOWER_SPRITES.bush}
+              style={{
+                position: 'absolute',
+                left: (bx + centerCol) * tileSize,
+                top: (by + centerRow) * tileSize,
+                width: tileSize,
+                height: tileSize,
+              }}
+            />,
+          );
+        }
+        return bushes;
+      }, [activeWorld.trees.length, cols, rows, tileSize, centerCol, centerRow])}
+
       {/* Buildings */}
       {activeWorld.buildings.map((b) => (
         <BuildingSprite key={b.id} building={b} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
-      {/* Trees */}
-      {activeWorld.trees.map((t) => (
+      {/* Trees and Animals — interleaved by y position for correct overlap.
+          Trees use their base (trunk) y for sort order.
+          Animals behind a tree's canopy row will be hidden correctly. */}
+      {[...activeWorld.trees].sort((a, b) => a.position.y - b.position.y).map((t) => (
         <TreeSprite key={t.id} tree={t} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
-      {/* Animals */}
+      {/* Animals rendered with zIndex based on their y position.
+          Trees also get zIndex so animals behind canopy are hidden. */}
       {activeWorld.animals.map((a) => (
         <AnimalSprite
           key={a.id}
@@ -219,12 +329,12 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       ))}
 
       {/* Qur'an glowing flowers */}
-      {quranLogged && (
+      {effectiveQuranLogged && (
         <QuranFlowers cols={cols} rows={rows} tileSize={tileSize} seed={quranLoggedDate ?? 'default'} />
       )}
 
       {/* Dhikr floating particles */}
-      {dhikrLogged && (
+      {effectiveDhikrLogged && (
         <DhikrParticles screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
       )}
     </View>
@@ -238,19 +348,67 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
 function TreeSprite({ tree, center, centerRow, tileSize }: {
   tree: Tree; center: number; centerRow: number; tileSize: number;
 }) {
+  // Trees are 1 tile wide × 2 tiles tall
+  // The tree position is the BASE (trunk) tile; the canopy extends 1 tile above
+  const width = tileSize;
+  const height = tileSize * 2;
   return (
     <Image
       source={TREE_SPRITES[tree.stage]}
       style={{
         position: 'absolute',
         left: (tree.position.x + center) * tileSize,
-        top: (tree.position.y + centerRow) * tileSize,
-        width: tileSize,
-        height: tileSize,
+        top: (tree.position.y + centerRow) * tileSize - tileSize, // offset up by 1 tile for canopy
+        width,
+        height,
+        zIndex: 20, // Trees always in front of animals
       }}
     />
   );
 }
+
+// ============================================================
+// Animated Water Tile
+// ============================================================
+
+const WATER_FRAME_DURATION = 600; // ms per frame
+
+// Single shared water frame hook — avoids per-tile intervals
+function useWaterFrame() {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFrame(f => (f + 1) % 4);
+    }, WATER_FRAME_DURATION);
+    return () => clearInterval(interval);
+  }, []);
+  return frame;
+}
+
+const WaterTiles = React.memo(function WaterTiles({ rivers, centerCol, centerRow, tileSize }: {
+  rivers: River[]; centerCol: number; centerRow: number; tileSize: number;
+}) {
+  const frame = useWaterFrame();
+  return (
+    <>
+      {rivers.map((r) =>
+        r.tiles.map((tile, idx) => (
+          <Image
+            key={`${r.id}_${idx}`}
+            source={TILE_SPRITES.water[frame]}
+            style={{
+              position: 'absolute',
+              left: (tile.x + centerCol) * tileSize,
+              top: (tile.y + centerRow) * tileSize,
+              width: tileSize,
+              height: tileSize,
+            }}
+          />
+        ))
+      )}
+    </>
+  );
+});
 
 // ============================================================
 // Flowers
@@ -457,6 +615,7 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
         width: tileSize,
         height: tileSize,
         transform: [{ translateX }, { translateY }],
+        zIndex: 10, // Animals always behind trees
       }}
     >
       <Image source={spriteSource} style={{ width: tileSize, height: tileSize }} />
@@ -965,7 +1124,7 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
   const occupied = new Set<string>();
   occupied.add('0,0');
 
-  const treeCounts = { days: 3, months: 20, years: 120 };
+  const treeCounts = { days: 10, months: 40, years: 150 };
   const treeCount = treeCounts[level];
 
   // Helper: compute target count from config thresholds
@@ -981,7 +1140,7 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
     lastUpdated: now,
   }));
 
-  const flowerCounts = { days: 0, months: 5, years: 12 };
+  const flowerCounts = { days: 3, months: 8, years: 20 };
   const flowers: Flower[] = Array.from({ length: flowerCounts[level] }, (_, i) => ({
     id: `sim_flower_${i}`,
     position: randomPosition(rng, occupied, cols, rows),
@@ -1119,8 +1278,8 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
   }
 
   const illustriousPresets = {
-    days: [] as string[],
-    months: ['radiant_fountain'],
+    days: ['radiant_fountain'] as string[],
+    months: ['radiant_fountain', 'glowing_tree', 'floating_lantern'],
     years: ['radiant_fountain', 'glowing_tree', 'floating_lantern', 'light_arch'],
   };
   const illustriousItems: IllustriousItem[] = illustriousPresets[level].map((type, i) => ({
@@ -1143,8 +1302,9 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
 // Sprite Debug Grid — toggle with showAllSprites
 // ============================================================
 
-const ALL_SPRITES: { label: string; source: number }[] = [
+const ALL_SPRITES: { label: string; source: number; tilesWide?: number; tilesTall?: number }[] = [
   // Tiles
+  { label: 'grass_clear', source: TILE_SPRITES.grass[6] },
   { label: 'grass_1', source: TILE_SPRITES.grass[0] },
   { label: 'grass_2', source: TILE_SPRITES.grass[1] },
   { label: 'grass_3', source: TILE_SPRITES.grass[2] },
@@ -1152,16 +1312,19 @@ const ALL_SPRITES: { label: string; source: number }[] = [
   { label: 'grass_5', source: TILE_SPRITES.grass[4] },
   { label: 'grass_6', source: TILE_SPRITES.grass[5] },
   { label: 'path', source: TILE_SPRITES.path },
-  { label: 'water', source: TILE_SPRITES.water },
+  { label: 'water', source: TILE_SPRITES.water[0] },
   { label: 'sand', source: TILE_SPRITES.sand },
   { label: 'dirt', source: TILE_SPRITES.dirt },
-  // Trees
-  { label: 'sapling', source: TREE_SPRITES.sapling },
-  { label: 'young', source: TREE_SPRITES.young },
-  { label: 'mature', source: TREE_SPRITES.mature },
+  // Rocks
+  ...ROCK_SPRITES.map((src, i) => ({ label: `rock_${i + 1}`, source: src })),
+  // Trees (1 wide × 2 tall)
+  { label: 'sapling', source: TREE_SPRITES.sapling, tilesTall: 2 },
+  { label: 'young', source: TREE_SPRITES.young, tilesTall: 2 },
+  { label: 'mature', source: TREE_SPRITES.mature, tilesTall: 2 },
   // Flowers
   { label: 'basic', source: FLOWER_SPRITES.basic },
   { label: 'enhanced', source: FLOWER_SPRITES.enhanced },
+  { label: 'bush', source: FLOWER_SPRITES.bush },
   // Buildings
   { label: 'home', source: BUILDING_SPRITES.home },
   { label: 'mansion', source: BUILDING_SPRITES.mansion },
@@ -1171,6 +1334,7 @@ const ALL_SPRITES: { label: string; source: number }[] = [
   { label: 'rabbit', source: ANIMAL_SPRITES.rabbit },
   { label: 'deer', source: ANIMAL_SPRITES.deer },
   { label: 'squirrel', source: ANIMAL_SPRITES.squirrel },
+  { label: 'black_cat', source: ANIMAL_SPRITES.black_cat },
   // Illustrious
   { label: 'fountain', source: ILLUSTRIOUS_SPRITES.radiant_fountain },
   { label: 'glow_tree', source: ILLUSTRIOUS_SPRITES.glowing_tree },
@@ -1211,21 +1375,23 @@ function SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; 
   let col = 1;
   let row = 1;
   for (const sprite of ALL_SPRITES) {
-    if (col >= cols - 1) {
+    const sw = sprite.tilesWide ?? 1;
+    const sh = sprite.tilesTall ?? 1;
+    if (col + sw >= cols - 1) {
       col = 1;
-      row += 2; // leave a row gap for the label
+      row += Math.max(sh, 2) + 1; // leave a row gap for the label
     }
-    if (row >= rows - 1) break;
+    if (row + sh >= rows - 1) break;
 
     spriteElements.push(
       <View key={sprite.label} style={{ position: 'absolute', left: col * tileSize, top: row * tileSize, alignItems: 'center' }}>
-        <Image source={sprite.source} style={{ width: tileSize, height: tileSize }} resizeMode="contain" />
+        <Image source={sprite.source} style={{ width: tileSize * sw, height: tileSize * sh }} resizeMode="contain" />
         <Text style={{ color: '#FFF', fontSize: 8, textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 2, borderRadius: 2 }}>
           {sprite.label}
         </Text>
       </View>
     );
-    col += 2; // leave a tile gap
+    col += sw + 1; // leave a tile gap
   }
 
   return (
