@@ -102,7 +102,7 @@ const BuildingSprite: React.FC<{ building: Building; center: number; centerRow: 
 
 // --- Main Component ---
 
-export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, quranLoggedDate, dhikrLogged }: JannahCanvasProps) {
+export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, quranLoggedDate, dhikrLogged: _dhikrLogged }: JannahCanvasProps) {
   const gridSize = (worldState.gridSize || GAME_CONFIG.map.initialGridSize);
 
   // Tile size: fit gridSize tiles along the shorter screen axis
@@ -320,7 +320,8 @@ const ANIMAL_SPEED: Record<string, number> = {
 
 const FEED_FRAME_MS = 500; // time per feeding frame
 
-function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupiedPositions }: {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupiedPositions }: {
   animal: Animal; center: number; centerRow: number; tileSize: number;
   cols: number; rows: number; occupiedPositions: Set<string>;
 }) {
@@ -467,7 +468,8 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
 // Illustrious Items
 // ============================================================
 
-function IllustriousSprite({ item, center, centerRow, tileSize }: {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _IllustriousSprite({ item, center, centerRow, tileSize }: {
   item: IllustriousItem; center: number; centerRow: number; tileSize: number;
 }) {
   const pulseAnim = useRef(new Animated.Value(0.7)).current;
@@ -755,7 +757,8 @@ function GlowingFlower({ col, row, tileSize }: { col: number; row: number; tileS
 
 const PARTICLE_COUNT = 10;
 
-function DhikrParticles({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _DhikrParticles({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
   const particles = useMemo(() => {
     return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
       id: i,
@@ -957,7 +960,8 @@ function groupPositionsIntoClusters(positions: Position[]): Position[][] {
   return clusters;
 }
 
-function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
   const now = Date.now();
   const rng = seededRng(12345);
   const gridSize = GAME_CONFIG.map.initialGridSize;
@@ -1179,7 +1183,8 @@ const ALL_SPRITES: { label: string; source: number }[] = [
   { label: 'signboard', source: LANDMARK_SPRITES.signboard },
 ];
 
-function SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
   const gridSize = GAME_CONFIG.map.initialGridSize;
   const tileSize = Math.max(
     GAME_CONFIG.map.minTileSize,
