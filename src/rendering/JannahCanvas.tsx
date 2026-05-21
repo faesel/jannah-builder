@@ -16,7 +16,8 @@ import { COLORS } from '../config/colors';
 import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES } from './sprites';
 import type { AnimalDirection } from './sprites';
 
-// --- Component Props and Types (Assuming these are defined elsewhere) ---
+// Debug flag moved to GAME_CONFIG.debug.showAllSprites
+
 interface JannahCanvasProps {
   worldState: WorldState;
   screenWidth: number;
@@ -26,84 +27,12 @@ interface JannahCanvasProps {
   dhikrLogged?: boolean;
 }
 
-// Helper component to apply global aesthetic filters (Bloom, Color Grade)
-const AestheticWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const config = GAME_CONFIG.aesthetics;
-    // In a real RN environment, this would involve complex shaders or color matrix transformations.
-    // For now, we simulate the effect using container styling and comments.
-    return (
-        <View style={[styles.aestheticContainer, { 
-            backgroundColor: config.colorGrade === 'warm_sepia' ? '#f5e6c9' : COLORS.grass // Fallback color
-        }]}>
-            {/* This View acts as the canvas layer where all assets are rendered */}
-            <View style={styles.canvasLayer}>{children}</View>
-        </View>
-    );
-};
+export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, quranLoggedDate, dhikrLogged }: JannahCanvasProps) {
+  if (GAME_CONFIG.debug.showAllSprites) {
+    return <SpriteDebugOnMap screenWidth={screenWidth} screenHeight={screenHeight} />;
+  }
 
-// --- Individual Sprite Components (Simplified for brevity) ---
-
-const FlowerSprite: React.FC<{ flower: Flower; center: number; centerRow: number; tileSize: number }> = ({ flower, center, centerRow, tileSize }) => {
-  // Logic to calculate position based on world state and apply bloom effect
-  return (
-    <View key={flower.id} style={{ position: 'absolute', left: 0, top: 0 }}>
-      {/* The actual Image component would be wrapped in a Bloom/Glow shader */}
-      <Image
-        source={FLOWER_SPRITES[flower.type]}
-        style={{
-          position: 'absolute',
-          left: (flower.x + center) * tileSize,
-          top: (flower.y + centerRow) * tileSize,
-          width: tileSize,
-          height: tileSize,
-          opacity: 0.9, // Slight transparency for watercolor feel
-        }}
-      />
-    </View>
-  );
-};
-
-const TreeSprite: React.FC<{ tree: Tree; center: number; centerRow: number; tileSize: number }> = ({ tree, center, centerRow, tileSize }) => {
-  // Logic to select sprite based on tree.stage and apply seasonal color grading
-  return (
-    <View key={tree.id} style={{ position: 'absolute', left: 0, top: 0 }}>
-      {/* The actual Image component would be wrapped in a Bloom/Glow shader */}
-      <Image
-        source={TREE_SPRITES[tree.stage]} // Placeholder for dynamic sprite selection
-        style={{
-          position: 'absolute',
-          left: (tree.x + center) * tileSize,
-          top: (tree.y + centerRow) * tileSize,
-          width: tileSize,
-          height: tileSize,
-        }}
-      />
-    </View>
-  );
-};
-
-const BuildingSprite: React.FC<{ building: Building; center: number; centerRow: number; tileSize: number }> = ({ building, center, centerRow, tileSize }) => {
-  // Logic to select sprite and apply patina/weathering effects (via shader or texture overlay)
-  return (
-    <View key={building.id} style={{ position: 'absolute', left: 0, top: 0 }}>
-      <Image
-        source={BUILDING_SPRITES[building.type]}
-        style={{
-          position: 'absolute',
-          left: (building.x + center) * tileSize,
-          top: (building.y + centerRow) * tileSize,
-          width: tileSize,
-          height: tileSize,
-        }}
-      />
-    </View>
-  );
-};
-
-// --- Main Component ---
-
-export const JannahCanvas = React.memo(function JannahCanvas({ worldState, screenWidth, screenHeight, quranLogged, quranLoggedDate, dhikrLogged: _dhikrLogged }: JannahCanvasProps) {
-  const gridSize = (worldState.gridSize || GAME_CONFIG.map.initialGridSize);
+  const gridSize = (GAME_CONFIG.debug.simulateProgress ? GAME_CONFIG.map.initialGridSize : worldState.gridSize) ?? GAME_CONFIG.map.initialGridSize;
 
   // Tile size: fit gridSize tiles along the shorter screen axis
   const tileSize = Math.max(
@@ -114,64 +43,95 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
 
-  // Center of the grid in tile coordinates (used for positioning all elements relative to the center)
+  const activeWorld = useMemo(() =>
+    GAME_CONFIG.debug.simulateProgress
+      ? buildSimulatedWorld(GAME_CONFIG.debug.simulateProgress, cols, rows)
+      : worldState,
+    [GAME_CONFIG.debug.simulateProgress, cols, rows, worldState],
+  );
+
+  // Center of the grid in tile coordinates
   const centerCol = Math.floor(cols / 2);
   const centerRow = Math.floor(rows / 2);
 
-  return (
-    <AestheticWrapper>
-      {/* Grass tiles — rendered using variant sprites for natural look */}
-      {useMemo(() => {
-        const tiles: React.ReactElement[] = [];
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            // Deterministic variant per tile using simple hash
-            const variant = ((row * 7) + (col * 13) + (row * col * 3)) % TILE_SPRITES.grass.length;
-            tiles.push(
-              <Image
-                key={`g${row}_${col}`}
-                source={TILE_SPRITES.grass[variant]}
-                style={{
-                  position: 'absolute',
-                  left: col * tileSize,
-                  top: row * tileSize,
-                  width: tileSize,
-                  height: tileSize,
-                }}
-              />,
-            );
-          }
-        }
-        return tiles;
-      }, [rows, cols, tileSize])}
-
-      {/* River tiles (Water) */}
-      {worldState.rivers.map((r) =>
-        r.tiles.map((tile, idx) => (
+  // Grass tiles — rendered using variant sprites for natural look
+  const grassVariants = TILE_SPRITES.grass;
+  const grassTiles = useMemo(() => {
+    const tiles: React.ReactElement[] = [];
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        // Deterministic variant per tile using simple hash
+        const variant = ((row * 7) + (col * 13) + (row * col * 3)) % grassVariants.length;
+        tiles.push(
           <Image
-            key={`${r.id}_${idx}`}
-            source={TILE_SPRITES.water}
+            key={`g${row}_${col}`}
+            source={grassVariants[variant]}
             style={{
               position: 'absolute',
-              left: (tile.x + centerCol) * tileSize,
-              top: (tile.y + centerRow) * tileSize,
+              left: col * tileSize,
+              top: row * tileSize,
               width: tileSize,
               height: tileSize,
             }}
-          />
-        ))
-      )}
+          />,
+        );
+      }
+    }
+    return tiles;
+  }, [rows, cols, tileSize, grassVariants]);
+
+  // Debug gridlines
+  const gridLines = useMemo(() => {
+    if (!GAME_CONFIG.debug.showGridLines) return null;
+    const lines: React.ReactElement[] = [];
+    const lineColor = 'rgba(0,0,0,0.12)';
+    const totalW = cols * tileSize;
+    const totalH = rows * tileSize;
+    for (let col = 0; col <= cols; col++) {
+      lines.push(
+        <View key={`v${col}`} style={{
+          position: 'absolute', left: col * tileSize, top: 0,
+          width: 1, height: totalH, backgroundColor: lineColor,
+        }} />,
+      );
+    }
+    for (let row = 0; row <= rows; row++) {
+      lines.push(
+        <View key={`h${row}`} style={{
+          position: 'absolute', left: 0, top: row * tileSize,
+          width: totalW, height: 1, backgroundColor: lineColor,
+        }} />,
+      );
+    }
+    return lines;
+  }, [cols, rows, tileSize]);
+
+  // Build occupied position set for animal collision avoidance
+  const occupiedPositions = useMemo(() => {
+    const set = new Set<string>();
+    activeWorld.buildings.forEach(b => set.add(`b:${b.position.x},${b.position.y}`));
+    activeWorld.trees.forEach(t => set.add(`t:${t.position.x},${t.position.y}`));
+    activeWorld.rivers.forEach(r => r.tiles.forEach(t => set.add(`w:${t.x},${t.y}`)));
+    return set;
+  }, [activeWorld.buildings, activeWorld.trees, activeWorld.rivers]);
+
+  return (
+    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grass }}>
+      {/* Grass tile Views for checkerboard texture */}
+      {grassTiles}
+
+      {gridLines}
 
       {/* Sand border around river tiles */}
       {useMemo(() => {
         const waterSet = new Set<string>();
-        worldState.rivers.forEach(r => r.tiles.forEach(t => waterSet.add(`${t.x},${t.y}`)));
+        activeWorld.rivers.forEach(r => r.tiles.forEach(t => waterSet.add(`${t.x},${t.y}`)));
         const sandPositions = new Set<string>();
         const neighbours = [
           { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
           { dx: 1, dy: 1 }, { dx: -1, dy: 1 }, { dx: 1, dy: -1 }, { dx: -1, dy: -1 },
         ];
-        worldState.rivers.forEach(r => r.tiles.forEach(t => {
+        activeWorld.rivers.forEach(r => r.tiles.forEach(t => {
           for (const n of neighbours) {
             const key = `${t.x + n.dx},${t.y + n.dy}`;
             if (!waterSet.has(key)) sandPositions.add(key);
@@ -193,7 +153,24 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
             />
           );
         });
-      }, [worldState.rivers, centerCol, centerRow, tileSize])}
+      }, [activeWorld.rivers, centerCol, centerRow, tileSize])}
+
+      {/* River tiles */}
+      {activeWorld.rivers.map((r) =>
+        r.tiles.map((tile, idx) => (
+          <Image
+            key={`${r.id}_${idx}`}
+            source={TILE_SPRITES.water}
+            style={{
+              position: 'absolute',
+              left: (tile.x + centerCol) * tileSize,
+              top: (tile.y + centerRow) * tileSize,
+              width: tileSize,
+              height: tileSize,
+            }}
+          />
+        ))
+      )}
 
       {/* Signboard at center */}
       <View style={[styles.signboardContainer, {
@@ -208,25 +185,49 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       </View>
 
       {/* Flowers */}
-      {worldState.flowers.map((f) => (
+      {activeWorld.flowers.map((f) => (
         <FlowerSprite key={f.id} flower={f} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Buildings */}
-      {worldState.buildings.map((b) => (
+      {activeWorld.buildings.map((b) => (
         <BuildingSprite key={b.id} building={b} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
       {/* Trees */}
-      {worldState.trees.map((t) => (
+      {activeWorld.trees.map((t) => (
         <TreeSprite key={t.id} tree={t} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
       ))}
 
+      {/* Animals */}
+      {activeWorld.animals.map((a) => (
+        <AnimalSprite
+          key={a.id}
+          animal={a}
+          center={centerCol}
+          centerRow={centerRow}
+          tileSize={tileSize}
+          cols={cols}
+          rows={rows}
+          occupiedPositions={occupiedPositions}
+        />
+      ))}
+
+      {/* Illustrious items */}
+      {activeWorld.illustriousItems.map((i) => (
+        <IllustriousSprite key={i.id} item={i} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
+      ))}
+
       {/* Qur'an glowing flowers */}
-      {quranLogged && quranLoggedDate && (
-        <QuranFlowers cols={cols} rows={rows} tileSize={tileSize} seed={quranLoggedDate} />
+      {quranLogged && (
+        <QuranFlowers cols={cols} rows={rows} tileSize={tileSize} seed={quranLoggedDate ?? 'default'} />
       )}
-    </AestheticWrapper>
+
+      {/* Dhikr floating particles */}
+      {dhikrLogged && (
+        <DhikrParticles screenWidth={cols * tileSize} screenHeight={rows * tileSize} />
+      )}
+    </View>
   );
 });
 
@@ -320,8 +321,7 @@ const ANIMAL_SPEED: Record<string, number> = {
 
 const FEED_FRAME_MS = 500; // time per feeding frame
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupiedPositions }: {
+function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupiedPositions }: {
   animal: Animal; center: number; centerRow: number; tileSize: number;
   cols: number; rows: number; occupiedPositions: Set<string>;
 }) {
@@ -468,8 +468,7 @@ function _AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupi
 // Illustrious Items
 // ============================================================
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _IllustriousSprite({ item, center, centerRow, tileSize }: {
+function IllustriousSprite({ item, center, centerRow, tileSize }: {
   item: IllustriousItem; center: number; centerRow: number; tileSize: number;
 }) {
   const pulseAnim = useRef(new Animated.Value(0.7)).current;
@@ -757,8 +756,7 @@ function GlowingFlower({ col, row, tileSize }: { col: number; row: number; tileS
 
 const PARTICLE_COUNT = 10;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _DhikrParticles({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+function DhikrParticles({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
   const particles = useMemo(() => {
     return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
       id: i,
@@ -960,8 +958,7 @@ function groupPositionsIntoClusters(positions: Position[]): Position[][] {
   return clusters;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
+function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, rows: number): WorldState {
   const now = Date.now();
   const rng = seededRng(12345);
   const gridSize = GAME_CONFIG.map.initialGridSize;
@@ -1183,8 +1180,7 @@ const ALL_SPRITES: { label: string; source: number }[] = [
   { label: 'signboard', source: LANDMARK_SPRITES.signboard },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
+function SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
   const gridSize = GAME_CONFIG.map.initialGridSize;
   const tileSize = Math.max(
     GAME_CONFIG.map.minTileSize,
