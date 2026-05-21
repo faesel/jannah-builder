@@ -284,45 +284,6 @@ export class WorldLogic {
     };
   }
 
-  /**
-   * Reconcile trees: ensures the world state has the expected number of trees
-   * based on the current consecutive-day streak. This guards against race
-   * conditions or missed processDay calls that could leave the world under-populated.
-   * Returns an updated profile only if trees were added.
-   */
-  static reconcileTrees(profile: UserProfile): UserProfile {
-    const today = PrayerLogic.getTodayDate();
-    const consecutiveDays = PrayerLogic.countConsecutiveDaysFrom(
-      profile.prayerLogs,
-      today
-    );
-    const expectedTrees = TreeLogic.shouldGenerateTrees(consecutiveDays);
-    const currentTrees = profile.worldState.trees.length;
-
-    if (expectedTrees > currentTrees) {
-      const treesNeeded = expectedTrees - currentTrees;
-      const newTrees = TreeLogic.generateTrees(
-        treesNeeded,
-        profile.worldState.trees
-      );
-
-      return {
-        ...profile,
-        worldState: {
-          ...profile.worldState,
-          trees: [...profile.worldState.trees, ...newTrees],
-          lastUpdated: Date.now(),
-        },
-        statistics: {
-          ...profile.statistics,
-          totalTreesGrown: profile.statistics.totalTreesGrown + newTrees.length,
-        },
-      };
-    }
-
-    return profile;
-  }
-
   // --- Internal helpers ---
 
   /**

@@ -46,25 +46,29 @@ export default function JannahScreen() {
           const today = PrayerLogic.getTodayDate();
           const result = WorldLogic.processDay(current, today);
 
-          const hasChanges =
+          // Only apply growth for today — never decay, since the day is still in progress.
+          // Decay for genuinely missed days is handled by the game loop on next app open.
+          const hasGrowth =
             result.treesAdded.length > 0 ||
-            result.treesDecayed.length > 0 ||
-            result.treesRemoved.length > 0 ||
             result.buildingsAdded.length > 0 ||
-            result.buildingsRemoved.length > 0 ||
-            result.buildingsDecayed.length > 0 ||
             result.animalsAdded.length > 0 ||
-            result.animalsRemoved.length > 0 ||
             result.riversAdded.length > 0 ||
-            result.illustriousItemsAdded.length > 0 ||
-            result.illustriousItemsRemoved.length > 0;
+            result.illustriousItemsAdded.length > 0;
 
-          if (hasChanges) {
-            current = WorldLogic.applyProcessingResult(current, result);
+          if (hasGrowth) {
+            // Strip out any decay results before applying
+            const growthOnly = {
+              ...result,
+              treesDecayed: [],
+              treesRemoved: [],
+              buildingsDecayed: [],
+              buildingsRemoved: [],
+              animalsRemoved: [],
+              illustriousItemsRemoved: [],
+            };
+            current = WorldLogic.applyProcessingResult(current, growthOnly);
           }
 
-          // Reconcile: ensure tree count matches what the streak entitles
-          current = WorldLogic.reconcileTrees(current);
           current = WorldLogic.updateStatisticsForPrayer(current);
           await ProfileManager.updateProfile(current);
           setProfile(current);
