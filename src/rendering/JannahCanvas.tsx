@@ -13,7 +13,7 @@ import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Pos
 import { GAME_CONFIG } from '../config/game.config';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES } from './sprites';
 import type { AnimalDirection } from './sprites';
 
 // Debug flag moved to GAME_CONFIG.debug.showAllSprites
@@ -167,7 +167,14 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
   // Build occupied position set for animal collision avoidance
   const occupiedPositions = useMemo(() => {
     const set = new Set<string>();
-    activeWorld.buildings.forEach(b => set.add(`b:${b.position.x},${b.position.y}`));
+    activeWorld.buildings.forEach(b => {
+      const size = BUILDING_SIZES[b.type] || { tilesWide: 1, tilesTall: 1 };
+      for (let dx = 0; dx < size.tilesWide; dx++) {
+        for (let dy = 0; dy < size.tilesTall; dy++) {
+          set.add(`b:${b.position.x + dx},${b.position.y - dy}`);
+        }
+      }
+    });
     activeWorld.trees.forEach(t => set.add(`t:${t.position.x},${t.position.y}`));
     activeWorld.rivers.forEach(r => r.tiles.forEach(t => set.add(`w:${t.x},${t.y}`)));
     return set;
@@ -361,7 +368,7 @@ function TreeSprite({ tree, center, centerRow, tileSize }: {
         top: (tree.position.y + centerRow) * tileSize - tileSize, // offset up by 1 tile for canopy
         width,
         height,
-        zIndex: 20, // Trees always in front of animals
+        zIndex: 100 + tree.position.y, // Y-based depth: lower on screen = in front
       }}
     />
   );
@@ -439,23 +446,27 @@ function BuildingSprite({ building, center, centerRow, tileSize }: {
   building: Building; center: number; centerRow: number; tileSize: number;
 }) {
   const isDilapidated = building.condition === 'dilapidated';
+  const size = BUILDING_SIZES[building.type] || { tilesWide: 1, tilesTall: 1 };
+  const width = size.tilesWide * tileSize;
+  const height = size.tilesTall * tileSize;
 
   return (
     <View
       style={{
         position: 'absolute',
         left: (building.position.x + center) * tileSize,
-        top: (building.position.y + centerRow) * tileSize,
-        width: tileSize,
-        height: tileSize,
+        top: (building.position.y + centerRow) * tileSize - (height - tileSize),
+        width,
+        height,
         opacity: isDilapidated ? 0.5 : 1,
+        zIndex: 100 + building.position.y, // Y-based depth: lower on screen = in front
       }}
     >
       <Image
         source={BUILDING_SPRITES[building.type]}
         style={{
-          width: tileSize,
-          height: tileSize,
+          width,
+          height,
           tintColor: isDilapidated ? '#8B7355' : undefined,
         }}
       />
@@ -1045,8 +1056,12 @@ function findClusteredPosition(
   clusterPositions: Position[],
   occupied: Set<string>,
   cols: number,
-  rows: number
+  rows: number,
+  buildingType?: string
 ): Position {
+  const size = buildingType ? (BUILDING_SIZES[buildingType] || { tilesWide: 1, tilesTall: 1 }) : { tilesWide: 1, tilesTall: 1 };
+  const spacing = Math.max(size.tilesWide, size.tilesTall);
+
   const directions = [
     { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
     { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
@@ -1054,14 +1069,23 @@ function findClusteredPosition(
   const halfX = Math.floor(cols / 2) - 1;
   const halfY = Math.floor(rows / 2) - 1;
 
-  for (let dist = 1; dist <= 3; dist++) {
+  const canPlace = (x: number, y: number): boolean => {
+    for (let dx = 0; dx < size.tilesWide; dx++) {
+      for (let dy = 0; dy < size.tilesTall; dy++) {
+        const key = `${x + dx},${y - dy}`;
+        if (occupied.has(key)) return false;
+        if (Math.abs(x + dx) > halfX || Math.abs(y - dy) > halfY) return false;
+      }
+    }
+    return true;
+  };
+
+  for (let dist = 1; dist <= spacing + 2; dist++) {
     for (const pos of clusterPositions) {
       for (const dir of directions) {
         const x = pos.x + dir.dx * dist;
         const y = pos.y + dir.dy * dist;
-        const key = `${x},${y}`;
-        if (!occupied.has(key) && Math.abs(x) <= halfX && Math.abs(y) <= halfY) {
-          occupied.add(key);
+        if (canPlace(x, y)) {
           return { x, y };
         }
       }
@@ -1071,25 +1095,23 @@ function findClusteredPosition(
   // Fallback: ring around cluster centroid
   const cx = Math.round(clusterPositions.reduce((s, p) => s + p.x, 0) / clusterPositions.length);
   const cy = Math.round(clusterPositions.reduce((s, p) => s + p.y, 0) / clusterPositions.length);
-  for (let r = 2; r < 10; r++) {
+  for (let r = 1; r < spacing + 8; r++) {
     for (let angle = 0; angle < 8; angle++) {
       const x = cx + Math.round(r * Math.cos((angle * Math.PI) / 4));
       const y = cy + Math.round(r * Math.sin((angle * Math.PI) / 4));
-      const key = `${x},${y}`;
-      if (!occupied.has(key) && Math.abs(x) <= halfX && Math.abs(y) <= halfY) {
-        occupied.add(key);
+      if (canPlace(x, y)) {
         return { x, y };
       }
     }
   }
 
-  return { x: cx + 1, y: cy };
+  return { x: cx + spacing, y: cy };
 }
 
 /**
- * Group positions into clusters based on Manhattan distance proximity (≤ 4).
+ * Group positions into clusters based on Manhattan distance proximity.
  */
-function groupPositionsIntoClusters(positions: Position[]): Position[][] {
+function groupPositionsIntoClusters(positions: Position[], proximityThreshold = 6): Position[][] {
   const clusters: Position[][] = [];
   const assigned = new Set<number>();
 
@@ -1104,7 +1126,7 @@ function groupPositionsIntoClusters(positions: Position[]): Position[][] {
       for (let j = 0; j < positions.length; j++) {
         if (assigned.has(j)) continue;
         const dist = Math.abs(positions[j].x - current.x) + Math.abs(positions[j].y - current.y);
-        if (dist <= 4) {
+        if (dist <= proximityThreshold) {
           cluster.push(positions[j]);
           assigned.add(j);
           queue.push(positions[j]);
@@ -1167,8 +1189,10 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
       const sameType = buildings.filter((b) => b.type === type);
       let position: Position;
       if (sameType.length > 0) {
-        // Group into clusters by proximity
-        const clusters = groupPositionsIntoClusters(sameType.map((b) => b.position));
+        // Group into clusters by proximity (scaled to building size)
+        const bSize = BUILDING_SIZES[type] || { tilesWide: 1, tilesTall: 1 };
+        const proximity = Math.max(bSize.tilesWide, bSize.tilesTall) + 2;
+        const clusters = groupPositionsIntoClusters(sameType.map((b) => b.position), proximity);
         const latestCluster = clusters[clusters.length - 1];
         if (latestCluster.length >= clusterLimits[type]) {
           // Start a new cluster elsewhere
@@ -1177,10 +1201,17 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
           clusterLimits[type] = cfg.clusterSize.min +
             Math.floor(rng() * (cfg.clusterSize.max - cfg.clusterSize.min + 1));
         } else {
-          position = findClusteredPosition(latestCluster, occupied, cols, rows);
+          position = findClusteredPosition(latestCluster, occupied, cols, rows, type);
         }
       } else {
         position = randomPosition(rng, occupied, cols, rows);
+      }
+      // Mark the full building footprint as occupied
+      const bSize = BUILDING_SIZES[type] || { tilesWide: 1, tilesTall: 1 };
+      for (let dx = 0; dx < bSize.tilesWide; dx++) {
+        for (let dy = 0; dy < bSize.tilesTall; dy++) {
+          occupied.add(`${position.x + dx},${position.y - dy}`);
+        }
       }
       buildings.push({ id: `sim_bld_${type}_${i}`, type, position, createdAt: now, condition: 'good' as const });
     }
@@ -1326,9 +1357,9 @@ const ALL_SPRITES: { label: string; source: number; tilesWide?: number; tilesTal
   { label: 'enhanced', source: FLOWER_SPRITES.enhanced },
   { label: 'bush', source: FLOWER_SPRITES.bush },
   // Buildings
-  { label: 'home', source: BUILDING_SPRITES.home },
-  { label: 'mansion', source: BUILDING_SPRITES.mansion },
-  { label: 'palace', source: BUILDING_SPRITES.palace },
+  { label: 'home', source: BUILDING_SPRITES.home, tilesWide: 2, tilesTall: 3 },
+  { label: 'mansion', source: BUILDING_SPRITES.mansion, tilesWide: 3, tilesTall: 3 },
+  { label: 'palace', source: BUILDING_SPRITES.palace, tilesWide: 4, tilesTall: 5 },
   // Animals
   { label: 'bird', source: ANIMAL_SPRITES.bird },
   { label: 'rabbit', source: ANIMAL_SPRITES.rabbit },

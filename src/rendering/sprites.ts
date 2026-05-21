@@ -73,6 +73,12 @@ export const BUILDING_SPRITES = {
   palace: require('../../assets/sprites/buildings/palace.png'),
 };
 
+export const BUILDING_SIZES: Record<string, { tilesWide: number; tilesTall: number }> = {
+  home: { tilesWide: 2, tilesTall: 3 },
+  mansion: { tilesWide: 3, tilesTall: 3 },
+  palace: { tilesWide: 4, tilesTall: 5 },
+};
+
 // --- Animals ---
 
 export const ANIMAL_SPRITES = {
