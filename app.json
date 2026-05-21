@@ -2,7 +2,7 @@
   "expo": {
     "name": "Jannah Builder",
     "slug": "jannah-builder",
-    "version": "2.5.1",
+    "version": "2.7.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
