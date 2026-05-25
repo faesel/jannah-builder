@@ -4,7 +4,7 @@
  */
 
 import { Tree, Position } from '../types/models';
-import { TreeStage, GAME_CONFIG } from '../config/game.config';
+import { TreeStage, GAME_CONFIG, RESERVED_POSITIONS } from '../config/game.config';
 
 export class TreeLogic {
   /**
@@ -93,6 +93,7 @@ export class TreeLogic {
     const occupied = new Set(
       allTrees.map((t) => `${t.position.x},${t.position.y}`)
     );
+    RESERVED_POSITIONS.forEach((p) => occupied.add(p));
 
     const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
 

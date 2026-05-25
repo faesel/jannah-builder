@@ -17,7 +17,7 @@ import {
   Tree,
   Position,
 } from '../types/models';
-import { GAME_CONFIG, FlowerVariety } from '../config/game.config';
+import { GAME_CONFIG, FlowerVariety, RESERVED_POSITIONS } from '../config/game.config';
 
 type BuildingType = Building['type'];
 type AnimalType = Animal['type'];
@@ -48,6 +48,12 @@ const ANIMAL_TYPES: { type: AnimalType; threshold: number; repeatEvery: number }
 function targetCount(treeCount: number, threshold: number, repeatEvery: number): number {
   if (treeCount < threshold) return 0;
   return 1 + Math.floor((treeCount - threshold) / repeatEvery);
+}
+
+/** Add reserved positions (e.g. signboard) to an occupied set. */
+function addReserved(occupied: Set<string>): Set<string> {
+  RESERVED_POSITIONS.forEach((p) => occupied.add(p));
+  return occupied;
 }
 
 export class WorldElementLogic {
@@ -123,6 +129,7 @@ export class WorldElementLogic {
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
     ]);
+    addReserved(occupied);
 
     for (let i = 0; i < actionsAvailable; i++) {
       // Prioritise upgrading oldest non-max-stage flower (only pre-existing ones)
@@ -229,6 +236,7 @@ export class WorldElementLogic {
       ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
       ...existingDhikrFlowers.map((f) => `${f.position.x},${f.position.y}`),
     ]);
+    addReserved(occupied);
     const position = this.findFlowerPosition(existingTrees, occupied);
     const now = Date.now();
 
@@ -268,6 +276,7 @@ export class WorldElementLogic {
     const config = GAME_CONFIG.world.obstacles;
     const obstacles: Obstacle[] = [];
     const occupied = new Set<string>();
+    addReserved(occupied);
     const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
     const now = Date.now();
 
@@ -329,6 +338,7 @@ export class WorldElementLogic {
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...(existingObstacles ?? []).map((o) => `${o.position.x},${o.position.y}`),
     ]);
+    addReserved(occupied);
 
     let position: Position = { x: 0, y: 0 };
     for (let attempt = 0; attempt < 200; attempt++) {
@@ -541,6 +551,7 @@ export class WorldElementLogic {
     allOccupied: Position[]
   ): Position {
     const occupied = new Set(allOccupied.map((p) => `${p.x},${p.y}`));
+    addReserved(occupied);
     // Cardinal directions for street-like adjacency
     const directions = [
       { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
@@ -608,6 +619,7 @@ export class WorldElementLogic {
       ...treePositions.map((p) => `${p.x},${p.y}`),
       ...occupiedPositions.map((p) => `${p.x},${p.y}`),
     ]);
+    addReserved(occupied);
 
     const radius = Math.max(3, Math.ceil(Math.sqrt(treePositions.length)) + 1);
 
@@ -702,6 +714,7 @@ export class WorldElementLogic {
       ...buildings.map((b) => `${b.position.x},${b.position.y}`),
       ...existingRivers.flatMap((r) => r.tiles.map((t) => `${t.x},${t.y}`)),
     ]);
+    addReserved(occupied);
 
     // River length scales with tree count
     const extraLength = Math.floor((treeCount - rc.threshold) * rc.lengthGrowth);

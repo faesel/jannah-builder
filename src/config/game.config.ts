@@ -7,6 +7,9 @@
 
 const DEBUG_LOW_ILLUSTRIOUS = false;
 
+/** The signboard occupies the centre tile — nothing may spawn here. */
+export const RESERVED_POSITIONS = new Set(['0,0']);
+
 export const GAME_CONFIG = {
   // Prayer mechanics
   prayers: {
