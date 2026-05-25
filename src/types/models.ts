@@ -159,8 +159,3 @@ export interface DayProcessingResult {
 // ===== Helper Types =====
 
 export type DayStatus = 'complete' | 'incomplete' | 'missed';
-
-export interface DateRange {
-  startDate: string; // ISO 8601
-  endDate: string; // ISO 8601
-}

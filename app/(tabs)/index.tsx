@@ -180,7 +180,7 @@ export default function LogPrayerScreen() {
           profile = existing[0];
           await ProfileManager.setActiveProfileId(profile.id);
         } else {
-          profile = await ProfileManager.addProfile(GAME_CONFIG.profiles.defaultName);
+          profile = await ProfileManager.addProfile('Profile');
         }
       }
 

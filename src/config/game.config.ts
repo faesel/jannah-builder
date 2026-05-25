@@ -18,30 +18,17 @@ export const GAME_CONFIG = {
   trees: {
     daysForNewTree: 3, // Consecutive full days needed to generate one tree
     growthStages: ['sapling', 'young', 'mature'] as const,
-    maxTrees: 100, // Reasonable upper limit for performance
     firstDaySeedling: true, // Plant a sapling on the user's very first complete day
   },
 
   // Decay mechanics
   decay: {
-    treesAffectedPerMissedDay: 1, // Only one tree affected at a time
-    degradationOrder: ['mature', 'young', 'sapling', 'removed'] as const,
-    cascadeDecay: false, // Never cascade across multiple trees
     buildings: {
       enabled: true,
-      removeOnePerMissedDay: true, // Remove one building when trees drop below threshold
     },
     animals: {
       enabled: true,
-      removeOnePerMissedDay: true, // Remove one animal when trees drop below threshold
     },
-  },
-
-  // Qur'an & Dhikr mechanics
-  spiritualPractices: {
-    affectTreeGrowth: false, // Never generate trees
-    affectDecay: false, // Never cause decay
-    visualEffectsOnly: true, // Only enhance visuals
   },
 
   // Illustrious items (streak-based)
@@ -59,15 +46,12 @@ export const GAME_CONFIG = {
       floating_lantern: DEBUG_LOW_ILLUSTRIOUS ? 3 : 90,
       light_arch: DEBUG_LOW_ILLUSTRIOUS ? 4 : 120,
     },
-    fadeOutDuration: 3000, // 3 seconds gentle fade
-    showCounters: false, // Never show streak numbers prominently
   },
 
   // World elements
   world: {
     flowers: {
       baseThreshold: 4, // Trees needed before flowers appear
-      quranBoost: 1.5, // Multiplier when logging Qur'an
     },
     buildings: {
       home: { threshold: 12, repeatEvery: 10, clusterSize: { min: 3, max: 6 } },
@@ -102,7 +86,6 @@ export const GAME_CONFIG = {
   // Profile settings
   profiles: {
     maxProfiles: 3,
-    defaultName: 'Profile',
   },
 
   // Debug / testing
