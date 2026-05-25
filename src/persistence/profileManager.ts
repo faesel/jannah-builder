@@ -69,13 +69,22 @@ export class ProfileManager {
   static async loadProfiles(): Promise<UserProfile[]> {
     const profiles = await Storage.get<UserProfile[]>(STORAGE_KEYS.PROFILES);
     // Migrate older profiles that may lack newer fields
-    return (profiles || []).map(p => ({
-      ...p,
-      worldState: {
-        ...p.worldState,
-        rivers: p.worldState.rivers ?? [],
-      },
-    }));
+    return (profiles || []).map(p => {
+      const obstacles = p.worldState.obstacles ?? [];
+      const needsObstacles = obstacles.length < GAME_CONFIG.world.obstacles.initialCount;
+
+      return {
+        ...p,
+        worldState: {
+          ...p.worldState,
+          rivers: p.worldState.rivers ?? [],
+          dhikrFlowers: p.worldState.dhikrFlowers ?? [],
+          obstacles: needsObstacles
+            ? [...obstacles, ...WorldElementLogic.generateInitialObstacles().slice(obstacles.length)]
+            : obstacles,
+        },
+      };
+    });
   }
 
   /**

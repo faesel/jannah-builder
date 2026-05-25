@@ -70,7 +70,7 @@ export const GAME_CONFIG = {
       types: ['basic', 'bush'] as const,
     },
     obstacles: {
-      initialCount: 20, // Stumps/rocks placed at game start
+      initialCount: 40, // Stumps/rocks placed at game start
       types: ['stump', 'rock'] as const,
       stumpVariants: 5,
       rockVariants: 7,
