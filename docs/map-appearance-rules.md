@@ -21,9 +21,10 @@ Trees are the foundational element of the map. Everything else scales from tree 
 
 ### Generation
 
-- **3 consecutive full prayer days** → 1 new tree.
+- **3 consecutive full prayer days** → 1 tree action.
+- A tree action **upgrades the oldest non-mature tree first** (saplings before young trees).
+- A new sapling is only planted when all existing trees are already mature.
 - **First-day seedling**: On the user's very first complete day, a sapling is planted immediately (even before the 3-day threshold is met).
-- Maximum trees: 100.
 - Placement: completely random across the grid.
 
 ### Growth Stages
@@ -48,7 +49,6 @@ Triggered when **an entire day of prayers is missed**.
 | Rule | Value |
 |------|-------|
 | Base threshold | 4 trees before flowers appear |
-| Qur'an boost | ×1.5 flower density when Qur'an is logged |
 
 ---
 
@@ -131,9 +131,8 @@ Temporary, visually striking items that represent spiritual gifts – not achiev
 ### Rules
 
 - Appear when streak reaches the threshold.
-- **Fade gently** (3 s animation) when streak breaks.
+- **Fade gently** when streak breaks.
 - Never affect trees, buildings, or permanent progress.
-- No streak counters are shown prominently.
 - Positioned just outside the tree cluster ring.
 
 ---
@@ -177,15 +176,17 @@ Seasons represent continuity over time, not perfection.
 
 ---
 
-## Total Items on the Map (at Max Trees = 100)
+## Total Items on the Map (Theoretical Maximums)
 
 The formula for scaled elements is: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
+
+Note: there is no hard cap on tree count. The values below use 100 trees as a reference point.
 
 ### Trees
 
 | | Count |
 |-|-------|
-| Maximum | **100** |
+| Reference point | **100** (no hard cap) |
 
 ### Buildings
 
@@ -240,7 +241,7 @@ The formula for scaled elements is: `targetCount = 1 + floor((trees − threshol
 | Rivers | 3 |
 | Illustrious Items | 4 |
 | Qur'an Flowers (overlay) | 1–4 |
-| **Maximum items** | **~145** |
+| **Approximate items** | **~145** |
 
 ---
 
