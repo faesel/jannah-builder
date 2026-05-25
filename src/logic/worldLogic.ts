@@ -161,7 +161,7 @@ export class WorldLogic {
     );
 
     // --- Dhikr flowers ---
-    if (dayLog?.dhikrLogged) {
+    if (dayLog?.dhikrLogged && Math.random() < GAME_CONFIG.world.dhikrFlowers.spawnChance) {
       const dhikrFlower = WorldElementLogic.spawnDhikrFlower(
         projectedTrees,
         profile.worldState.flowers,

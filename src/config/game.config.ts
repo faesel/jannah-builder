@@ -65,6 +65,7 @@ export const GAME_CONFIG = {
       },
     },
     dhikrFlowers: {
+      spawnChance: 0.05, // 5% chance per dhikr log
       durationDays: 2, // Temporary flowers/bushes last 2 days
       types: ['basic', 'bush'] as const,
     },
@@ -84,7 +85,7 @@ export const GAME_CONFIG = {
       rabbits: { threshold: 15, repeatEvery: 15 },
       deer: { threshold: 40, repeatEvery: 30 },
       squirrels: { threshold: 25, repeatEvery: 20 },
-      black_cat: { spawnChance: 0.08, durationDays: 2 },
+      black_cat: { spawnChance: 0.05, durationDays: 2 },
     },
     rivers: {
       threshold: 18, // Trees needed before first river appears
