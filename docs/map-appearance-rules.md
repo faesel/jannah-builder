@@ -90,7 +90,7 @@ Obstacles represent the untamed state of the map. They are cleared by progress a
 
 | Rule | Value |
 |------|-------|
-| Initial count | 6 (placed randomly on new profile) |
+| Initial count | 20 (placed randomly on new profile) |
 | Types | Stump (5 variants), Rock (7 variants) |
 | Removal trigger | Any new element added to the map (tree, flower, building, animal, river) removes the **oldest** obstacle |
 | Addition trigger | Missed prayer day — one random stump or rock appears |
