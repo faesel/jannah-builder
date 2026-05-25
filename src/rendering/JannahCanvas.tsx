@@ -13,7 +13,7 @@ import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Pos
 import { GAME_CONFIG } from '../config/game.config';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES, STUMP_SPRITES } from './sprites';
 import type { AnimalDirection } from './sprites';
 
 // Debug flag moved to GAME_CONFIG.debug.showAllSprites
@@ -272,6 +272,24 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
       {/* Flowers */}
       {activeWorld.flowers.map((f) => (
         <FlowerSprite key={f.id} flower={f} center={centerCol} centerRow={centerRow} tileSize={tileSize} />
+      ))}
+
+      {/* Obstacles (stumps & rocks from world state) */}
+      {(activeWorld.obstacles ?? []).map((o) => (
+        <Image
+          key={o.id}
+          source={o.type === 'stump'
+            ? STUMP_SPRITES[(o.variant - 1) % STUMP_SPRITES.length]
+            : ROCK_SPRITES[(o.variant - 1) % ROCK_SPRITES.length]
+          }
+          style={{
+            position: 'absolute',
+            left: (o.position.x + centerCol) * tileSize,
+            top: (o.position.y + centerRow) * tileSize,
+            width: tileSize,
+            height: tileSize,
+          }}
+        />
       ))}
 
       {/* Berry bushes — appear once flower threshold is met */}

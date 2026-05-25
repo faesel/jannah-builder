@@ -49,6 +49,14 @@ export const ROCK_SPRITES = [
   require('../../assets/sprites/rocks/stone_grey_6.png'),
 ];
 
+export const STUMP_SPRITES = [
+  require('../../assets/sprites/bushes/stump_1.png'),
+  require('../../assets/sprites/bushes/stump_2.png'),
+  require('../../assets/sprites/bushes/stump_3.png'),
+  require('../../assets/sprites/bushes/stump_4.png'),
+  require('../../assets/sprites/bushes/stump_5.png'),
+];
+
 // --- Trees ---
 
 export const TREE_SPRITES: Record<TreeStage, number> = {
