@@ -36,6 +36,7 @@ export class WorldLogic {
       animalsAdded: [],
       animalsRemoved: [],
       riversAdded: [],
+      riversRemoved: [],
       illustriousItemsAdded: [],
       illustriousItemsRemoved: [],
     };
@@ -103,7 +104,7 @@ export class WorldLogic {
     const projectedTrees = this.projectTrees(profile, result);
     const projectedTreeCount = projectedTrees.length;
 
-    // --- Building & animal & flower decay (when trees drop below thresholds) ---
+    // --- Building, animal, flower & river decay (when trees drop below thresholds) ---
     if (!dayComplete) {
       const buildingDecayResult = WorldElementLogic.decayBuildings(
         projectedTreeCount,
@@ -118,6 +119,10 @@ export class WorldLogic {
       result.flowersRemoved = WorldElementLogic.decayFlowers(
         projectedTreeCount,
         profile.worldState.flowers
+      );
+      result.riversRemoved = WorldElementLogic.decayRivers(
+        projectedTreeCount,
+        profile.worldState.rivers
       );
     }
 
@@ -278,7 +283,8 @@ export class WorldLogic {
           ...profile.worldState.animals,
           ...result.animalsAdded,
         ].filter((a) => !result.animalsRemoved.includes(a.id)),
-        rivers: [...profile.worldState.rivers, ...result.riversAdded],
+        rivers: [...profile.worldState.rivers, ...result.riversAdded]
+          .filter((r) => !result.riversRemoved.includes(r.id)),
         illustriousItems: profile.worldState.illustriousItems
           .filter((item) => !result.illustriousItemsRemoved.includes(item.id))
           .concat(result.illustriousItemsAdded),

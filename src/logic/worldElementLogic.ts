@@ -430,6 +430,25 @@ export class WorldElementLogic {
   }
 
   /**
+   * Determine which rivers should be removed when trees drop below threshold.
+   * Removes one river per missed day — the most recently created one.
+   */
+  static decayRivers(
+    treeCount: number,
+    existingRivers: River[]
+  ): string[] {
+    const rc = GAME_CONFIG.world.rivers;
+    const desired = targetCount(treeCount, rc.threshold, rc.repeatEvery);
+    const excess = existingRivers.length - desired;
+
+    if (excess <= 0) return [];
+
+    // Remove one river per missed day (newest first)
+    const sorted = [...existingRivers].sort((a, b) => b.createdAt - a.createdAt);
+    return [sorted[0].id];
+  }
+
+  /**
    * Find a position for a flower — adjacent to a tree for a natural look.
    */
   private static findFlowerPosition(

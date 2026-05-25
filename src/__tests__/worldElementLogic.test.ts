@@ -400,4 +400,27 @@ describe('WorldElementLogic', () => {
       expect(result).toHaveLength(1);
     });
   });
+
+  describe('decayRivers', () => {
+    it('returns nothing when rivers are at or below desired count', () => {
+      const rivers = [
+        { id: 'river_1', tiles: [{ x: 0, y: 0 }], createdAt: 100 },
+      ];
+      // 18 trees = threshold → desired = 1
+      const result = WorldElementLogic.decayRivers(18, rivers);
+      expect(result).toHaveLength(0);
+    });
+
+    it('removes one river when tree count drops below threshold', () => {
+      const rivers = [
+        { id: 'river_old', tiles: [{ x: 0, y: 0 }], createdAt: 100 },
+        { id: 'river_new', tiles: [{ x: 5, y: 5 }], createdAt: 200 },
+      ];
+      // 10 trees → below threshold of 18 → desired = 0, excess = 2
+      const result = WorldElementLogic.decayRivers(10, rivers);
+      expect(result).toHaveLength(1);
+      // Newest river removed first
+      expect(result[0]).toBe('river_new');
+    });
+  });
 });

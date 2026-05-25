@@ -268,6 +268,7 @@ describe('WorldLogic', () => {
         animalsAdded: [],
         animalsRemoved: [],
         riversAdded: [],
+        riversRemoved: [],
         illustriousItemsAdded: [],
         illustriousItemsRemoved: [],
       };
@@ -310,6 +311,7 @@ describe('WorldLogic', () => {
         animalsAdded: [],
         animalsRemoved: [],
         riversAdded: [],
+        riversRemoved: [],
         illustriousItemsAdded: [],
         illustriousItemsRemoved: [],
       };
@@ -350,6 +352,7 @@ describe('WorldLogic', () => {
         animalsAdded: [],
         animalsRemoved: ['bird_1'],
         riversAdded: [],
+        riversRemoved: [],
         illustriousItemsAdded: [],
         illustriousItemsRemoved: [],
       };

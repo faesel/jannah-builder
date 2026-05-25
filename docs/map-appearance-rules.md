@@ -215,7 +215,19 @@ Triggered on a missed day when tree count drops below an animal type's threshold
 
 ## Rivers (Decay)
 
-No decay logic exists. Rivers are never removed once placed.
+| Rule | Value |
+|------|-------|
+| Trigger | Tree count drops below threshold (18 trees) |
+| Target selection | Newest river |
+| Rivers affected | 1 per missed day |
+| Condition path | Removed immediately (no intermediate state) |
+
+### Threshold
+
+| | Value |
+|-|-------|
+| Threshold | 18 trees |
+| Repeat every | 30 trees |
 
 ---
 

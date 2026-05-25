@@ -154,6 +154,7 @@ export interface DayProcessingResult {
   animalsAdded: Animal[];
   animalsRemoved: string[];
   riversAdded: River[];
+  riversRemoved: string[];
   illustriousItemsAdded: IllustriousItem[];
   illustriousItemsRemoved: string[];
 }
