@@ -146,6 +146,8 @@ export interface DayProcessingResult {
   treesUpgraded: Tree[]; // Trees upgraded to next growth stage
   treesDecayed: Tree[];
   treesRemoved: string[];
+  flowersAdded: Flower[];
+  flowersRemoved: string[];
   buildingsAdded: Building[];
   buildingsDecayed: Building[]; // Buildings degraded to dilapidated state
   buildingsRemoved: string[];

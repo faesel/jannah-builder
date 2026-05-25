@@ -52,6 +52,7 @@ export const GAME_CONFIG = {
   world: {
     flowers: {
       baseThreshold: 4, // Trees needed before flowers appear
+      repeatEvery: 2, // One additional flower per 2 trees beyond threshold
     },
     buildings: {
       home: { threshold: 12, repeatEvery: 10, clusterSize: { min: 3, max: 6 } },

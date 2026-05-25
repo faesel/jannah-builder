@@ -10,6 +10,7 @@
 import {
   Building,
   Animal,
+  Flower,
   River,
   Tree,
   Position,
@@ -96,6 +97,60 @@ export class WorldElementLogic {
     }
 
     return newAnimals;
+  }
+
+  /**
+   * Determine which new flowers should spawn given the current tree count.
+   * Flowers are placed adjacent to trees, creating a natural understory.
+   */
+  static evaluateFlowers(
+    treeCount: number,
+    existingFlowers: Flower[],
+    existingTrees: Tree[]
+  ): Flower[] {
+    const fc = GAME_CONFIG.world.flowers;
+    const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
+    const needed = desired - existingFlowers.length;
+    if (needed <= 0) return [];
+
+    const newFlowers: Flower[] = [];
+    const occupied = new Set([
+      ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
+      ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
+    ]);
+
+    for (let i = 0; i < needed; i++) {
+      const position = this.findFlowerPosition(existingTrees, occupied);
+      const now = Date.now();
+      const flower: Flower = {
+        id: `flower_${now}_${i}`,
+        position,
+        type: 'basic',
+      };
+      newFlowers.push(flower);
+      occupied.add(`${position.x},${position.y}`);
+    }
+
+    return newFlowers;
+  }
+
+  /**
+   * Determine which flowers should be removed when trees drop below threshold.
+   * Removes one flower per missed day — the newest one.
+   */
+  static decayFlowers(
+    treeCount: number,
+    existingFlowers: Flower[]
+  ): string[] {
+    const fc = GAME_CONFIG.world.flowers;
+    const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
+    const excess = existingFlowers.length - desired;
+
+    if (excess <= 0) return [];
+
+    // Remove one flower per missed day (newest first by ID since flowers lack createdAt)
+    const sorted = [...existingFlowers].sort((a, b) => b.id.localeCompare(a.id));
+    return [sorted[0].id];
   }
 
   /**
@@ -372,6 +427,43 @@ export class WorldElementLogic {
     }
 
     return { x: radius + 1, y: 0 };
+  }
+
+  /**
+   * Find a position for a flower — adjacent to a tree for a natural look.
+   */
+  private static findFlowerPosition(
+    trees: Tree[],
+    occupied: Set<string>
+  ): Position {
+    const directions = [
+      { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+      { dx: 1, dy: 1 }, { dx: -1, dy: -1 },
+      { dx: 1, dy: -1 }, { dx: -1, dy: 1 },
+    ];
+
+    // Try positions adjacent to random trees
+    const shuffledTrees = [...trees].sort(() => Math.random() - 0.5);
+    for (const tree of shuffledTrees) {
+      const shuffledDirs = [...directions].sort(() => Math.random() - 0.5);
+      for (const dir of shuffledDirs) {
+        const x = tree.position.x + dir.dx;
+        const y = tree.position.y + dir.dy;
+        if (!occupied.has(`${x},${y}`)) {
+          return { x, y };
+        }
+      }
+    }
+
+    // Fallback: find any clear position near the tree cluster
+    return this.findClearPosition(
+      trees.map((t) => t.position),
+      [...occupied].map((key) => {
+        const [x, y] = key.split(',').map(Number);
+        return { x, y };
+      })
+    );
   }
 
   // --- River logic ---

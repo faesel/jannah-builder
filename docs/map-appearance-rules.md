@@ -15,11 +15,15 @@ A summary of all the rules that govern what appears on the Jannah map and when.
 
 ---
 
-## Trees
+# Addition Rules
+
+How and when elements are added to the map.
+
+---
+
+## Trees (Addition)
 
 Trees are the foundational element of the map. Everything else scales from tree count.
-
-### Generation
 
 - **3 consecutive full prayer days** → 1 tree action.
 - A tree action **upgrades the oldest non-mature tree first** (saplings before young trees).
@@ -33,26 +37,24 @@ Trees are the foundational element of the map. Everything else scales from tree 
 sapling → young → mature
 ```
 
-### Decay
-
-Triggered when **an entire day of prayers is missed**.
-
-- Only **one tree** is affected per missed day.
-- The **most mature** tree degrades first.
-- Degradation order: `mature → young → sapling → removed`.
-- Decay **never cascades** across multiple trees.
-
 ---
 
-## Flowers
+## Flowers (Addition)
+
+Flowers appear naturally alongside trees, placed adjacent to them for a natural understory look.
+
+Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
 | Rule | Value |
 |------|-------|
-| Base threshold | 4 trees before flowers appear |
+| Threshold | 4 trees |
+| Repeat every | 2 trees |
+| Placement | Adjacent to existing trees (cardinal + diagonal) |
+| Type | `basic` (default) or `enhanced` (when Qur'an logged) |
 
 ---
 
-## Buildings
+## Buildings (Addition)
 
 Buildings appear when the tree count crosses configured thresholds. Additional instances spawn every `repeatEvery` trees beyond the initial threshold.
 
@@ -69,17 +71,13 @@ Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 - Same-type buildings form street-like clusters (placed in cardinal adjacency).
 - Once a cluster reaches its random size limit, a new cluster starts elsewhere.
 
-### Decay
-
-- When trees drop below a threshold, the **newest** building of that type degrades.
-- Condition path: `good → dilapidated → removed`.
-- Only **one building** is affected per missed day.
-
 ---
 
-## Animals
+## Animals (Addition)
 
 Animals follow the same threshold/repeat formula as buildings.
+
+Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
 | Type | Threshold | Repeat Every |
 |------|-----------|--------------|
@@ -87,11 +85,6 @@ Animals follow the same threshold/repeat formula as buildings.
 | Rabbit | 15 trees | 15 |
 | Squirrel | 25 trees | 20 |
 | Deer | 40 trees | 30 |
-
-### Decay
-
-- When trees drop below a threshold, the **newest** animal of that type is removed.
-- Only **one animal** is removed per missed day.
 
 ### Black Cat (Special)
 
@@ -103,7 +96,7 @@ Animals follow the same threshold/repeat formula as buildings.
 
 ---
 
-## Rivers
+## Rivers (Addition)
 
 | Rule | Value |
 |------|-------|
@@ -117,7 +110,7 @@ Rivers are generated as snaking single-tile-wide paths from map edges. They neve
 
 ---
 
-## Illustrious Items (Streak-Based)
+## Illustrious Items (Addition – Streak-Based)
 
 Temporary, visually striking items that represent spiritual gifts – not achievements.
 
@@ -128,18 +121,123 @@ Temporary, visually striking items that represent spiritual gifts – not achiev
 | Floating Lantern | 90 days |
 | Light Arch | 120 days |
 
-### Rules
-
 - Appear when streak reaches the threshold.
-- **Fade gently** when streak breaks.
-- Never affect trees, buildings, or permanent progress.
 - Positioned just outside the tree cluster ring.
+- Never affect trees, buildings, or permanent progress.
 
 ---
 
-## Qur'an Effects (Visual Only)
+# Decay Rules
 
-Logging Qur'an **never** generates trees or causes decay. Effects are purely visual.
+How and when elements are removed or degraded. Decay is triggered when **an entire day of prayers is missed**.
+
+---
+
+## Trees (Decay)
+
+| Rule | Value |
+|------|-------|
+| Trigger | Entire day missed |
+| Trees affected | 1 per missed day |
+| Target selection | Most mature tree first |
+| Cascade | Never — only one tree per day |
+
+### Degradation path
+
+```
+mature → young → sapling → removed
+```
+
+---
+
+## Buildings (Decay)
+
+Triggered on a missed day when tree count drops below a building type's threshold.
+
+| Rule | Value |
+|------|-------|
+| Trigger | Tree count < threshold for a building type |
+| Target selection | Newest building of that type |
+| Buildings affected | 1 per missed day |
+| Condition path | `good → dilapidated → removed` |
+
+### Thresholds (same as addition)
+
+| Type | Threshold |
+|------|-----------|
+| Home | 12 trees |
+| Mansion | 35 trees |
+| Palace | 70 trees |
+
+If trees drop below the threshold, the desired count decreases and excess buildings are decayed one at a time.
+
+---
+
+## Animals (Decay)
+
+Triggered on a missed day when tree count drops below an animal type's threshold.
+
+| Rule | Value |
+|------|-------|
+| Trigger | Tree count < threshold for an animal type |
+| Target selection | Newest animal of that type |
+| Animals affected | 1 per missed day |
+| Condition path | Removed immediately (no intermediate state) |
+
+### Thresholds (same as addition)
+
+| Type | Threshold |
+|------|-----------|
+| Bird | 5 trees |
+| Rabbit | 15 trees |
+| Squirrel | 25 trees |
+| Deer | 40 trees |
+
+---
+
+## Flowers (Decay)
+
+| Rule | Value |
+|------|-------|
+| Trigger | Tree count drops below threshold (4 trees) |
+| Target selection | Newest flower |
+| Flowers affected | 1 per missed day |
+| Condition path | Removed immediately (no intermediate state) |
+
+### Threshold
+
+| | Value |
+|-|-------|
+| Threshold | 4 trees |
+| Repeat every | 2 trees |
+
+---
+
+## Rivers (Decay)
+
+No decay logic exists. Rivers are never removed once placed.
+
+---
+
+## Illustrious Items (Decay)
+
+| Rule | Value |
+|------|-------|
+| Trigger | Streak breaks (not a missed day per se — just loss of consecutive days) |
+| Effect | Gentle fade-out animation |
+| Impact on permanent progress | None |
+
+Disappearance represents a temporary gift returning — not failure.
+
+---
+
+# Visual Effects (Non-Mechanical)
+
+These effects never generate trees, cause decay, or affect game state. They are purely cosmetic.
+
+---
+
+## Qur'an Effects
 
 | Effect | Detail |
 |--------|--------|
@@ -147,13 +245,10 @@ Logging Qur'an **never** generates trees or causes decay. Effects are purely vis
 | Flower glow | Breathing opacity animation: ~5 % → 80 % (1.5 s cycle) |
 | Ambient light boost | ×1.3 |
 | Tree glow | Enabled |
-| Flower density | ×1.5 |
 
 ---
 
-## Dhikr Effects (Visual Only)
-
-Logging dhikr **never** generates trees or causes decay. Effects are purely ambient.
+## Dhikr Effects
 
 | Effect | Detail |
 |--------|--------|
@@ -163,7 +258,7 @@ Logging dhikr **never** generates trees or causes decay. Effects are purely ambi
 
 ---
 
-## Seasons (Planned)
+# Seasons (Planned)
 
 Seasons represent continuity over time, not perfection.
 
@@ -176,7 +271,7 @@ Seasons represent continuity over time, not perfection.
 
 ---
 
-## Total Items on the Map (Theoretical Maximums)
+# Summary: Total Items on the Map (at 100 Trees)
 
 The formula for scaled elements is: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
@@ -226,22 +321,23 @@ Note: there is no hard cap on tree count. The values below use 100 trees as a re
 
 ### Flowers
 
-| Type | Max Count | Notes |
-|------|-----------|-------|
-| Persistent (world state) | Uncapped | Stored in world state; no generation logic yet |
-| Qur'an glowing flowers | 1–4 | Temporary visual overlay, deterministic per day |
+| Type | Calculation | Max Count | Notes |
+|------|-------------|-----------|-------|
+| Persistent | 1 + floor((100 − 4) / 2) | **49** | Generated by tree-count mechanic |
+| Qur'an glowing flowers | — | 1–4 | Temporary visual overlay, deterministic per day |
 
 ### Grand Total (at 100 trees, full streak)
 
 | Category | Count |
 |----------|-------|
 | Trees | 100 |
+| Flowers | 49 |
 | Buildings | 12 |
 | Animals | 25 + 1 black cat |
 | Rivers | 3 |
 | Illustrious Items | 4 |
 | Qur'an Flowers (overlay) | 1–4 |
-| **Approximate items** | **~145** |
+| **Approximate items** | **~195** |
 
 ---
 

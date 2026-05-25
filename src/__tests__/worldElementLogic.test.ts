@@ -351,4 +351,53 @@ describe('WorldElementLogic', () => {
       expect(result).toHaveLength(1);
     });
   });
+
+  describe('evaluateFlowers', () => {
+    it('returns nothing below the flower threshold', () => {
+      const result = WorldElementLogic.evaluateFlowers(3, [], makeTrees(3));
+      expect(result).toHaveLength(0);
+    });
+
+    it('spawns a flower at threshold', () => {
+      const result = WorldElementLogic.evaluateFlowers(4, [], makeTrees(4));
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe('basic');
+    });
+
+    it('spawns additional flowers as trees grow', () => {
+      const result = WorldElementLogic.evaluateFlowers(10, [], makeTrees(10));
+      // targetCount = 1 + floor((10-4)/2) = 4
+      expect(result).toHaveLength(4);
+    });
+
+    it('does not spawn flowers that already exist', () => {
+      const existing = [
+        { id: 'flower_1', position: { x: 5, y: 5 }, type: 'basic' as const },
+      ];
+      const result = WorldElementLogic.evaluateFlowers(4, existing, makeTrees(4));
+      // 1 desired, 1 existing → 0 needed
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('decayFlowers', () => {
+    it('returns nothing when flowers are at or below desired count', () => {
+      const flowers = [
+        { id: 'flower_1', position: { x: 1, y: 1 }, type: 'basic' as const },
+      ];
+      const result = WorldElementLogic.decayFlowers(4, flowers);
+      expect(result).toHaveLength(0);
+    });
+
+    it('removes one flower when tree count drops below threshold', () => {
+      const flowers = [
+        { id: 'flower_a', position: { x: 1, y: 1 }, type: 'basic' as const },
+        { id: 'flower_b', position: { x: 2, y: 2 }, type: 'basic' as const },
+      ];
+      // 2 trees → desired = 0 (below threshold of 4), so both are excess
+      const result = WorldElementLogic.decayFlowers(2, flowers);
+      // Only one removed per missed day
+      expect(result).toHaveLength(1);
+    });
+  });
 });
