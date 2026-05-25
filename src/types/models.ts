@@ -2,7 +2,7 @@
  * Core data model type definitions for Jannah Builder
  */
 
-import { TreeStage, IllustriousItemType } from '../config/game.config';
+import { TreeStage, IllustriousItemType, FlowerVariety, ObstacleType } from '../config/game.config';
 
 // ===== Prayer Logging =====
 
@@ -42,6 +42,8 @@ export interface Position {
 export interface WorldState {
   trees: Tree[];
   flowers: Flower[];
+  dhikrFlowers: DhikrFlower[];
+  obstacles: Obstacle[];
   buildings: Building[];
   animals: Animal[];
   rivers: River[];
@@ -58,7 +60,24 @@ export interface WorldState {
 export interface Flower {
   id: string;
   position: Position;
-  type: 'basic' | 'enhanced'; // Enhanced when Qur'an is logged
+  variety: FlowerVariety; // Which flower sprite set (pink, leaf, purple, etc.)
+  stage: number; // Current growth stage (1-based, max depends on variety)
+  createdAt: number;
+}
+
+export interface DhikrFlower {
+  id: string;
+  position: Position;
+  type: 'basic' | 'bush';
+  createdAt: number;
+}
+
+export interface Obstacle {
+  id: string;
+  type: ObstacleType; // 'stump' or 'rock'
+  variant: number; // Which sprite variant (1-based)
+  position: Position;
+  createdAt: number;
 }
 
 export interface Building {
@@ -147,7 +166,12 @@ export interface DayProcessingResult {
   treesDecayed: Tree[];
   treesRemoved: string[];
   flowersAdded: Flower[];
+  flowersUpgraded: Flower[]; // Flowers upgraded to next stage
   flowersRemoved: string[];
+  dhikrFlowersAdded: DhikrFlower[];
+  dhikrFlowersRemoved: string[];
+  obstaclesAdded: Obstacle[];
+  obstaclesRemoved: string[];
   buildingsAdded: Building[];
   buildingsDecayed: Building[]; // Buildings degraded to dilapidated state
   buildingsRemoved: string[];

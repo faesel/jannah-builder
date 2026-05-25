@@ -18,6 +18,8 @@ import { COLORS } from '../../src/config/colors';
 const DEFAULT_WORLD: WorldState = {
   trees: [],
   flowers: [],
+  dhikrFlowers: [],
+  obstacles: [],
   buildings: [],
   animals: [],
   rivers: [],

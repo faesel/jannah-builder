@@ -6,6 +6,7 @@
 import { UserProfile, WorldState, Statistics, StreakData, AppState, AppSettings } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
 import { Storage, STORAGE_KEYS } from './storage';
+import { WorldElementLogic } from '../logic/worldElementLogic';
 
 export class ProfileManager {
   /**
@@ -18,6 +19,8 @@ export class ProfileManager {
     const worldState: WorldState = {
       trees: [],
       flowers: [],
+      dhikrFlowers: [],
+      obstacles: WorldElementLogic.generateInitialObstacles(),
       buildings: [],
       animals: [],
       rivers: [],

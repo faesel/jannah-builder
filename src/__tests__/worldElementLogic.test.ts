@@ -355,49 +355,75 @@ describe('WorldElementLogic', () => {
   describe('evaluateFlowers', () => {
     it('returns nothing below the flower threshold', () => {
       const result = WorldElementLogic.evaluateFlowers(3, [], makeTrees(3));
-      expect(result).toHaveLength(0);
+      expect(result.added).toHaveLength(0);
+      expect(result.upgraded).toHaveLength(0);
     });
 
     it('spawns a flower at threshold', () => {
       const result = WorldElementLogic.evaluateFlowers(4, [], makeTrees(4));
-      expect(result).toHaveLength(1);
-      expect(result[0].type).toBe('basic');
+      expect(result.added).toHaveLength(1);
+      expect(result.added[0].stage).toBe(1);
+      expect(result.added[0].variety).toBeDefined();
     });
 
     it('spawns additional flowers as trees grow', () => {
       const result = WorldElementLogic.evaluateFlowers(10, [], makeTrees(10));
       // targetCount = 1 + floor((10-4)/2) = 4
-      expect(result).toHaveLength(4);
+      expect(result.added).toHaveLength(4);
     });
 
     it('does not spawn flowers that already exist', () => {
       const existing = [
-        { id: 'flower_1', position: { x: 5, y: 5 }, type: 'basic' as const },
+        { id: 'flower_1', position: { x: 5, y: 5 }, variety: 'pink' as const, stage: 1, createdAt: 1000 },
       ];
       const result = WorldElementLogic.evaluateFlowers(4, existing, makeTrees(4));
-      // 1 desired, 1 existing → 0 needed
-      expect(result).toHaveLength(0);
+      // 1 desired, 1 existing → 0 needed, but 1 action available if flower can be upgraded
+      // Since stage 1 < max stage (3), it should upgrade
+      expect(result.added).toHaveLength(0);
+    });
+
+    it('prioritises upgrading over creating new flowers', () => {
+      const existing = [
+        { id: 'flower_1', position: { x: 5, y: 5 }, variety: 'pink' as const, stage: 1, createdAt: 1000 },
+      ];
+      // 6 trees → targetCount = 1 + floor((6-4)/2) = 2, actions = 2-1 = 1
+      const result = WorldElementLogic.evaluateFlowers(6, existing, makeTrees(6));
+      expect(result.upgraded).toHaveLength(1);
+      expect(result.upgraded[0].id).toBe('flower_1');
+      expect(result.upgraded[0].stage).toBe(2);
+      expect(result.added).toHaveLength(0);
     });
   });
 
   describe('decayFlowers', () => {
     it('returns nothing when flowers are at or below desired count', () => {
       const flowers = [
-        { id: 'flower_1', position: { x: 1, y: 1 }, type: 'basic' as const },
+        { id: 'flower_1', position: { x: 1, y: 1 }, variety: 'pink' as const, stage: 2, createdAt: 1000 },
       ];
       const result = WorldElementLogic.decayFlowers(4, flowers);
-      expect(result).toHaveLength(0);
+      expect(result.removed).toHaveLength(0);
+      expect(result.degraded).toHaveLength(0);
     });
 
-    it('removes one flower when tree count drops below threshold', () => {
+    it('degrades a flower stage when tree count drops below threshold', () => {
       const flowers = [
-        { id: 'flower_a', position: { x: 1, y: 1 }, type: 'basic' as const },
-        { id: 'flower_b', position: { x: 2, y: 2 }, type: 'basic' as const },
+        { id: 'flower_a', position: { x: 1, y: 1 }, variety: 'pink' as const, stage: 2, createdAt: 1000 },
+        { id: 'flower_b', position: { x: 2, y: 2 }, variety: 'leaf' as const, stage: 1, createdAt: 2000 },
       ];
       // 2 trees → desired = 0 (below threshold of 4), so both are excess
       const result = WorldElementLogic.decayFlowers(2, flowers);
-      // Only one removed per missed day
-      expect(result).toHaveLength(1);
+      // One degraded (the highest stage, newest first)
+      expect(result.degraded).toHaveLength(1);
+      expect(result.degraded[0].stage).toBe(1);
+    });
+
+    it('removes a flower at stage 1', () => {
+      const flowers = [
+        { id: 'flower_a', position: { x: 1, y: 1 }, variety: 'pink' as const, stage: 1, createdAt: 1000 },
+      ];
+      const result = WorldElementLogic.decayFlowers(2, flowers);
+      expect(result.removed).toHaveLength(1);
+      expect(result.removed[0]).toBe('flower_a');
     });
   });
 

@@ -29,7 +29,12 @@ export class WorldLogic {
       treesDecayed: [],
       treesRemoved: [],
       flowersAdded: [],
+      flowersUpgraded: [],
       flowersRemoved: [],
+      dhikrFlowersAdded: [],
+      dhikrFlowersRemoved: [],
+      obstaclesAdded: [],
+      obstaclesRemoved: [],
       buildingsAdded: [],
       buildingsDecayed: [],
       buildingsRemoved: [],
@@ -116,22 +121,34 @@ export class WorldLogic {
         projectedTreeCount,
         profile.worldState.animals
       );
-      result.flowersRemoved = WorldElementLogic.decayFlowers(
+      const flowerDecayResult = WorldElementLogic.decayFlowers(
         projectedTreeCount,
         profile.worldState.flowers
       );
+      result.flowersRemoved = flowerDecayResult.removed;
+      // Apply flower degradation as upgrades in reverse (handled in applyProcessingResult)
+      result.flowersUpgraded.push(...flowerDecayResult.degraded);
       result.riversRemoved = WorldElementLogic.decayRivers(
         projectedTreeCount,
         profile.worldState.rivers
       );
+
+      // Spawn an obstacle on missed day
+      const newObstacle = WorldElementLogic.spawnObstacle(
+        projectedTrees,
+        profile.worldState.obstacles
+      );
+      result.obstaclesAdded.push(newObstacle);
     }
 
     // --- Flowers, buildings & animals ---
-    result.flowersAdded = WorldElementLogic.evaluateFlowers(
+    const flowerResult = WorldElementLogic.evaluateFlowers(
       projectedTreeCount,
       profile.worldState.flowers,
       projectedTrees
     );
+    result.flowersAdded = flowerResult.added;
+    result.flowersUpgraded.push(...flowerResult.upgraded);
     result.buildingsAdded = WorldElementLogic.evaluateBuildings(
       projectedTreeCount,
       profile.worldState.buildings,
@@ -142,6 +159,39 @@ export class WorldLogic {
       profile.worldState.animals,
       projectedTrees
     );
+
+    // --- Dhikr flowers ---
+    if (dayLog?.dhikrLogged) {
+      const dhikrFlower = WorldElementLogic.spawnDhikrFlower(
+        projectedTrees,
+        profile.worldState.flowers,
+        profile.worldState.dhikrFlowers ?? []
+      );
+      result.dhikrFlowersAdded.push(dhikrFlower);
+    }
+    // Expire old dhikr flowers
+    const expiredDhikr = WorldElementLogic.expireDhikrFlowers(
+      profile.worldState.dhikrFlowers ?? [],
+      date
+    );
+    result.dhikrFlowersRemoved.push(...expiredDhikr);
+
+    // --- Obstacle removal on progress ---
+    const elementsAddedThisDay =
+      result.treesAdded.length +
+      result.flowersAdded.length +
+      result.buildingsAdded.length +
+      result.animalsAdded.length +
+      result.riversAdded.length;
+
+    if (elementsAddedThisDay > 0) {
+      const obstacleToRemove = WorldElementLogic.removeObstacleForProgress(
+        profile.worldState.obstacles
+      );
+      if (obstacleToRemove) {
+        result.obstaclesRemoved.push(obstacleToRemove);
+      }
+    }
 
     // --- Rivers ---
     result.riversAdded = WorldElementLogic.evaluateRivers(
@@ -237,6 +287,28 @@ export class WorldLogic {
       (b) => !result.buildingsRemoved.includes(b.id)
     );
 
+    // Flowers: add, upgrade, remove
+    const updatedFlowers = [...profile.worldState.flowers, ...result.flowersAdded];
+    for (const upgraded of result.flowersUpgraded) {
+      const idx = updatedFlowers.findIndex((f) => f.id === upgraded.id);
+      if (idx !== -1) updatedFlowers[idx] = upgraded;
+    }
+    const filteredFlowers = updatedFlowers.filter(
+      (f) => !result.flowersRemoved.includes(f.id)
+    );
+
+    // Dhikr flowers
+    const updatedDhikrFlowers = [
+      ...(profile.worldState.dhikrFlowers ?? []),
+      ...result.dhikrFlowersAdded,
+    ].filter((f) => !result.dhikrFlowersRemoved.includes(f.id));
+
+    // Obstacles
+    const updatedObstacles = [
+      ...(profile.worldState.obstacles ?? []),
+      ...result.obstaclesAdded,
+    ].filter((o) => !result.obstaclesRemoved.includes(o.id));
+
     // Map expansion
     const newMapSize =
       WorldElementLogic.evaluateMapExpansion(
@@ -274,10 +346,9 @@ export class WorldLogic {
       worldState: {
         ...profile.worldState,
         trees: filteredTrees,
-        flowers: [
-          ...profile.worldState.flowers,
-          ...result.flowersAdded,
-        ].filter((f) => !result.flowersRemoved.includes(f.id)),
+        flowers: filteredFlowers,
+        dhikrFlowers: updatedDhikrFlowers,
+        obstacles: updatedObstacles,
         buildings: filteredBuildings,
         animals: [
           ...profile.worldState.animals,

@@ -41,7 +41,7 @@ sapling → young → mature
 
 ## Flowers (Addition)
 
-Flowers appear naturally alongside trees, placed adjacent to them for a natural understory look.
+Flowers appear naturally alongside trees, placed adjacent to them for a natural understory look. Like trees, flowers progress through growth stages and **upgrading existing flowers is prioritised over creating new ones**.
 
 Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
@@ -50,7 +50,52 @@ Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 | Threshold | 4 trees |
 | Repeat every | 2 trees |
 | Placement | Adjacent to existing trees (cardinal + diagonal) |
-| Type | `basic` (default) or `enhanced` (when Qur'an logged) |
+
+### Varieties
+
+| Variety | Stages |
+|---------|--------|
+| Pink | 3 |
+| Leaf | 3 |
+| Purple | 4 |
+| Red | 3 |
+| Teal | 3 |
+| Dark | 3 |
+| Wild | 4 |
+
+- When a new flower is created, a **random variety** is chosen.
+- Each action upgrades the **oldest, lowest-stage** flower first.
+- A new flower (stage 1) is only planted when all existing flowers are at their maximum stage.
+
+---
+
+## Dhikr Flowers (Addition – Temporary)
+
+Logging dhikr spawns a temporary flower or bush on the map for visual richness.
+
+| Rule | Value |
+|------|-------|
+| Trigger | Dhikr logged for the day |
+| Types | `basic`, `bush` (random) |
+| Duration | 2 days then fades |
+| Effect on progress | None – purely decorative |
+
+These represent **barakah**, not progress. If the user does not log dhikr, nothing is lost.
+
+---
+
+## Obstacles (Stumps & Rocks)
+
+Obstacles represent the untamed state of the map. They are cleared by progress and return when prayers are missed.
+
+| Rule | Value |
+|------|-------|
+| Initial count | 6 (placed randomly on new profile) |
+| Types | Stump (5 variants), Rock (7 variants) |
+| Removal trigger | Any new element added to the map (tree, flower, building, animal, river) removes the **oldest** obstacle |
+| Addition trigger | Missed prayer day — one random stump or rock appears |
+
+Obstacles never block game mechanics or prevent element placement.
 
 ---
 
@@ -200,9 +245,9 @@ Triggered on a missed day when tree count drops below an animal type's threshold
 | Rule | Value |
 |------|-------|
 | Trigger | Tree count drops below threshold (4 trees) |
-| Target selection | Newest flower |
+| Target selection | Highest-stage flower first, then newest |
 | Flowers affected | 1 per missed day |
-| Condition path | Removed immediately (no intermediate state) |
+| Condition path | Stage N → Stage N−1 → … → Stage 1 → Removed |
 
 ### Threshold
 
@@ -210,6 +255,16 @@ Triggered on a missed day when tree count drops below an animal type's threshold
 |-|-------|
 | Threshold | 4 trees |
 | Repeat every | 2 trees |
+
+---
+
+## Obstacles (Decay / Regrowth)
+
+| Rule | Value |
+|------|-------|
+| Trigger | Missed prayer day |
+| Effect | One random stump or rock appears on the map |
+| Removal | Happens when new elements are added (see Addition Rules) |
 
 ---
 

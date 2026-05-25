@@ -14,6 +14,8 @@ function createFreshProfile(): UserProfile {
   const worldState: WorldState = {
     trees: [],
     flowers: [],
+    dhikrFlowers: [],
+    obstacles: [],
     buildings: [],
     animals: [],
     rivers: [],

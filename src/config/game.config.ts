@@ -53,6 +53,26 @@ export const GAME_CONFIG = {
     flowers: {
       baseThreshold: 4, // Trees needed before flowers appear
       repeatEvery: 2, // One additional flower per 2 trees beyond threshold
+      varieties: ['pink', 'leaf', 'purple', 'red', 'teal', 'dark', 'wild'] as const,
+      stages: {
+        pink: 4,
+        leaf: 4,
+        purple: 3,
+        red: 3,
+        teal: 4,
+        dark: 4,
+        wild: 4,
+      },
+    },
+    dhikrFlowers: {
+      durationDays: 2, // Temporary flowers/bushes last 2 days
+      types: ['basic', 'bush'] as const,
+    },
+    obstacles: {
+      initialCount: 6, // Stumps/rocks placed at game start
+      types: ['stump', 'rock'] as const,
+      stumpVariants: 5,
+      rockVariants: 7,
     },
     buildings: {
       home: { threshold: 12, repeatEvery: 10, clusterSize: { min: 3, max: 6 } },
@@ -116,3 +136,5 @@ export const GAME_CONFIG = {
 export type Prayer = (typeof GAME_CONFIG.prayers.dailyPrayers)[number];
 export type TreeStage = (typeof GAME_CONFIG.trees.growthStages)[number];
 export type IllustriousItemType = (typeof GAME_CONFIG.illustriousItems.types)[number];
+export type FlowerVariety = (typeof GAME_CONFIG.world.flowers.varieties)[number];
+export type ObstacleType = (typeof GAME_CONFIG.world.obstacles.types)[number];

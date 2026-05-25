@@ -11,11 +11,13 @@ import {
   Building,
   Animal,
   Flower,
+  DhikrFlower,
+  Obstacle,
   River,
   Tree,
   Position,
 } from '../types/models';
-import { GAME_CONFIG } from '../config/game.config';
+import { GAME_CONFIG, FlowerVariety } from '../config/game.config';
 
 type BuildingType = Building['type'];
 type AnimalType = Animal['type'];
@@ -100,57 +102,251 @@ export class WorldElementLogic {
   }
 
   /**
-   * Determine which new flowers should spawn given the current tree count.
-   * Flowers are placed adjacent to trees, creating a natural understory.
+   * Determine which new flowers should spawn or be upgraded.
+   * Prioritises upgrading existing flowers over creating new ones.
    */
   static evaluateFlowers(
     treeCount: number,
     existingFlowers: Flower[],
     existingTrees: Tree[]
-  ): Flower[] {
+  ): { added: Flower[]; upgraded: Flower[] } {
     const fc = GAME_CONFIG.world.flowers;
     const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
-    const needed = desired - existingFlowers.length;
-    if (needed <= 0) return [];
+    const actionsAvailable = desired - existingFlowers.length;
 
-    const newFlowers: Flower[] = [];
+    if (actionsAvailable <= 0) return { added: [], upgraded: [] };
+
+    const added: Flower[] = [];
+    const upgraded: Flower[] = [];
+    const workingFlowers = [...existingFlowers];
     const occupied = new Set([
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
     ]);
 
-    for (let i = 0; i < needed; i++) {
-      const position = this.findFlowerPosition(existingTrees, occupied);
-      const now = Date.now();
-      const flower: Flower = {
-        id: `flower_${now}_${i}`,
-        position,
-        type: 'basic',
-      };
-      newFlowers.push(flower);
-      occupied.add(`${position.x},${position.y}`);
+    for (let i = 0; i < actionsAvailable; i++) {
+      // Prioritise upgrading oldest non-max-stage flower (only pre-existing ones)
+      const preExistingIds = new Set(existingFlowers.map((f) => f.id));
+      const upgradeableFlowers = workingFlowers.filter((f) => preExistingIds.has(f.id));
+      const candidate = this.findFlowerUpgradeCandidate(upgradeableFlowers);
+
+      if (candidate) {
+        const upgradedFlower: Flower = {
+          ...candidate,
+          stage: candidate.stage + 1,
+        };
+        upgraded.push(upgradedFlower);
+        const idx = workingFlowers.findIndex((f) => f.id === candidate.id);
+        workingFlowers[idx] = upgradedFlower;
+      } else {
+        // All pre-existing flowers are at max stage — create a new one
+        const position = this.findFlowerPosition(existingTrees, occupied);
+        const variety = this.randomFlowerVariety();
+        const now = Date.now();
+        const flower: Flower = {
+          id: `flower_${now}_${added.length}`,
+          position,
+          variety,
+          stage: 1,
+          createdAt: now,
+        };
+        added.push(flower);
+        workingFlowers.push(flower);
+        occupied.add(`${position.x},${position.y}`);
+      }
     }
 
-    return newFlowers;
+    return { added, upgraded };
   }
 
   /**
-   * Determine which flowers should be removed when trees drop below threshold.
-   * Removes one flower per missed day — the newest one.
+   * Find the oldest flower not yet at max stage (earliest stage first).
+   */
+  static findFlowerUpgradeCandidate(flowers: Flower[]): Flower | null {
+    const fc = GAME_CONFIG.world.flowers;
+    const upgradeable = flowers
+      .filter((f) => f.stage < fc.stages[f.variety])
+      .sort((a, b) => {
+        // Lowest stage first, then oldest
+        if (a.stage !== b.stage) return a.stage - b.stage;
+        return a.createdAt - b.createdAt;
+      });
+
+    return upgradeable.length > 0 ? upgradeable[0] : null;
+  }
+
+  /**
+   * Determine flower decay when trees drop below threshold.
+   * Degrades one flower per missed day: reduce stage, or remove if at stage 1.
    */
   static decayFlowers(
     treeCount: number,
     existingFlowers: Flower[]
-  ): string[] {
+  ): { degraded: Flower[]; removed: string[] } {
     const fc = GAME_CONFIG.world.flowers;
     const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
     const excess = existingFlowers.length - desired;
 
-    if (excess <= 0) return [];
+    if (excess <= 0) return { degraded: [], removed: [] };
 
-    // Remove one flower per missed day (newest first by ID since flowers lack createdAt)
-    const sorted = [...existingFlowers].sort((a, b) => b.id.localeCompare(a.id));
-    return [sorted[0].id];
+    // Target the newest flower at the highest stage
+    const sorted = [...existingFlowers].sort((a, b) => {
+      if (b.stage !== a.stage) return b.stage - a.stage;
+      return b.createdAt - a.createdAt;
+    });
+
+    const target = sorted[0];
+    if (target.stage <= 1) {
+      return { degraded: [], removed: [target.id] };
+    }
+
+    return {
+      degraded: [{ ...target, stage: target.stage - 1 }],
+      removed: [],
+    };
+  }
+
+  /**
+   * Pick a random flower variety from the configured list.
+   */
+  private static randomFlowerVariety(): FlowerVariety {
+    const varieties = GAME_CONFIG.world.flowers.varieties;
+    return varieties[Math.floor(Math.random() * varieties.length)];
+  }
+
+  /**
+   * Spawn a dhikr flower or bush (temporary, lasts 2 days).
+   */
+  static spawnDhikrFlower(
+    existingTrees: Tree[],
+    existingFlowers: Flower[],
+    existingDhikrFlowers: DhikrFlower[]
+  ): DhikrFlower {
+    const types = GAME_CONFIG.world.dhikrFlowers.types;
+    const type = types[Math.floor(Math.random() * types.length)];
+    const occupied = new Set([
+      ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
+      ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
+      ...existingDhikrFlowers.map((f) => `${f.position.x},${f.position.y}`),
+    ]);
+    const position = this.findFlowerPosition(existingTrees, occupied);
+    const now = Date.now();
+
+    return {
+      id: `dhikr_${type}_${now}`,
+      position,
+      type,
+      createdAt: now,
+    };
+  }
+
+  /**
+   * Remove expired dhikr flowers (older than durationDays).
+   */
+  static expireDhikrFlowers(
+    dhikrFlowers: DhikrFlower[],
+    currentDate: string
+  ): string[] {
+    const duration = GAME_CONFIG.world.dhikrFlowers.durationDays;
+    return dhikrFlowers
+      .filter((f) => {
+        const createdDate = new Date(f.createdAt).toISOString().split('T')[0];
+        const created = new Date(createdDate + 'T00:00:00Z').getTime();
+        const current = new Date(currentDate + 'T00:00:00Z').getTime();
+        const daysDiff = Math.floor((current - created) / (1000 * 60 * 60 * 24));
+        return daysDiff >= duration;
+      })
+      .map((f) => f.id);
+  }
+
+  // --- Obstacle logic ---
+
+  /**
+   * Generate initial obstacles for a new profile.
+   */
+  static generateInitialObstacles(): Obstacle[] {
+    const config = GAME_CONFIG.world.obstacles;
+    const obstacles: Obstacle[] = [];
+    const occupied = new Set<string>();
+    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
+    const now = Date.now();
+
+    for (let i = 0; i < config.initialCount; i++) {
+      const type = config.types[Math.floor(Math.random() * config.types.length)];
+      const maxVariant = type === 'stump' ? config.stumpVariants : config.rockVariants;
+      const variant = Math.floor(Math.random() * maxVariant) + 1;
+
+      // Find random position
+      let position: Position = { x: 0, y: 0 };
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const x = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
+        const y = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
+        if (!occupied.has(`${x},${y}`)) {
+          position = { x, y };
+          occupied.add(`${x},${y}`);
+          break;
+        }
+      }
+
+      obstacles.push({
+        id: `obstacle_${type}_${now}_${i}`,
+        type,
+        variant,
+        position,
+        createdAt: now,
+      });
+    }
+
+    return obstacles;
+  }
+
+  /**
+   * Remove one obstacle when new world elements are added (progress clears debris).
+   * Returns the ID of the obstacle to remove, or null if none remain.
+   */
+  static removeObstacleForProgress(obstacles: Obstacle[]): string | null {
+    if (obstacles.length === 0) return null;
+    // Remove oldest obstacle first
+    const sorted = [...obstacles].sort((a, b) => a.createdAt - b.createdAt);
+    return sorted[0].id;
+  }
+
+  /**
+   * Spawn an obstacle on a missed day (stump or rock returns).
+   */
+  static spawnObstacle(
+    existingTrees: Tree[],
+    existingObstacles: Obstacle[]
+  ): Obstacle {
+    const config = GAME_CONFIG.world.obstacles;
+    const type = config.types[Math.floor(Math.random() * config.types.length)];
+    const maxVariant = type === 'stump' ? config.stumpVariants : config.rockVariants;
+    const variant = Math.floor(Math.random() * maxVariant) + 1;
+    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
+    const now = Date.now();
+
+    const occupied = new Set([
+      ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
+      ...existingObstacles.map((o) => `${o.position.x},${o.position.y}`),
+    ]);
+
+    let position: Position = { x: 0, y: 0 };
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const x = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
+      const y = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
+      if (!occupied.has(`${x},${y}`)) {
+        position = { x, y };
+        break;
+      }
+    }
+
+    return {
+      id: `obstacle_${type}_${now}`,
+      type,
+      variant,
+      position,
+      createdAt: now,
+    };
   }
 
   /**

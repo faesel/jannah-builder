@@ -426,7 +426,7 @@ function FlowerSprite({ flower, center, centerRow, tileSize }: {
 }) {
   return (
     <Image
-      source={flower.type === 'enhanced' ? FLOWER_SPRITES.enhanced : FLOWER_SPRITES.basic}
+      source={FLOWER_SPRITES.basic}
       style={{
         position: 'absolute',
         left: (flower.position.x + center) * tileSize,
@@ -1166,7 +1166,9 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
   const flowers: Flower[] = Array.from({ length: flowerCounts[level] }, (_, i) => ({
     id: `sim_flower_${i}`,
     position: randomPosition(rng, occupied, cols, rows),
-    type: 'basic' as const,
+    variety: 'pink' as const,
+    stage: 1,
+    createdAt: now,
   }));
 
   const bc = GAME_CONFIG.world.buildings;
@@ -1323,6 +1325,8 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
 
   return {
     trees, flowers, buildings, animals, rivers, illustriousItems,
+    dhikrFlowers: [],
+    obstacles: [],
     mapSize: { width: gridSize, height: gridSize },
     gridSize,
     lastUpdated: now,
