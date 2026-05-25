@@ -136,7 +136,7 @@ export class WorldLogic {
       // Spawn an obstacle on missed day
       const newObstacle = WorldElementLogic.spawnObstacle(
         projectedTrees,
-        profile.worldState.obstacles
+        profile.worldState.obstacles ?? []
       );
       result.obstaclesAdded.push(newObstacle);
     }
@@ -186,7 +186,7 @@ export class WorldLogic {
 
     if (elementsAddedThisDay > 0) {
       const obstacleToRemove = WorldElementLogic.removeObstacleForProgress(
-        profile.worldState.obstacles
+        profile.worldState.obstacles ?? []
       );
       if (obstacleToRemove) {
         result.obstaclesRemoved.push(obstacleToRemove);

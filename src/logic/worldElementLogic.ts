@@ -327,7 +327,7 @@ export class WorldElementLogic {
 
     const occupied = new Set([
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
-      ...existingObstacles.map((o) => `${o.position.x},${o.position.y}`),
+      ...(existingObstacles ?? []).map((o) => `${o.position.x},${o.position.y}`),
     ]);
 
     let position: Position = { x: 0, y: 0 };
