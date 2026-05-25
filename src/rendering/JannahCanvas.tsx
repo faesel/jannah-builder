@@ -267,6 +267,7 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
           source={LANDMARK_SPRITES.signboard}
           style={{ width: tileSize, height: tileSize }}
         />
+        <Text style={[styles.signboardText, { fontSize: tileSize * 0.35 }]}>ج</Text>
       </View>
 
       {/* Flowers */}
@@ -1029,6 +1030,12 @@ const styles = StyleSheet.create({
   signboardContainer: {
     position: 'absolute',
     alignItems: 'center',
+  },
+  signboardText: {
+    position: 'absolute',
+    top: '18%',
+    color: '#2d1a0e',
+    fontWeight: 'bold',
   },
 });
 
