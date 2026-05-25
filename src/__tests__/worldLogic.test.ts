@@ -89,6 +89,103 @@ describe('WorldLogic', () => {
       expect(result.treesAdded).toHaveLength(0);
     });
 
+    it('upgrades an existing sapling instead of creating a new tree', () => {
+      const existingSapling = {
+        id: 'tree_existing',
+        stage: 'sapling' as const,
+        position: { x: 1, y: 1 },
+        createdAt: 1000,
+        lastUpdated: 1000,
+      };
+      const logs = consecutiveLogs('2026-03-06', 6);
+      // Profile already has 1 sapling from the first 3-day period
+      const profile = makeProfile({
+        prayerLogs: logs,
+        worldState: {
+          trees: [existingSapling],
+          flowers: [],
+          buildings: [],
+          animals: [],
+          rivers: [],
+          illustriousItems: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-06');
+      // Should upgrade the sapling, not create a new tree
+      expect(result.treesUpgraded).toHaveLength(1);
+      expect(result.treesUpgraded[0].id).toBe('tree_existing');
+      expect(result.treesUpgraded[0].stage).toBe('young');
+      expect(result.treesAdded).toHaveLength(0);
+    });
+
+    it('creates a new tree only when all existing trees are mature', () => {
+      const matureTree = {
+        id: 'tree_mature',
+        stage: 'mature' as const,
+        position: { x: 2, y: 2 },
+        createdAt: 500,
+        lastUpdated: 500,
+      };
+      const logs = consecutiveLogs('2026-03-06', 6);
+      const profile = makeProfile({
+        prayerLogs: logs,
+        worldState: {
+          trees: [matureTree],
+          flowers: [],
+          buildings: [],
+          animals: [],
+          rivers: [],
+          illustriousItems: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-06');
+      // All trees are mature, so a new sapling is created
+      expect(result.treesAdded).toHaveLength(1);
+      expect(result.treesUpgraded).toHaveLength(0);
+    });
+
+    it('upgrades oldest sapling first when multiple saplings exist', () => {
+      const olderSapling = {
+        id: 'tree_old',
+        stage: 'sapling' as const,
+        position: { x: 1, y: 1 },
+        createdAt: 100,
+        lastUpdated: 100,
+      };
+      const newerSapling = {
+        id: 'tree_new',
+        stage: 'sapling' as const,
+        position: { x: 2, y: 2 },
+        createdAt: 200,
+        lastUpdated: 200,
+      };
+      const logs = consecutiveLogs('2026-03-09', 9);
+      const profile = makeProfile({
+        prayerLogs: logs,
+        worldState: {
+          trees: [newerSapling, olderSapling],
+          flowers: [],
+          buildings: [],
+          animals: [],
+          rivers: [],
+          illustriousItems: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      // 9 days = 3 tree actions; 2 existing trees → 1 action available
+      const result = WorldLogic.processDay(profile, '2026-03-09');
+      expect(result.treesUpgraded).toHaveLength(1);
+      expect(result.treesUpgraded[0].id).toBe('tree_old');
+    });
+
     it('triggers decay on a missed day', () => {
       const tree = {
         id: 'tree_1',
@@ -160,6 +257,7 @@ describe('WorldLogic', () => {
       });
       const result: ReturnType<typeof WorldLogic.processDay> = {
         treesAdded: [],
+        treesUpgraded: [],
         treesDecayed: [],
         treesRemoved: ['tree_to_remove'],
         buildingsAdded: [],
@@ -199,6 +297,7 @@ describe('WorldLogic', () => {
       });
       const result: ReturnType<typeof WorldLogic.processDay> = {
         treesAdded: [],
+        treesUpgraded: [],
         treesDecayed: [],
         treesRemoved: [],
         buildingsAdded: [],
@@ -236,6 +335,7 @@ describe('WorldLogic', () => {
       });
       const result: ReturnType<typeof WorldLogic.processDay> = {
         treesAdded: [],
+        treesUpgraded: [],
         treesDecayed: [],
         treesRemoved: [],
         buildingsAdded: [],

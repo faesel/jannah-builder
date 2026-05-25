@@ -138,4 +138,40 @@ describe('TreeLogic', () => {
       });
     });
   });
+
+  describe('findUpgradeCandidate', () => {
+    it('returns the oldest sapling when saplings exist', () => {
+      const trees = [
+        makeTree('young', 0, 0),
+        makeTree('sapling', 1, 1),
+        makeTree('sapling', 2, 2),
+      ];
+      // Simulate different creation times
+      trees[1].createdAt = 200;
+      trees[2].createdAt = 100;
+      const candidate = TreeLogic.findUpgradeCandidate(trees);
+      expect(candidate?.id).toBe(trees[2].id);
+    });
+
+    it('returns the oldest young tree when no saplings exist', () => {
+      const trees = [
+        makeTree('mature', 0, 0),
+        makeTree('young', 1, 1),
+        makeTree('young', 2, 2),
+      ];
+      trees[1].createdAt = 300;
+      trees[2].createdAt = 150;
+      const candidate = TreeLogic.findUpgradeCandidate(trees);
+      expect(candidate?.id).toBe(trees[2].id);
+    });
+
+    it('returns null when all trees are mature', () => {
+      const trees = [makeTree('mature', 0, 0), makeTree('mature', 1, 1)];
+      expect(TreeLogic.findUpgradeCandidate(trees)).toBeNull();
+    });
+
+    it('returns null for empty array', () => {
+      expect(TreeLogic.findUpgradeCandidate([])).toBeNull();
+    });
+  });
 });

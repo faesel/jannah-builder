@@ -25,6 +25,7 @@ export class WorldLogic {
   ): DayProcessingResult {
     const result: DayProcessingResult = {
       treesAdded: [],
+      treesUpgraded: [],
       treesDecayed: [],
       treesRemoved: [],
       buildingsAdded: [],
@@ -40,7 +41,7 @@ export class WorldLogic {
     const dayLog = profile.prayerLogs.find((log) => log.date === date);
     const dayComplete = dayLog?.isComplete ?? false;
 
-    // --- Trees: generation or decay ---
+    // --- Trees: generation/upgrade or decay ---
     if (dayComplete) {
       const consecutiveDays = PrayerLogic.countConsecutiveDaysFrom(
         profile.prayerLogs,
@@ -48,20 +49,40 @@ export class WorldLogic {
       );
       const treesToGenerate = TreeLogic.shouldGenerateTrees(consecutiveDays);
       const currentTreeCount = profile.worldState.trees.length;
-      const treesNeeded = treesToGenerate - currentTreeCount;
+      const actionsAvailable = treesToGenerate - currentTreeCount;
 
-      if (treesNeeded > 0) {
-        result.treesAdded = TreeLogic.generateTrees(
-          treesNeeded,
-          profile.worldState.trees
-        );
+      if (actionsAvailable > 0) {
+        // Build a working copy of trees to track upgrades across multiple actions
+        const workingTrees = [...profile.worldState.trees];
+
+        for (let i = 0; i < actionsAvailable; i++) {
+          // Prioritise upgrading existing trees over creating new ones
+          const candidate = TreeLogic.findUpgradeCandidate(workingTrees);
+
+          if (candidate) {
+            const upgraded = TreeLogic.upgradeTree(candidate)!;
+            result.treesUpgraded.push(upgraded);
+            // Update working copy so next iteration sees the upgraded state
+            const idx = workingTrees.findIndex((t) => t.id === candidate.id);
+            workingTrees[idx] = upgraded;
+          } else {
+            // All trees are mature — create a new sapling
+            const newTrees = TreeLogic.generateTrees(1, [
+              ...workingTrees,
+              ...result.treesAdded,
+            ]);
+            result.treesAdded.push(...newTrees);
+            workingTrees.push(...newTrees);
+          }
+        }
       }
 
       // First-day seedling incentive: plant one sapling on the user's very first complete day
       if (
         GAME_CONFIG.trees.firstDaySeedling &&
         profile.worldState.trees.length === 0 &&
-        result.treesAdded.length === 0
+        result.treesAdded.length === 0 &&
+        result.treesUpgraded.length === 0
       ) {
         const completeLogs = profile.prayerLogs.filter((l) => l.isComplete);
         const isFirstCompleteDay =
@@ -166,6 +187,14 @@ export class WorldLogic {
 
     // Add new trees
     updatedTrees.push(...result.treesAdded);
+
+    // Apply upgraded trees
+    for (const upgradedTree of result.treesUpgraded) {
+      const index = updatedTrees.findIndex((t) => t.id === upgradedTree.id);
+      if (index !== -1) {
+        updatedTrees[index] = upgradedTree;
+      }
+    }
 
     // Update degraded trees
     for (const degradedTree of result.treesDecayed) {
@@ -295,6 +324,11 @@ export class WorldLogic {
     result: DayProcessingResult
   ): typeof profile.worldState.trees {
     const trees = [...profile.worldState.trees, ...result.treesAdded];
+
+    for (const upgraded of result.treesUpgraded) {
+      const idx = trees.findIndex((t) => t.id === upgraded.id);
+      if (idx !== -1) trees[idx] = upgraded;
+    }
 
     for (const degraded of result.treesDecayed) {
       const idx = trees.findIndex((t) => t.id === degraded.id);

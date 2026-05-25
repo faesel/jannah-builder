@@ -143,6 +143,7 @@ export interface AppSettings {
 
 export interface DayProcessingResult {
   treesAdded: Tree[];
+  treesUpgraded: Tree[]; // Trees upgraded to next growth stage
   treesDecayed: Tree[];
   treesRemoved: string[];
   buildingsAdded: Building[];

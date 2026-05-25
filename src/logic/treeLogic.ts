@@ -152,6 +152,26 @@ export class TreeLogic {
   }
 
   /**
+   * Find the best tree to upgrade — oldest sapling first, then oldest young.
+   * Returns null if all trees are already mature.
+   */
+  static findUpgradeCandidate(trees: Tree[]): Tree | null {
+    const saplings = trees
+      .filter((t) => t.stage === 'sapling')
+      .sort((a, b) => a.createdAt - b.createdAt);
+
+    if (saplings.length > 0) return saplings[0];
+
+    const young = trees
+      .filter((t) => t.stage === 'young')
+      .sort((a, b) => a.createdAt - b.createdAt);
+
+    if (young.length > 0) return young[0];
+
+    return null;
+  }
+
+  /**
    * Get tree count by stage
    */
   static countByStage(trees: Tree[]): Record<TreeStage, number> {
