@@ -52,6 +52,11 @@ export default function JannahScreen() {
           // Decay for genuinely missed days is handled by the game loop on next app open.
           const hasGrowth =
             result.treesAdded.length > 0 ||
+            result.treesUpgraded.length > 0 ||
+            result.flowersAdded.length > 0 ||
+            result.flowersUpgraded.length > 0 ||
+            result.dhikrFlowersAdded.length > 0 ||
+            result.obstaclesRemoved.length > 0 ||
             result.buildingsAdded.length > 0 ||
             result.animalsAdded.length > 0 ||
             result.riversAdded.length > 0 ||

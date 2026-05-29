@@ -74,18 +74,9 @@ export function useGameLoop(): GameLoopState {
           for (const date of datesToProcess) {
             const result = WorldLogic.processDay(currentProfile, date);
 
-            const hasChanges =
-              result.treesAdded.length > 0 ||
-              result.treesDecayed.length > 0 ||
-              result.treesRemoved.length > 0 ||
-              result.buildingsAdded.length > 0 ||
-              result.buildingsRemoved.length > 0 ||
-              result.buildingsDecayed.length > 0 ||
-              result.animalsAdded.length > 0 ||
-              result.animalsRemoved.length > 0 ||
-              result.riversAdded.length > 0 ||
-              result.illustriousItemsAdded.length > 0 ||
-              result.illustriousItemsRemoved.length > 0;
+            const hasChanges = Object.values(result).some(
+              (arr) => Array.isArray(arr) && arr.length > 0
+            );
 
             if (hasChanges) {
               currentProfile = WorldLogic.applyProcessingResult(
