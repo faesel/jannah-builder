@@ -12,8 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { Storage } from '../src/persistence/storage';
 import { AppInitializer } from '../src/logic/appInitializer';
+import { ProfileManager } from '../src/persistence/profileManager';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -40,6 +43,51 @@ export default function SettingsScreen() {
       ]
     );
   }, [router]);
+
+  const handleExportState = useCallback(async () => {
+    try {
+      const profile = await ProfileManager.getActiveProfile();
+      if (!profile) {
+        Alert.alert('No profile', 'No active profile found to export.');
+        return;
+      }
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        appVersion: Constants.expoConfig?.version ?? 'unknown',
+        profile: {
+          id: profile.id,
+          name: profile.name,
+          createdAt: profile.createdAt,
+          lastActive: profile.lastActive,
+          worldState: profile.worldState,
+          prayerLogs: profile.prayerLogs,
+          statistics: profile.statistics,
+          streaks: profile.streaks,
+        },
+      };
+
+      const json = JSON.stringify(exportData, null, 2);
+      const fileName = `jannah-state-${new Date().toISOString().split('T')[0]}.json`;
+      const filePath = `${FileSystem.cacheDirectory}${fileName}`;
+
+      await FileSystem.writeAsStringAsync(filePath, json, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(filePath, {
+          mimeType: 'application/json',
+          dialogTitle: 'Export game state',
+        });
+      } else {
+        Alert.alert('Sharing unavailable', 'Sharing is not available on this device.');
+      }
+    } catch (err) {
+      console.error('[Settings] Error exporting state:', err);
+      Alert.alert('Export failed', 'Could not export game state.');
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -117,6 +165,26 @@ export default function SettingsScreen() {
         {/* Danger zone */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
+          <View style={styles.exportCard}>
+            <View style={styles.exportInfo}>
+              <Ionicons name="download-outline" size={20} color="#4A7C59" style={{ marginRight: 10 }} />
+              <Text style={styles.exportDescription}>
+                Export your full game state as a JSON file. Useful for sharing with developers to diagnose issues.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.exportButton,
+                pressed && styles.exportButtonPressed,
+              ]}
+              onPress={handleExportState}
+              accessibilityRole="button"
+              accessibilityLabel="Export game state as JSON"
+            >
+              <Ionicons name="share-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
+              <Text style={styles.exportText}>Export State</Text>
+            </Pressable>
+          </View>
           <View style={styles.dangerCard}>
             <View style={styles.dangerInfo}>
               <Ionicons name="warning-outline" size={20} color="#A06060" style={{ marginRight: 10 }} />
@@ -285,6 +353,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8D4D4',
     padding: 20,
+    marginTop: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#2C4A3E',
@@ -294,6 +363,51 @@ const styles = StyleSheet.create({
       },
       android: { elevation: 3 },
     }),
+  },
+  exportCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D4E8D4',
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  exportInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  exportDescription: {
+    flex: 1,
+    fontSize: 14,
+    color: '#5A7A5A',
+    lineHeight: 20,
+  },
+  exportButton: {
+    flexDirection: 'row',
+    paddingVertical: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#A0D4A0',
+    backgroundColor: 'rgba(160, 212, 160, 0.06)',
+  },
+  exportButtonPressed: {
+    backgroundColor: 'rgba(160, 212, 160, 0.15)',
+  },
+  exportText: {
+    fontSize: 14,
+    color: '#4A7C59',
+    fontWeight: '600',
   },
   dangerInfo: {
     flexDirection: 'row',
