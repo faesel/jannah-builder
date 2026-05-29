@@ -169,7 +169,7 @@ export default function SettingsScreen() {
             <View style={styles.exportInfo}>
               <Ionicons name="download-outline" size={20} color="#4A7C59" style={{ marginRight: 10 }} />
               <Text style={styles.exportDescription}>
-                Export your full game state as a JSON file. Useful for sharing with developers to diagnose issues.
+                Export your full game state as a JSON file. If you spot a bug, share this file with the developer to help get it fixed.
               </Text>
             </View>
             <Pressable
