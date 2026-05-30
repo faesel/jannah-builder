@@ -79,6 +79,77 @@ const STATUS_COLOURS: Record<DayStatus, string> = {
   pending: '#D4D9D0',
 };
 
+/** Get all days in a given month with their status */
+function getMonthDays(year: number, month: number, prayerLogs: PrayerLog[]): DayInfo[] {
+  const today = PrayerLogic.getTodayDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days: DayInfo[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateObj = new Date(date + 'T12:00:00');
+    const dayLabel = dateObj.toLocaleDateString('en-GB', { weekday: 'short' });
+
+    const log = prayerLogs.find((l) => l.date === date);
+    const prayerCount = log ? Object.values(log.prayers).filter(Boolean).length : 0;
+
+    let status: DayStatus;
+    if (date > today) {
+      status = 'pending';
+    } else if (date === today) {
+      status = log?.isComplete ? 'complete' : prayerCount > 0 ? 'partial' : 'pending';
+    } else {
+      status = log?.isComplete ? 'complete' : prayerCount > 0 ? 'partial' : 'missed';
+    }
+
+    days.push({ date, dayLabel, status, prayerCount, quranLogged: log?.quranLogged ?? false, dhikrLogged: log?.dhikrLogged ?? false });
+  }
+
+  return days;
+}
+
+/** Get month summary stats */
+function getMonthSummary(year: number, month: number, prayerLogs: PrayerLog[]) {
+  const today = PrayerLogic.getTodayDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let totalPrayers = 0;
+  let completeDays = 0;
+  let eligibleDays = 0;
+  let quranDays = 0;
+  let dhikrDays = 0;
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (date > today) break;
+    eligibleDays++;
+
+    const log = prayerLogs.find((l) => l.date === date);
+    if (log) {
+      totalPrayers += Object.values(log.prayers).filter(Boolean).length;
+      if (log.isComplete) completeDays++;
+      if (log.quranLogged) quranDays++;
+      if (log.dhikrLogged) dhikrDays++;
+    }
+  }
+
+  const completionRate = eligibleDays > 0 ? Math.round((completeDays / eligibleDays) * 100) : 0;
+  return { totalPrayers, completeDays, eligibleDays, completionRate, quranDays, dhikrDays };
+}
+
+/** Get year heatmap data — an array of 12 month summaries */
+function getYearSummary(year: number, prayerLogs: PrayerLog[]) {
+  const months = [];
+  for (let m = 0; m < 12; m++) {
+    months.push({ month: m, ...getMonthSummary(year, m, prayerLogs) });
+  }
+  const totalPrayers = months.reduce((s, m) => s + m.totalPrayers, 0);
+  const completeDays = months.reduce((s, m) => s + m.completeDays, 0);
+  const eligibleDays = months.reduce((s, m) => s + m.eligibleDays, 0);
+  const completionRate = eligibleDays > 0 ? Math.round((completeDays / eligibleDays) * 100) : 0;
+  const bestMonth = months.reduce((best, m) => m.completionRate > best.completionRate ? m : best, months[0]);
+  return { months, totalPrayers, completeDays, eligibleDays, completionRate, bestMonth };
+}
+
 const STATUS_ICONS: Record<DayStatus, string> = {
   complete: '✓',
   partial: '!',
@@ -93,7 +164,8 @@ const STATUS_LABELS: Record<DayStatus, string> = {
   pending: 'In progress',
 };
 
-type StatsView = 'allTime' | 'current';
+type StatsView = 'current' | 'allTime';
+type TimeView = 'week' | 'month' | 'year';
 
 export default function StatisticsScreen() {
   const router = useRouter();
@@ -101,6 +173,13 @@ export default function StatisticsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statsView, setStatsView] = useState<StatsView>('current');
+  const [timeView, setTimeView] = useState<TimeView>('week');
+
+  // Month/year navigation
+  const now = new Date();
+  const [viewMonth, setViewMonth] = useState(now.getMonth());
+  const [viewYear, setViewYear] = useState(now.getFullYear());
+  const [heatmapYear, setHeatmapYear] = useState(now.getFullYear());
 
   const loadProfile = useCallback(async () => {
     try {
@@ -249,108 +328,288 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        {/* 7-day history */}
+        {/* Time-based history (Week / Month / Year) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Week</Text>
-          <View style={styles.weekCard}>
-            {/* Day labels row */}
-            <View style={styles.weekRow}>
-              <View style={styles.weekRowLabel} />
-              {days.map((day) => (
-                <Text
-                  key={`label-${day.date}`}
-                  style={[
-                    styles.weekDayLabel,
-                    day.dayLabel === 'Today' && styles.dayLabelToday,
-                  ]}
-                >
-                  {day.dayLabel}
+          <View style={styles.toggleRow} accessibilityRole="tablist">
+            {(['week', 'month', 'year'] as TimeView[]).map((view) => (
+              <Pressable
+                key={view}
+                style={[styles.toggleButton, timeView === view && styles.toggleButtonActive]}
+                onPress={() => setTimeView(view)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: timeView === view }}
+                accessibilityLabel={`${view.charAt(0).toUpperCase() + view.slice(1)} view`}
+              >
+                <Text style={[styles.toggleText, timeView === view && styles.toggleTextActive]}>
+                  {view.charAt(0).toUpperCase() + view.slice(1)}
                 </Text>
-              ))}
-            </View>
-
-            {/* Prayer row */}
-            <View style={styles.weekRow}>
-              <View style={styles.weekRowLabel}>
-                <Image source={WEEK_ROW_ICONS.prayer} style={styles.weekRowIcon} />
-              </View>
-              {days.map((day) => (
-                <Pressable
-                  key={`prayer-${day.date}`}
-                  style={styles.weekCell}
-                  onLongPress={() => handleDayLongPress(day.date, day.status)}
-                  accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}, ${day.prayerCount} of 5`}
-                  accessibilityHint={
-                    day.status !== 'complete' && day.dayLabel !== 'Today'
-                      ? 'Long press to complete all prayers'
-                      : undefined
-                  }
-                >
-                  <View
-                    style={[
-                      styles.dayDot,
-                      { backgroundColor: STATUS_COLOURS[day.status] },
-                    ]}
-                  >
-                    <Text style={styles.dayDotText}>
-                      {STATUS_ICONS[day.status]}
-                    </Text>
-                  </View>
-                  <Text style={styles.dayCount}>{day.prayerCount}/5</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Qur'an row */}
-            <View style={styles.weekRow}>
-              <View style={styles.weekRowLabel}>
-                <Image source={WEEK_ROW_ICONS.quran} style={styles.weekRowIcon} />
-              </View>
-              {days.map((day) => (
-                <View
-                  key={`quran-${day.date}`}
-                  style={styles.weekCell}
-                  accessibilityLabel={`${day.dayLabel}: Qur'an ${day.quranLogged ? 'read' : 'not read'}`}
-                >
-                  <View
-                    style={[
-                      styles.weekIndicator,
-                      day.quranLogged ? styles.weekIndicatorActive : styles.weekIndicatorInactive,
-                    ]}
-                  >
-                    {day.quranLogged && (
-                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            {/* Dhikr row */}
-            <View style={styles.weekRow}>
-              <View style={styles.weekRowLabel}>
-                <Image source={WEEK_ROW_ICONS.dhikr} style={styles.weekRowIcon} />
-              </View>
-              {days.map((day) => (
-                <View
-                  key={`dhikr-${day.date}`}
-                  style={styles.weekCell}
-                  accessibilityLabel={`${day.dayLabel}: Dhikr ${day.dhikrLogged ? 'done' : 'not done'}`}
-                >
-                  <View
-                    style={[
-                      styles.weekIndicator,
-                      day.dhikrLogged ? styles.weekIndicatorActive : styles.weekIndicatorInactive,
-                    ]}
-                  >
-                    {day.dhikrLogged && (
-                      <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
+              </Pressable>
+            ))}
           </View>
+
+          {timeView === 'week' && (
+            <View style={styles.weekCard}>
+              {/* Day labels row */}
+              <View style={styles.weekRow}>
+                <View style={styles.weekRowLabel} />
+                {days.map((day) => (
+                  <Text
+                    key={`label-${day.date}`}
+                    style={[
+                      styles.weekDayLabel,
+                      day.dayLabel === 'Today' && styles.dayLabelToday,
+                    ]}
+                  >
+                    {day.dayLabel}
+                  </Text>
+                ))}
+              </View>
+
+              {/* Prayer row */}
+              <View style={styles.weekRow}>
+                <View style={styles.weekRowLabel}>
+                  <Image source={WEEK_ROW_ICONS.prayer} style={styles.weekRowIcon} />
+                </View>
+                {days.map((day) => (
+                  <Pressable
+                    key={`prayer-${day.date}`}
+                    style={styles.weekCell}
+                    onLongPress={() => handleDayLongPress(day.date, day.status)}
+                    accessibilityLabel={`${day.dayLabel}: ${STATUS_LABELS[day.status]}, ${day.prayerCount} of 5`}
+                    accessibilityHint={
+                      day.status !== 'complete' && day.dayLabel !== 'Today'
+                        ? 'Long press to complete all prayers'
+                        : undefined
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.dayDot,
+                        { backgroundColor: STATUS_COLOURS[day.status] },
+                      ]}
+                    >
+                      <Text style={styles.dayDotText}>
+                        {STATUS_ICONS[day.status]}
+                      </Text>
+                    </View>
+                    <Text style={styles.dayCount}>{day.prayerCount}/5</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Qur'an row */}
+              <View style={styles.weekRow}>
+                <View style={styles.weekRowLabel}>
+                  <Image source={WEEK_ROW_ICONS.quran} style={styles.weekRowIcon} />
+                </View>
+                {days.map((day) => (
+                  <View
+                    key={`quran-${day.date}`}
+                    style={styles.weekCell}
+                    accessibilityLabel={`${day.dayLabel}: Qur'an ${day.quranLogged ? 'read' : 'not read'}`}
+                  >
+                    <View
+                      style={[
+                        styles.weekIndicator,
+                        day.quranLogged ? styles.weekIndicatorActive : styles.weekIndicatorInactive,
+                      ]}
+                    >
+                      {day.quranLogged && (
+                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* Dhikr row */}
+              <View style={styles.weekRow}>
+                <View style={styles.weekRowLabel}>
+                  <Image source={WEEK_ROW_ICONS.dhikr} style={styles.weekRowIcon} />
+                </View>
+                {days.map((day) => (
+                  <View
+                    key={`dhikr-${day.date}`}
+                    style={styles.weekCell}
+                    accessibilityLabel={`${day.dayLabel}: Dhikr ${day.dhikrLogged ? 'done' : 'not done'}`}
+                  >
+                    <View
+                      style={[
+                        styles.weekIndicator,
+                        day.dhikrLogged ? styles.weekIndicatorActive : styles.weekIndicatorInactive,
+                      ]}
+                    >
+                      {day.dhikrLogged && (
+                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {timeView === 'month' && (() => {
+            const monthDays = getMonthDays(viewYear, viewMonth, prayerLogs);
+            const summary = getMonthSummary(viewYear, viewMonth, prayerLogs);
+            const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+            const startOffset = (firstDayOfWeek + 6) % 7;
+            const monthName = new Date(viewYear, viewMonth).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+            return (
+              <View>
+                {/* Month navigation */}
+                <View style={styles.monthNav}>
+                  <Pressable
+                    onPress={() => {
+                      if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
+                      else setViewMonth(viewMonth - 1);
+                    }}
+                    style={styles.monthNavButton}
+                    accessibilityLabel="Previous month"
+                  >
+                    <Ionicons name="chevron-back" size={20} color="#4A7C59" />
+                  </Pressable>
+                  <Text style={styles.monthNavTitle}>{monthName}</Text>
+                  <Pressable
+                    onPress={() => {
+                      if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
+                      else setViewMonth(viewMonth + 1);
+                    }}
+                    style={styles.monthNavButton}
+                    accessibilityLabel="Next month"
+                  >
+                    <Ionicons name="chevron-forward" size={20} color="#4A7C59" />
+                  </Pressable>
+                </View>
+
+                {/* Calendar grid */}
+                <View style={styles.calendarCard}>
+                  <View style={styles.calendarRow}>
+                    {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                      <View key={`hdr-${i}`} style={styles.calendarCell}>
+                        <Text style={styles.calendarHeaderText}>{d}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {(() => {
+                    const rows: React.ReactNode[] = [];
+                    let dayIndex = 0;
+                    const totalCells = startOffset + monthDays.length;
+                    const rowCount = Math.ceil(totalCells / 7);
+                    for (let row = 0; row < rowCount; row++) {
+                      const cells: React.ReactNode[] = [];
+                      for (let col = 0; col < 7; col++) {
+                        const cellIndex = row * 7 + col;
+                        if (cellIndex < startOffset || dayIndex >= monthDays.length) {
+                          cells.push(<View key={`empty-${cellIndex}`} style={styles.calendarCell} />);
+                        } else {
+                          const day = monthDays[dayIndex];
+                          const dayNum = dayIndex + 1;
+                          dayIndex++;
+                          cells.push(
+                            <View key={day.date} style={styles.calendarCell}>
+                              <View style={[styles.calendarDot, { backgroundColor: STATUS_COLOURS[day.status] }]}>
+                                <Text style={styles.calendarDotText}>{dayNum}</Text>
+                              </View>
+                            </View>
+                          );
+                        }
+                      }
+                      rows.push(<View key={`row-${row}`} style={styles.calendarRow}>{cells}</View>);
+                    }
+                    return rows;
+                  })()}
+                  <View style={styles.calendarLegend}>
+                    {(['complete', 'partial', 'missed', 'pending'] as DayStatus[]).map((s) => (
+                      <View key={s} style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: STATUS_COLOURS[s] }]} />
+                        <Text style={styles.legendText}>{STATUS_LABELS[s]}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Month summary */}
+                <View style={styles.monthSummary}>
+                  <View style={styles.statsRow}>
+                    <StatCard icon={<Ionicons name="checkbox" size={24} color="#4A7C59" />} label="Prayers" value={summary.totalPrayers} />
+                    <View style={styles.gridGap} />
+                    <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={summary.completeDays} />
+                  </View>
+                  <View style={styles.statsRow}>
+                    <StatCard icon={<Ionicons name="trending-up" size={24} color="#4A7C59" />} label="Completion" value={`${summary.completionRate}%`} />
+                    <View style={styles.gridGap} />
+                    <StatCard icon={<Ionicons name="book" size={24} color="#7B8FA6" />} label="Qur'an Days" value={summary.quranDays} />
+                  </View>
+                </View>
+              </View>
+            );
+          })()}
+
+          {timeView === 'year' && (() => {
+            const yearData = getYearSummary(heatmapYear, prayerLogs);
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const bestMonthName = monthNames[yearData.bestMonth.month];
+
+            return (
+              <View>
+                {/* Year navigation */}
+                <View style={styles.monthNav}>
+                  <Pressable
+                    onPress={() => setHeatmapYear(heatmapYear - 1)}
+                    style={styles.monthNavButton}
+                    accessibilityLabel="Previous year"
+                  >
+                    <Ionicons name="chevron-back" size={20} color="#4A7C59" />
+                  </Pressable>
+                  <Text style={styles.monthNavTitle}>{heatmapYear}</Text>
+                  <Pressable
+                    onPress={() => setHeatmapYear(heatmapYear + 1)}
+                    style={styles.monthNavButton}
+                    accessibilityLabel="Next year"
+                  >
+                    <Ionicons name="chevron-forward" size={20} color="#4A7C59" />
+                  </Pressable>
+                </View>
+
+                {/* Year heatmap — monthly bars */}
+                <View style={styles.calendarCard}>
+                  {yearData.months.map((m, i) => (
+                    <View key={i} style={styles.yearMonthRow}>
+                      <Text style={styles.yearMonthLabel}>{monthNames[i]}</Text>
+                      <View style={styles.yearBarTrack}>
+                        <View
+                          style={[
+                            styles.yearBarFill,
+                            {
+                              width: `${m.completionRate}%`,
+                              backgroundColor: m.completionRate >= 80 ? '#4A7C59' : m.completionRate >= 50 ? '#D4A017' : m.completionRate > 0 ? '#C0392B' : '#E8ECE5',
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.yearBarValue}>{m.eligibleDays > 0 ? `${m.completionRate}%` : '—'}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Year summary */}
+                <View style={styles.monthSummary}>
+                  <View style={styles.statsRow}>
+                    <StatCard icon={<Ionicons name="checkbox" size={24} color="#4A7C59" />} label="Prayers" value={yearData.totalPrayers} />
+                    <View style={styles.gridGap} />
+                    <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={yearData.completeDays} />
+                  </View>
+                  <View style={styles.statsRow}>
+                    <StatCard icon={<Ionicons name="trending-up" size={24} color="#4A7C59" />} label="Completion" value={`${yearData.completionRate}%`} />
+                    <View style={styles.gridGap} />
+                    <StatCard icon={<Ionicons name="star" size={24} color="#C4A020" />} label="Best Month" value={yearData.bestMonth.eligibleDays > 0 ? bestMonthName : '—'} />
+                  </View>
+                </View>
+              </View>
+            );
+          })()}
         </View>
 
         {/* Stats grid with toggle */}
@@ -379,50 +638,51 @@ export default function StatisticsScreen() {
               </Text>
             </Pressable>
           </View>
-          <View style={styles.statsGrid}>
-            {statsView === 'current' ? (
-              <>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="leaf" size={24} color="#4A7C59" />} label="Living Trees" value={worldState.trees.length} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="flower" size={24} color="#D4849A" />} label="Flowers" value={worldState.flowers.length} />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={worldState.buildings.length} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={worldState.animals.length} />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="star" size={24} color="#C4A020" />} label="Illustrious Gifts" value={worldState.illustriousItems.length} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={totalDaysComplete} />
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="checkbox" size={24} color="#4A7C59" />} label="Prayers Logged" value={totalPrayersLogged} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={totalDaysComplete} />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="leaf" size={24} color="#4A7C59" />} label="Trees Grown" value={statistics.totalTreesGrown} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="leaf-outline" size={24} color="#8B9D83" />} label="Trees Returned" value={statistics.totalTreesDecayed} />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={statistics.totalBuildingsCreated} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="home-outline" size={24} color="#9BAAB8" />} label="Buildings Returned" value={statistics.totalBuildingsReturned ?? 0} />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={statistics.totalAnimalsAppeared} />
-                  <View style={styles.gridGap} />
-                  <StatCard icon={<Ionicons name="paw-outline" size={24} color="#B8A08A" />} label="Animals Returned" value={statistics.totalAnimalsReturned ?? 0} />
-                </View>
-              </>
-            )}
-          </View>
+
+          {statsView === 'current' && (
+            <View style={styles.statsGrid}>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="leaf" size={24} color="#4A7C59" />} label="Living Trees" value={worldState.trees.length} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="flower" size={24} color="#D4849A" />} label="Flowers" value={worldState.flowers.length} />
+              </View>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={worldState.buildings.length} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={worldState.animals.length} />
+              </View>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="star" size={24} color="#C4A020" />} label="Illustrious Gifts" value={worldState.illustriousItems.length} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={totalDaysComplete} />
+              </View>
+            </View>
+          )}
+
+          {statsView === 'allTime' && (
+            <View style={styles.statsGrid}>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="checkbox" size={24} color="#4A7C59" />} label="Prayers Logged" value={totalPrayersLogged} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="calendar" size={24} color="#4A7C59" />} label="Complete Days" value={totalDaysComplete} />
+              </View>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="leaf" size={24} color="#4A7C59" />} label="Trees Grown" value={statistics.totalTreesGrown} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="leaf-outline" size={24} color="#8B9D83" />} label="Trees Returned" value={statistics.totalTreesDecayed} />
+              </View>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="home" size={24} color="#7B8FA6" />} label="Buildings" value={statistics.totalBuildingsCreated} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="home-outline" size={24} color="#9BAAB8" />} label="Buildings Returned" value={statistics.totalBuildingsReturned ?? 0} />
+              </View>
+              <View style={styles.statsRow}>
+                <StatCard icon={<Ionicons name="paw" size={24} color="#A0856A" />} label="Animals" value={statistics.totalAnimalsAppeared} />
+                <View style={styles.gridGap} />
+                <StatCard icon={<Ionicons name="paw-outline" size={24} color="#B8A08A" />} label="Animals Returned" value={statistics.totalAnimalsReturned ?? 0} />
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Garden age */}
@@ -693,9 +953,136 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    marginBottom: 10,
   },
   gridGap: {
     width: 10,
+  },
+
+  /* ── Month navigation ── */
+  monthNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  monthNavButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  monthNavTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2C4A3E',
+  },
+
+  /* ── Calendar grid ── */
+  calendarCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
+    padding: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  calendarRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  calendarCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 3,
+  },
+  calendarHeaderText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8B9D83',
+  },
+  calendarDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarDotText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  /* ── Calendar legend ── */
+  calendarLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E8ECE5',
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 4,
+  },
+  legendText: {
+    fontSize: 11,
+    color: '#8B9D83',
+  },
+
+  /* ── Month summary ── */
+  monthSummary: {
+    marginTop: 12,
+    gap: 10,
+  },
+
+  /* ── Year heatmap ── */
+  yearMonthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  yearMonthLabel: {
+    width: 32,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#8B9D83',
+  },
+  yearBarTrack: {
+    flex: 1,
+    height: 16,
+    backgroundColor: '#E8ECE5',
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginHorizontal: 8,
+  },
+  yearBarFill: {
+    height: '100%',
+    borderRadius: 8,
+  },
+  yearBarValue: {
+    width: 36,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2C4A3E',
+    textAlign: 'right',
   },
 
   /* ── World summary ── */
