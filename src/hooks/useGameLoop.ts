@@ -85,10 +85,19 @@ export function useGameLoop(): GameLoopState {
               );
               processed++;
             }
+
+            // Track the last date we processed
+            currentProfile = {
+              ...currentProfile,
+              worldState: {
+                ...currentProfile.worldState,
+                lastProcessedDate: date,
+              },
+            };
           }
 
-          // Only persist if missed days actually produced changes
-          if (processed > 0) {
+          // Persist if missed days produced changes or if we updated lastProcessedDate
+          if (processed > 0 || datesToProcess.length > 0) {
             currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
             await ProfileManager.updateProfile(currentProfile);
           }

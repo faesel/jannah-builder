@@ -203,9 +203,14 @@ export default function LogPrayerScreen() {
         updatedPrayerLogs.push(log);
       }
 
-      let updatedProfile = {
+      let updatedProfile: typeof profile = {
         ...profile,
         prayerLogs: updatedPrayerLogs,
+        worldState: {
+          ...profile.worldState,
+          // Clear so Jannah tab re-evaluates with new prayer data
+          lastProcessedDate: undefined,
+        },
       };
 
       // Roll for black cat spawn — once per newly logged prayer

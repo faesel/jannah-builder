@@ -44,8 +44,14 @@ export default function JannahScreen() {
           let current = await ProfileManager.getActiveProfile();
           if (!current) return;
 
-          // Reprocess today so newly logged prayers generate trees/effects
           const today = PrayerLogic.getTodayDate();
+
+          // Only run processDay once per calendar day
+          if (current.worldState.lastProcessedDate === today) {
+            setProfile(current);
+            return;
+          }
+
           const result = WorldLogic.processDay(current, today);
 
           // Only apply growth for today — never decay, since the day is still in progress.
@@ -75,6 +81,15 @@ export default function JannahScreen() {
             };
             current = WorldLogic.applyProcessingResult(current, growthOnly);
           }
+
+          // Mark today as processed
+          current = {
+            ...current,
+            worldState: {
+              ...current.worldState,
+              lastProcessedDate: today,
+            },
+          };
 
           current = WorldLogic.updateStatisticsForPrayer(current);
           await ProfileManager.updateProfile(current);

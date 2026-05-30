@@ -55,6 +55,8 @@ export interface WorldState {
   /** Number of tile columns/rows in the grid (square grid) */
   gridSize: number;
   lastUpdated: number;
+  /** The last date (YYYY-MM-DD) for which processDay was applied */
+  lastProcessedDate?: string;
 }
 
 export interface Flower {
