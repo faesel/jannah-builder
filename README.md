@@ -288,4 +288,4 @@ Private project.
 
 ## 🤲 Note
 
-This app is designed to support, not replace, genuine spiritual practice. May it be a means of drawing closer to Allah (SWT).
+This app is designed to support, not replace, genuine spiritual practice. May it be a means of drawing closer to Allah (SWT) ... ameen.
