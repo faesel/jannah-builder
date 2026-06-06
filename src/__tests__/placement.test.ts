@@ -24,7 +24,7 @@ describe('placement bounds', () => {
       expect(bounds.halfY).toBeGreaterThan(bounds.halfX);
     });
 
-    it('mirrors the renderer tile maths', () => {
+    it('mirrors the renderer horizontal tile maths', () => {
       const width = 400;
       const height = 800;
       const gridSize = GAME_CONFIG.map.initialGridSize;
@@ -33,11 +33,36 @@ describe('placement bounds', () => {
         Math.floor(Math.min(width, height) / gridSize)
       );
       const cols = Math.ceil(width / tileSize);
-      const rows = Math.ceil(height / tileSize);
 
       const bounds = computePlacementBounds(width, height);
       expect(bounds.halfX).toBe(Math.max(1, Math.floor(cols / 2) - 1));
-      expect(bounds.halfY).toBe(Math.max(1, Math.floor(rows / 2) - 1));
+    });
+
+    it('reserves a bottom margin so tall sprites are not clipped', () => {
+      const width = 400;
+      const height = 800;
+      const gridSize = GAME_CONFIG.map.initialGridSize;
+      const tileSize = Math.max(
+        GAME_CONFIG.map.minTileSize,
+        Math.floor(Math.min(width, height) / gridSize)
+      );
+      const rows = Math.ceil(height / tileSize);
+
+      const bounds = computePlacementBounds(width, height);
+      // The lowest base row must sit strictly above the last fully visible row,
+      // leaving room for the two-tile-tall tree sprite and the navigation.
+      const centerRow = Math.floor(rows / 2);
+      const lastFullyVisibleRow = Math.floor(height / tileSize) - 1;
+      const lowestBaseRow = centerRow + bounds.halfY;
+      expect(lowestBaseRow).toBeLessThan(lastFullyVisibleRow);
+      // And it is strictly tighter than the old centre-row half-extent.
+      expect(bounds.halfY).toBeLessThan(Math.floor(rows / 2) - 1);
+    });
+
+    it('reserves additional room for a bottom inset (navigation)', () => {
+      const withoutInset = computePlacementBounds(400, 800);
+      const withInset = computePlacementBounds(400, 800, 120);
+      expect(withInset.halfY).toBeLessThan(withoutInset.halfY);
     });
 
     it('never returns a degenerate (zero) extent', () => {

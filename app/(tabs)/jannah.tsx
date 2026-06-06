@@ -4,7 +4,7 @@ import {
   StyleSheet,
   LayoutChangeEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useGameLoop } from '../../src/hooks/useGameLoop';
 import { GAME_CONFIG } from '../../src/config/game.config';
@@ -34,6 +34,8 @@ const DEFAULT_WORLD: WorldState = {
 export default function JannahScreen() {
   // Game loop processes missed days on first mount
   const { processing: gameLoopProcessing } = useGameLoop();
+  // Bottom safe-area inset — reserved so assets never sit under the navigation.
+  const insets = useSafeAreaInsets();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [layout, setLayout] = useState<{ width: number; height: number } | null>(null);
@@ -143,7 +145,7 @@ export default function JannahScreen() {
     if (gameLoopProcessing) return;
     if (boundsSyncInFlight.current) return;
 
-    const bounds = computePlacementBounds(layout.width, layout.height);
+    const bounds = computePlacementBounds(layout.width, layout.height, insets.bottom);
     if (
       profile.worldState.placementBounds &&
       boundsEqual(profile.worldState.placementBounds, bounds)
@@ -194,7 +196,7 @@ export default function JannahScreen() {
     };
 
     syncBounds();
-  }, [layout, profile, gameLoopProcessing]);
+  }, [layout, profile, gameLoopProcessing, insets.bottom]);
 
   const worldState = profile?.worldState ?? DEFAULT_WORLD;
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Jannah Builder",
     "slug": "jannah-builder",
-    "version": "2.14.0",
+    "version": "2.14.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,7 +22,7 @@
         "backgroundColor": "#4A7C59"
       },
       "package": "com.jannahbuilder.app",
-      "versionCode": 12
+      "versionCode": 13
     },
     "web": {
       "favicon": "./assets/favicon.png"

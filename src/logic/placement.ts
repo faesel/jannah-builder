@@ -26,10 +26,24 @@ export function defaultPlacementBounds(): PlacementBounds {
 /**
  * Derive placement bounds from the rendered screen size, matching the tile
  * layout used by JannahCanvas (gridSize tiles along the shorter axis).
+ *
+ * Two things would otherwise clip assets near the bottom of a tall screen:
+ *   1. Tree sprites are two tiles tall, anchored at their base tile — so a tree
+ *      on the very bottom row has its trunk drawn right at the screen edge.
+ *   2. The canvas grid uses `ceil(screenHeight / tileSize)` rows, which can
+ *      overflow the visible container (the overflow is hidden), and the bottom
+ *      navigation sits directly beneath the scene.
+ *
+ * To keep every placed asset fully visible we constrain the vertical extent to
+ * rows that are wholly inside the un-occluded area, reserving one tile of
+ * breathing room at the bottom and one tile at the top for tree canopies.
+ * `bottomInset` (in pixels) lets the caller exclude an occluded region such as
+ * the bottom navigation / system inset.
  */
 export function computePlacementBounds(
   screenWidth: number,
-  screenHeight: number
+  screenHeight: number,
+  bottomInset = 0
 ): PlacementBounds {
   const gridSize = GAME_CONFIG.map.initialGridSize;
   const tileSize = Math.max(
@@ -38,9 +52,20 @@ export function computePlacementBounds(
   );
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
+  const centerRow = Math.floor(rows / 2);
+
+  // Last grid row whose full tile height fits within the un-occluded area.
+  const visibleHeight = Math.max(0, screenHeight - Math.max(0, bottomInset));
+  const lastFullyVisibleRow = Math.floor(visibleHeight / tileSize) - 1;
+
+  // Reserve one tile above the base for the tree canopy, and one tile of
+  // breathing room below the lowest base so a two-tile-tall tree never clips.
+  const halfYTop = centerRow - 1;
+  const halfYBottom = lastFullyVisibleRow - 1 - centerRow;
+
   return {
     halfX: Math.max(1, Math.floor(cols / 2) - 1),
-    halfY: Math.max(1, Math.floor(rows / 2) - 1),
+    halfY: Math.max(1, Math.min(halfYTop, halfYBottom)),
   };
 }
 
