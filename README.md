@@ -2,6 +2,8 @@
 
 A spiritually-sensitive prayer tracking app that visualises your spiritual journey as a growing pixel-art landscape.
 
+[![GitHub release downloads](https://img.shields.io/github/downloads/faesel/jannah-builder/total?label=downloads&color=brightgreen)](https://github.com/faesel/jannah-builder/releases)
+
 ## 🌳 About
 
 Jannah Builder is a cross-platform mobile app built with React Native and Expo. It allows users to log their five daily prayers and watch their spiritual progress manifest as a beautiful, growing world inspired by Jannah (Paradise).
