@@ -68,8 +68,10 @@ export const GAME_CONFIG = {
       },
     },
     dhikrFlowers: {
-      spawnChance: 0.05, // 5% chance per dhikr log
-      durationDays: 2, // Temporary flowers/bushes last 2 days
+      // Permanent "barakah" flowers (basic flower or bush) — a gentle visual
+      // reward for spiritual practice. Spawned at a low chance whenever Qur'an
+      // OR dhikr is logged, and they remain on the map permanently.
+      spawnChance: 0.02, // 2% chance per day when Qur'an or dhikr is logged
       types: ['basic', 'bush'] as const,
     },
     obstacles: {

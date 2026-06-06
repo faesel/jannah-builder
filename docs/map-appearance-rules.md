@@ -69,18 +69,19 @@ Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
 ---
 
-## Dhikr Flowers (Addition – Temporary)
+## Barakah Flowers (Addition – Permanent)
 
-Logging dhikr spawns a temporary flower or bush on the map for visual richness.
+Logging Qur'an or dhikr may spawn a small `basic` flower or `bush` on the map for visual richness.
 
 | Rule | Value |
 |------|-------|
-| Trigger | Dhikr logged for the day |
+| Trigger | Qur'an **or** dhikr logged for the day |
+| Spawn chance | 2% per qualifying day (`world.dhikrFlowers.spawnChance`) |
 | Types | `basic`, `bush` (random) |
-| Duration | 2 days then fades |
+| Permanence | Permanent — never fade or decay |
 | Effect on progress | None – purely decorative |
 
-These represent **barakah**, not progress. If the user does not log dhikr, nothing is lost.
+These represent **barakah**, not progress. If the user does not log Qur'an or dhikr, nothing is lost. They are stored under `worldState.dhikrFlowers` (name retained for storage compatibility).
 
 ---
 
@@ -92,9 +93,11 @@ Obstacles represent the untamed state of the map. They are cleared by progress a
 |------|-------|
 | Initial count | 20 (placed randomly on new profile) |
 | Types | Stump (5 variants), Rock (7 variants) |
-| Removal trigger | Any new element added to the map (tree, flower, building, animal, river) removes the **oldest** obstacle |
+| Rock removal | One rock cleared per **prayer logged** that day (oldest first) |
+| Stump removal | One stump cleared for **Qur'an logged** and one for **dhikr logged** that day (oldest first) |
 | Addition trigger | Missed prayer day — one random stump or rock appears |
 
+All obstacles are gradually cleared as the user logs prayers, Qur'an and dhikr; they only return on missed days.
 Obstacles never block game mechanics or prevent element placement.
 
 ---

@@ -223,6 +223,96 @@ describe('WorldLogic', () => {
         result.treesDecayed.length + result.treesRemoved.length
       ).toBe(1);
     });
+
+    it('clears one rock per prayer logged that day', () => {
+      const obstacles = [
+        { id: 'rock_1', type: 'rock' as const, variant: 1, position: { x: 1, y: 0 }, createdAt: 100 },
+        { id: 'rock_2', type: 'rock' as const, variant: 2, position: { x: 2, y: 0 }, createdAt: 200 },
+        { id: 'rock_3', type: 'rock' as const, variant: 3, position: { x: 3, y: 0 }, createdAt: 300 },
+        { id: 'stump_1', type: 'stump' as const, variant: 1, position: { x: 4, y: 0 }, createdAt: 400 },
+      ];
+      // Log 2 of 5 prayers; no Qur'an/dhikr
+      const partialLog: PrayerLog = {
+        ...makeLog('2026-03-10', false),
+        prayers: { Fajr: true, Dhuhr: true, Asr: false, Maghrib: false, Isha: false },
+        isComplete: false,
+      };
+      const profile = makeProfile({
+        prayerLogs: [partialLog],
+        worldState: {
+          trees: [], flowers: [], buildings: [], animals: [], rivers: [],
+          illustriousItems: [], dhikrFlowers: [], obstacles,
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-10');
+      // 2 prayers → 2 oldest rocks cleared; no stumps (no Qur'an/dhikr)
+      expect(result.obstaclesRemoved).toEqual(['rock_1', 'rock_2']);
+    });
+
+    it('clears one stump for Qur\'an and one for dhikr', () => {
+      const obstacles = [
+        { id: 'stump_1', type: 'stump' as const, variant: 1, position: { x: 1, y: 0 }, createdAt: 100 },
+        { id: 'stump_2', type: 'stump' as const, variant: 2, position: { x: 2, y: 0 }, createdAt: 200 },
+        { id: 'stump_3', type: 'stump' as const, variant: 3, position: { x: 3, y: 0 }, createdAt: 300 },
+      ];
+      // Qur'an + dhikr logged, but zero prayers
+      const log: PrayerLog = {
+        ...makeLog('2026-03-11', false),
+        prayers: { Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false },
+        isComplete: false,
+        quranLogged: true,
+        dhikrLogged: true,
+      };
+      const profile = makeProfile({
+        prayerLogs: [log],
+        worldState: {
+          trees: [], flowers: [], buildings: [], animals: [], rivers: [],
+          illustriousItems: [], dhikrFlowers: [], obstacles,
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-11');
+      // 2 oldest stumps cleared; no rocks present
+      expect(result.obstaclesRemoved).toEqual(['stump_1', 'stump_2']);
+    });
+
+    it('spawns a permanent barakah flower when Qur\'an or dhikr is logged', () => {
+      const realRandom = Math.random;
+      Math.random = () => 0; // force the 2% roll to succeed
+      try {
+        const log: PrayerLog = {
+          ...makeLog('2026-03-12', false),
+          prayers: { Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false },
+          isComplete: false,
+          quranLogged: true,
+          dhikrLogged: false,
+        };
+        const profile = makeProfile({ prayerLogs: [log] });
+        const result = WorldLogic.processDay(profile, '2026-03-12');
+        expect(result.dhikrFlowersAdded).toHaveLength(1);
+        // Permanent — nothing is ever expired/removed
+        expect(result.dhikrFlowersRemoved).toHaveLength(0);
+      } finally {
+        Math.random = realRandom;
+      }
+    });
+
+    it('does not spawn a barakah flower when neither Qur\'an nor dhikr is logged', () => {
+      const realRandom = Math.random;
+      Math.random = () => 0; // even with a guaranteed roll
+      try {
+        const profile = makeProfile({ prayerLogs: [makeLog('2026-03-13', true)] });
+        const result = WorldLogic.processDay(profile, '2026-03-13');
+        expect(result.dhikrFlowersAdded).toHaveLength(0);
+      } finally {
+        Math.random = realRandom;
+      }
+    });
   });
 
   describe('applyProcessingResult', () => {
@@ -389,6 +479,102 @@ describe('WorldLogic', () => {
       };
       const updated = WorldLogic.applyProcessingResult(profile, result);
       expect(updated.worldState.animals).toHaveLength(0);
+    });
+  });
+
+  describe('black cat (temporary gift)', () => {
+    const realRandom = Math.random;
+    afterEach(() => {
+      Math.random = realRandom;
+    });
+
+    it('spawns a cat without inflating the lifetime animals-appeared stat', () => {
+      Math.random = () => 0; // force the spawn roll to succeed
+      const profile = makeProfile();
+      const updated = WorldLogic.trySpawnBlackCat(profile);
+
+      expect(updated.worldState.animals).toHaveLength(1);
+      expect(updated.worldState.animals[0].type).toBe('black_cat');
+      // Temporary barakah — must NOT count toward permanent "animals appeared".
+      expect(updated.statistics.totalAnimalsAppeared).toBe(0);
+    });
+
+    it('flags an expired black cat for removal even on a complete day', () => {
+      const cat = {
+        id: 'animal_black_cat_1740787200000', // 2025-03-01
+        type: 'black_cat' as const,
+        position: { x: 2, y: 2 },
+        createdAt: Date.parse('2025-03-01T00:00:00Z'),
+      };
+      const profile = makeProfile({
+        worldState: {
+          trees: [],
+          flowers: [],
+          buildings: [],
+          animals: [cat],
+          rivers: [],
+          illustriousItems: [],
+          dhikrFlowers: [],
+          obstacles: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+        prayerLogs: [makeLog('2025-03-05', true)],
+      });
+
+      const result = WorldLogic.processDay(profile, '2025-03-05');
+      // Older than durationDays (2) → expiry, regardless of day completion.
+      expect(result.animalsRemoved).toContain(cat.id);
+    });
+
+    it('removing a black cat does not count as an animal returned', () => {
+      const cat = {
+        id: 'animal_black_cat_1',
+        type: 'black_cat' as const,
+        position: { x: 2, y: 2 },
+        createdAt: 1000,
+      };
+      const profile = makeProfile({
+        worldState: {
+          trees: [],
+          flowers: [],
+          buildings: [],
+          animals: [cat],
+          rivers: [],
+          illustriousItems: [],
+          dhikrFlowers: [],
+          obstacles: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result: ReturnType<typeof WorldLogic.processDay> = {
+        treesAdded: [],
+        treesUpgraded: [],
+        treesDecayed: [],
+        treesRemoved: [],
+        flowersAdded: [],
+        flowersRemoved: [],
+        flowersUpgraded: [],
+        dhikrFlowersAdded: [],
+        dhikrFlowersRemoved: [],
+        obstaclesAdded: [],
+        obstaclesRemoved: [],
+        buildingsAdded: [],
+        buildingsDecayed: [],
+        buildingsRemoved: [],
+        animalsAdded: [],
+        animalsRemoved: ['animal_black_cat_1'],
+        riversAdded: [],
+        riversRemoved: [],
+        illustriousItemsAdded: [],
+        illustriousItemsRemoved: [],
+      };
+      const updated = WorldLogic.applyProcessingResult(profile, result);
+      expect(updated.worldState.animals).toHaveLength(0);
+      expect(updated.statistics.totalAnimalsReturned).toBe(0);
     });
   });
 });

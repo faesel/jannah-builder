@@ -160,38 +160,39 @@ export class WorldLogic {
       projectedTrees
     );
 
-    // --- Dhikr flowers ---
-    if (dayLog?.dhikrLogged && Math.random() < GAME_CONFIG.world.dhikrFlowers.spawnChance) {
-      const dhikrFlower = WorldElementLogic.spawnDhikrFlower(
+    // --- Barakah flowers (permanent basic flower / bush) ---
+    // Spawned at a low chance whenever Qur'an OR dhikr is logged. They are a
+    // gentle, permanent visual reward for spiritual practice and never expire.
+    if (
+      (dayLog?.quranLogged || dayLog?.dhikrLogged) &&
+      Math.random() < GAME_CONFIG.world.dhikrFlowers.spawnChance
+    ) {
+      const barakahFlower = WorldElementLogic.spawnDhikrFlower(
         projectedTrees,
         profile.worldState.flowers,
         profile.worldState.dhikrFlowers ?? []
       );
-      result.dhikrFlowersAdded.push(dhikrFlower);
+      result.dhikrFlowersAdded.push(barakahFlower);
     }
-    // Expire old dhikr flowers
-    const expiredDhikr = WorldElementLogic.expireDhikrFlowers(
-      profile.worldState.dhikrFlowers ?? [],
-      date
+
+    // --- Obstacle clearing (progress tames the untamed map) ---
+    // Rocks are cleared by logged prayers; stumps by Qur'an and dhikr.
+    // Over time, consistent worship clears every obstacle from the map.
+    const obstacles = profile.worldState.obstacles ?? [];
+    const prayersLoggedToday = dayLog
+      ? Object.values(dayLog.prayers).filter(Boolean).length
+      : 0;
+    const rocksToClear = WorldElementLogic.removeObstaclesByType(
+      obstacles,
+      'rock',
+      prayersLoggedToday
     );
-    result.dhikrFlowersRemoved.push(...expiredDhikr);
-
-    // --- Obstacle removal on progress ---
-    const elementsAddedThisDay =
-      result.treesAdded.length +
-      result.flowersAdded.length +
-      result.buildingsAdded.length +
-      result.animalsAdded.length +
-      result.riversAdded.length;
-
-    if (elementsAddedThisDay > 0) {
-      const obstacleToRemove = WorldElementLogic.removeObstacleForProgress(
-        profile.worldState.obstacles ?? []
-      );
-      if (obstacleToRemove) {
-        result.obstaclesRemoved.push(obstacleToRemove);
-      }
-    }
+    const stumpsToClear = WorldElementLogic.removeObstaclesByType(
+      obstacles,
+      'stump',
+      (dayLog?.quranLogged ? 1 : 0) + (dayLog?.dhikrLogged ? 1 : 0)
+    );
+    result.obstaclesRemoved.push(...rocksToClear, ...stumpsToClear);
 
     // --- Rivers ---
     result.riversAdded = WorldElementLogic.evaluateRivers(
@@ -439,8 +440,13 @@ export class WorldLogic {
   }
 
   /**
-   * Attempt to spawn a black cat (8% chance per prayer logged).
+   * Attempt to spawn a black cat (5% chance per prayer logged).
    * Returns the updated profile with the cat added if the roll succeeds.
+   *
+   * The black cat is a temporary gift (barakah), not a permanent resident.
+   * Like illustrious items, it is deliberately NOT counted toward the
+   * lifetime "animals appeared" statistic — otherwise transient cats would
+   * inflate the tally beyond the animals actually living on the map.
    */
   static trySpawnBlackCat(profile: UserProfile): UserProfile {
     const config = GAME_CONFIG.world.animals.black_cat;
@@ -468,10 +474,6 @@ export class WorldLogic {
       worldState: {
         ...profile.worldState,
         animals: [...profile.worldState.animals, cat],
-      },
-      statistics: {
-        ...profile.statistics,
-        totalAnimalsAppeared: profile.statistics.totalAnimalsAppeared + 1,
       },
     };
   }

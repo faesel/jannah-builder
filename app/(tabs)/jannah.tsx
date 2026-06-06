@@ -54,6 +54,17 @@ export default function JannahScreen() {
 
           const result = WorldLogic.processDay(current, today);
 
+          // Temporary gifts (the black cat and illustrious items) fade gently
+          // even while today is still in progress — this is barakah returning,
+          // not decay or punishment. Without this they would never disappear
+          // for users who open the app every day, because the game loop only
+          // processes genuinely missed (un-opened) days.
+          const blackCatRemovals = result.animalsRemoved.filter((id) =>
+            current!.worldState.animals.some(
+              (a) => a.id === id && a.type === 'black_cat'
+            )
+          );
+
           // Only apply growth for today — never decay, since the day is still in progress.
           // Decay for genuinely missed days is handled by the game loop on next app open.
           const hasGrowth =
@@ -68,16 +79,21 @@ export default function JannahScreen() {
             result.riversAdded.length > 0 ||
             result.illustriousItemsAdded.length > 0;
 
-          if (hasGrowth) {
-            // Strip out any decay results before applying
+          const hasTemporaryFade =
+            blackCatRemovals.length > 0 ||
+            result.illustriousItemsRemoved.length > 0;
+
+          if (hasGrowth || hasTemporaryFade) {
+            // Strip out decay results before applying, but keep temporary-gift
+            // fades (black cat expiry and illustrious streak-break fades).
             const growthOnly = {
               ...result,
               treesDecayed: [],
               treesRemoved: [],
               buildingsDecayed: [],
               buildingsRemoved: [],
-              animalsRemoved: [],
-              illustriousItemsRemoved: [],
+              animalsRemoved: blackCatRemovals,
+              illustriousItemsRemoved: result.illustriousItemsRemoved,
             };
             current = WorldLogic.applyProcessingResult(current, growthOnly);
           }

@@ -13,7 +13,7 @@ import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Pos
 import { GAME_CONFIG } from '../config/game.config';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES, STUMP_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, getFlowerSprite, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES, STUMP_SPRITES } from './sprites';
 import type { AnimalDirection } from './sprites';
 
 // Debug flag moved to GAME_CONFIG.debug.showAllSprites
@@ -111,33 +111,6 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     return tiles;
   }, [rows, cols, tileSize, grassWeighted]);
 
-  // Scattered rocks — deterministic placement based on grid size
-  const rockDecorations = useMemo(() => {
-    const rocks: React.ReactElement[] = [];
-    const rockCount = Math.max(3, Math.floor((rows * cols) * 0.02));
-    for (let i = 0; i < rockCount; i++) {
-      // Deterministic pseudo-random positions using simple hash
-      const hash = ((i * 31) + (i * i * 7) + 53) % (rows * cols);
-      const rockRow = Math.floor(hash / cols);
-      const rockCol = hash % cols;
-      const spriteIdx = ((i * 13) + 5) % ROCK_SPRITES.length;
-      rocks.push(
-        <Image
-          key={`rock_${i}`}
-          source={ROCK_SPRITES[spriteIdx]}
-          style={{
-            position: 'absolute',
-            left: rockCol * tileSize,
-            top: rockRow * tileSize,
-            width: tileSize,
-            height: tileSize,
-          }}
-        />,
-      );
-    }
-    return rocks;
-  }, [rows, cols, tileSize]);
-
   // Debug gridlines
   const gridLines = useMemo(() => {
     if (!GAME_CONFIG.debug.showGridLines) return null;
@@ -184,9 +157,6 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     <View style={{ flex: 1, overflow: 'hidden', backgroundColor: COLORS.grass }}>
       {/* Grass tile Views for checkerboard texture */}
       {grassTiles}
-
-      {/* Scattered rock decorations */}
-      {rockDecorations}
 
       {gridLines}
 
@@ -293,34 +263,21 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
         />
       ))}
 
-      {/* Berry bushes — appear once flower threshold is met */}
-      {useMemo(() => {
-        const treeCount = activeWorld.trees.length;
-        const threshold = GAME_CONFIG.world.flowers.baseThreshold;
-        if (treeCount < threshold) return null;
-        const bushCount = Math.min(6, 1 + Math.floor((treeCount - threshold) / 3));
-        const bushes: React.ReactElement[] = [];
-        let seed = 7919;
-        const nextRand = () => { seed = (seed * 16807) % 2147483647; return seed; };
-        for (let i = 0; i < bushCount; i++) {
-          const bx = (nextRand() % cols) - Math.floor(cols / 2);
-          const by = (nextRand() % rows) - Math.floor(rows / 2);
-          bushes.push(
-            <Image
-              key={`bush_${i}`}
-              source={FLOWER_SPRITES.bush}
-              style={{
-                position: 'absolute',
-                left: (bx + centerCol) * tileSize,
-                top: (by + centerRow) * tileSize,
-                width: tileSize,
-                height: tileSize,
-              }}
-            />,
-          );
-        }
-        return bushes;
-      }, [activeWorld.trees.length, cols, rows, tileSize, centerCol, centerRow])}
+      {/* Barakah flowers — permanent basic flowers & bushes from logging
+          Qur'an or dhikr. A gentle, lasting reward for spiritual practice. */}
+      {(activeWorld.dhikrFlowers ?? []).map((f) => (
+        <Image
+          key={f.id}
+          source={f.type === 'bush' ? FLOWER_SPRITES.bush : FLOWER_SPRITES.basic}
+          style={{
+            position: 'absolute',
+            left: (f.position.x + centerCol) * tileSize,
+            top: (f.position.y + centerRow) * tileSize,
+            width: tileSize,
+            height: tileSize,
+          }}
+        />
+      ))}
 
       {/* Buildings */}
       {activeWorld.buildings.map((b) => (
@@ -445,7 +402,7 @@ function FlowerSprite({ flower, center, centerRow, tileSize }: {
 }) {
   return (
     <Image
-      source={FLOWER_SPRITES.basic}
+      source={getFlowerSprite(flower.variety, flower.stage)}
       style={{
         position: 'absolute',
         left: (flower.position.x + center) * tileSize,
@@ -1188,13 +1145,18 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
   }));
 
   const flowerCounts = { days: 3, months: 8, years: 20 };
-  const flowers: Flower[] = Array.from({ length: flowerCounts[level] }, (_, i) => ({
-    id: `sim_flower_${i}`,
-    position: randomPosition(rng, occupied, cols, rows),
-    variety: 'pink' as const,
-    stage: 1,
-    createdAt: now,
-  }));
+  const flowerVarieties = GAME_CONFIG.world.flowers.varieties;
+  const flowers: Flower[] = Array.from({ length: flowerCounts[level] }, (_, i) => {
+    const variety = flowerVarieties[Math.floor(rng() * flowerVarieties.length)];
+    const maxStage = GAME_CONFIG.world.flowers.stages[variety];
+    return {
+      id: `sim_flower_${i}`,
+      position: randomPosition(rng, occupied, cols, rows),
+      variety,
+      stage: 1 + Math.floor(rng() * maxStage),
+      createdAt: now,
+    };
+  });
 
   const bc = GAME_CONFIG.world.buildings;
   const buildingList: { type: Building['type']; count: number }[] = [

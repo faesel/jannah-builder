@@ -449,4 +449,33 @@ describe('WorldElementLogic', () => {
       expect(result[0]).toBe('river_new');
     });
   });
+
+  describe('removeObstaclesByType', () => {
+    const obstacles = [
+      { id: 'rock_old', type: 'rock' as const, variant: 1, position: { x: 0, y: 0 }, createdAt: 100 },
+      { id: 'rock_new', type: 'rock' as const, variant: 2, position: { x: 1, y: 0 }, createdAt: 300 },
+      { id: 'stump_old', type: 'stump' as const, variant: 1, position: { x: 2, y: 0 }, createdAt: 200 },
+      { id: 'stump_new', type: 'stump' as const, variant: 2, position: { x: 3, y: 0 }, createdAt: 400 },
+    ];
+
+    it('returns nothing for a count of zero', () => {
+      expect(WorldElementLogic.removeObstaclesByType(obstacles, 'rock', 0)).toHaveLength(0);
+    });
+
+    it('clears the oldest obstacles of the requested type first', () => {
+      const result = WorldElementLogic.removeObstaclesByType(obstacles, 'rock', 1);
+      expect(result).toEqual(['rock_old']);
+    });
+
+    it('only clears the requested type', () => {
+      const result = WorldElementLogic.removeObstaclesByType(obstacles, 'stump', 5);
+      // Both stumps, oldest first; no rocks included
+      expect(result).toEqual(['stump_old', 'stump_new']);
+    });
+
+    it('never returns more than exist', () => {
+      const result = WorldElementLogic.removeObstaclesByType(obstacles, 'rock', 10);
+      expect(result).toHaveLength(2);
+    });
+  });
 });

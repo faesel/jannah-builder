@@ -36,9 +36,17 @@ The app emphasises:
 - Top-down pixel-art world rendered as a tile grid (scales to screen size)
 - 6 grass tile variants with deterministic placement for natural-looking terrain
 - Trees, flowers, buildings, and animals appear as you progress
+- **Multi-stage flowers** — flowers spawn in several varieties and grow through stages over time, much like trees
 - **Animated animals** — birds, rabbits, deer, and squirrels roam the map with feeding, idle, and movement behaviours; each species moves at a different speed with collision avoidance
 - Visual effects for Qur'an reading (glowing flowers, warm golden overlay) and Dhikr (floating light particles)
 - Illustrious items (radiant fountains, glowing trees, floating lanterns, light arches) appear during long streaks and fade gently when broken
+
+### Obstacles (Taming the Map)
+- A new map starts with 20 obstacles — stumps and rocks scattered across the untamed land
+- **Rocks** are cleared one at a time for every prayer you log that day
+- **Stumps** are cleared when you log Qur'an (one) and dhikr (one)
+- Over time, consistent worship clears every obstacle from the map
+- Obstacles never block placement of trees, flowers, or buildings; a missed prayer day gently returns one
 
 ### Gentle Decay
 - Only triggered when an entire day is missed
@@ -50,6 +58,7 @@ The app emphasises:
 - **Qur'an logging** — simple "I read Qur'an today" toggle
 - **Dhikr logging** — simple "I did dhikr today" toggle
 - These enhance visual ambience but never generate or destroy trees
+- **Barakah flowers** — logging Qur'an or dhikr has a small (2%) chance to spawn a permanent basic flower or bush on the map, a gentle, lasting reward for spiritual practice
 
 ### Rivers
 - Rivers snake across the map as your garden grows (threshold: 35 trees)

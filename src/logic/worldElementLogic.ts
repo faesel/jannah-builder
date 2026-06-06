@@ -17,7 +17,7 @@ import {
   Tree,
   Position,
 } from '../types/models';
-import { GAME_CONFIG, FlowerVariety, RESERVED_POSITIONS } from '../config/game.config';
+import { GAME_CONFIG, FlowerVariety, ObstacleType, RESERVED_POSITIONS } from '../config/game.config';
 
 type BuildingType = Building['type'];
 type AnimalType = Animal['type'];
@@ -222,7 +222,8 @@ export class WorldElementLogic {
   }
 
   /**
-   * Spawn a dhikr flower or bush (temporary, lasts 2 days).
+   * Spawn a permanent barakah flower (basic flower or bush) as a gentle
+   * visual reward for logging Qur'an or dhikr. These never expire.
    */
   static spawnDhikrFlower(
     existingTrees: Tree[],
@@ -246,25 +247,6 @@ export class WorldElementLogic {
       type,
       createdAt: now,
     };
-  }
-
-  /**
-   * Remove expired dhikr flowers (older than durationDays).
-   */
-  static expireDhikrFlowers(
-    dhikrFlowers: DhikrFlower[],
-    currentDate: string
-  ): string[] {
-    const duration = GAME_CONFIG.world.dhikrFlowers.durationDays;
-    return dhikrFlowers
-      .filter((f) => {
-        const createdDate = new Date(f.createdAt).toISOString().split('T')[0];
-        const created = new Date(createdDate + 'T00:00:00Z').getTime();
-        const current = new Date(currentDate + 'T00:00:00Z').getTime();
-        const daysDiff = Math.floor((current - created) / (1000 * 60 * 60 * 24));
-        return daysDiff >= duration;
-      })
-      .map((f) => f.id);
   }
 
   // --- Obstacle logic ---
@@ -310,14 +292,21 @@ export class WorldElementLogic {
   }
 
   /**
-   * Remove one obstacle when new world elements are added (progress clears debris).
-   * Returns the ID of the obstacle to remove, or null if none remain.
+   * Select the oldest `count` obstacles of a given type to clear.
+   * Returns their IDs (oldest first). Progress clears the untamed map:
+   * rocks are cleared by logged prayers, stumps by Qur'an/dhikr.
    */
-  static removeObstacleForProgress(obstacles: Obstacle[]): string | null {
-    if (obstacles.length === 0) return null;
-    // Remove oldest obstacle first
-    const sorted = [...obstacles].sort((a, b) => a.createdAt - b.createdAt);
-    return sorted[0].id;
+  static removeObstaclesByType(
+    obstacles: Obstacle[],
+    type: ObstacleType,
+    count: number
+  ): string[] {
+    if (count <= 0 || obstacles.length === 0) return [];
+    return [...obstacles]
+      .filter((o) => o.type === type)
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .slice(0, count)
+      .map((o) => o.id);
   }
 
   /**

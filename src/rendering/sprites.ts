@@ -7,7 +7,7 @@
  * Replace placeholder PNGs with real pixel art — no code changes needed.
  */
 
-import { TreeStage } from '../config/game.config';
+import { TreeStage, FlowerVariety } from '../config/game.config';
 
 // --- Tiles ---
 
@@ -72,6 +72,66 @@ export const FLOWER_SPRITES = {
   enhanced: require('../../assets/sprites/flowers/enhanced.png'),
   bush: require('../../assets/sprites/flowers/bush.png'),
 };
+
+/**
+ * Multi-stage flower sprites, keyed by variety.
+ * Each array is ordered by growth stage: index 0 = stage 1, index 1 = stage 2, …
+ * Stage counts mirror GAME_CONFIG.world.flowers.stages.
+ */
+export const FLOWER_VARIETY_SPRITES: Record<FlowerVariety, number[]> = {
+  pink: [
+    require('../../assets/sprites/flowers/flower_pink_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_pink_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_pink_stage_3.png'),
+    require('../../assets/sprites/flowers/flower_pink_stage_4.png'),
+  ],
+  leaf: [
+    require('../../assets/sprites/flowers/flower_leaf_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_leaf_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_leaf_stage_3.png'),
+    require('../../assets/sprites/flowers/flower_leaf_stage_4.png'),
+  ],
+  purple: [
+    require('../../assets/sprites/flowers/flower_purple_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_purple_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_purple_stage_3.png'),
+  ],
+  red: [
+    require('../../assets/sprites/flowers/flower_red_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_red_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_red_stage_3.png'),
+  ],
+  teal: [
+    require('../../assets/sprites/flowers/flower_teal_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_teal_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_teal_stage_3.png'),
+    require('../../assets/sprites/flowers/flower_teal_stage_4.png'),
+  ],
+  dark: [
+    require('../../assets/sprites/flowers/flower_dark_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_dark_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_dark_stage_3.png'),
+    require('../../assets/sprites/flowers/flower_dark_stage_4.png'),
+  ],
+  wild: [
+    require('../../assets/sprites/flowers/flower_wild_stage_1.png'),
+    require('../../assets/sprites/flowers/flower_wild_stage_2.png'),
+    require('../../assets/sprites/flowers/flower_wild_stage_3.png'),
+    require('../../assets/sprites/flowers/flower_wild_stage_4.png'),
+  ],
+};
+
+/**
+ * Resolve the correct sprite for a flower's variety and stage.
+ * Stage is 1-indexed; clamps to the available range and falls back to the
+ * basic flower sprite if a variety has no dedicated art.
+ */
+export function getFlowerSprite(variety: FlowerVariety, stage: number): number {
+  const stages = FLOWER_VARIETY_SPRITES[variety];
+  if (!stages || stages.length === 0) return FLOWER_SPRITES.basic;
+  const index = Math.min(Math.max(stage, 1), stages.length) - 1;
+  return stages[index];
+}
 
 // --- Buildings ---
 
