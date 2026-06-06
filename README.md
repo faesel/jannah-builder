@@ -44,7 +44,7 @@ The app emphasises:
 - Illustrious items (radiant fountains, glowing trees, floating lanterns, light arches) appear during long streaks and fade gently when broken
 
 ### Obstacles (Taming the Map)
-- A new map starts with 20 obstacles — stumps and rocks scattered across the untamed land
+- A new map starts with 30 obstacles — stumps and rocks scattered across the untamed land
 - **Rocks** are cleared one at a time for every prayer you log that day
 - **Stumps** are cleared when you log Qur'an (one) and dhikr (one)
 - Over time, consistent worship clears every obstacle from the map

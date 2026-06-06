@@ -91,7 +91,7 @@ Obstacles represent the untamed state of the map. They are cleared by progress a
 
 | Rule | Value |
 |------|-------|
-| Initial count | 20 (placed randomly on new profile) |
+| Initial count | 30 (placed randomly on new profile) |
 | Types | Stump (5 variants), Rock (7 variants) |
 | Rock removal | One rock cleared per **prayer logged** that day (oldest first) |
 | Stump removal | One stump cleared for **Qur'an logged** and one for **dhikr logged** that day (oldest first) |
