@@ -134,6 +134,40 @@ export class ProfileManager {
   }
 
   /**
+   * Restore a profile from an imported state file and make it active.
+   *
+   * If a profile with the same id already exists it is replaced in place.
+   * Otherwise the profile is added; when there is no room (the 3-profile cap),
+   * the currently active profile is replaced so an import always succeeds
+   * without silently discarding the restored garden.
+   */
+  static async importProfile(profile: UserProfile): Promise<UserProfile> {
+    const profiles = await this.loadProfiles();
+    const restored: UserProfile = { ...profile, lastActive: Date.now() };
+
+    const existingIndex = profiles.findIndex((p) => p.id === restored.id);
+    if (existingIndex !== -1) {
+      profiles[existingIndex] = restored;
+    } else if (profiles.length < GAME_CONFIG.profiles.maxProfiles) {
+      profiles.push(restored);
+    } else {
+      const activeId = await this.getActiveProfileId();
+      const replaceIndex = profiles.findIndex((p) => p.id === activeId);
+      if (replaceIndex === -1) {
+        throw new Error(
+          `Maximum number of profiles (${GAME_CONFIG.profiles.maxProfiles}) reached. Delete a profile before importing.`
+        );
+      }
+      profiles[replaceIndex] = restored;
+    }
+
+    await this.saveProfiles(profiles);
+    await this.setActiveProfileId(restored.id);
+
+    return restored;
+  }
+
+  /**
    * Get active profile
    */
   static async getActiveProfile(): Promise<UserProfile | null> {

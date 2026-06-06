@@ -99,6 +99,66 @@ describe('ProfileManager', () => {
   });
 
   // ------------------------------------------------------------------
+  // importProfile
+  // ------------------------------------------------------------------
+  describe('importProfile', () => {
+    it('adds an imported profile and makes it active', async () => {
+      const imported = ProfileManager.createProfile('Restored');
+      const result = await ProfileManager.importProfile(imported);
+
+      const loaded = await ProfileManager.loadProfiles();
+      expect(loaded.map((p) => p.id)).toContain(imported.id);
+      expect(await ProfileManager.getActiveProfileId()).toBe(result.id);
+    });
+
+    it('replaces in place when a profile with the same id exists', async () => {
+      const imported = ProfileManager.createProfile('Original');
+      await ProfileManager.importProfile(imported);
+
+      const updated = { ...imported, name: 'Updated' };
+      await ProfileManager.importProfile(updated);
+
+      const loaded = await ProfileManager.loadProfiles();
+      const matches = loaded.filter((p) => p.id === imported.id);
+      expect(matches).toHaveLength(1);
+      expect(matches[0].name).toBe('Updated');
+    });
+
+    it('replaces the active profile when at the maximum and id is new', async () => {
+      const created = [];
+      for (let i = 0; i < GAME_CONFIG.profiles.maxProfiles; i++) {
+        created.push(await ProfileManager.addProfile(`Profile ${i}`));
+      }
+      const activeId = await ProfileManager.getActiveProfileId();
+
+      const imported = ProfileManager.createProfile('Imported');
+      await ProfileManager.importProfile(imported);
+
+      const loaded = await ProfileManager.loadProfiles();
+      expect(loaded).toHaveLength(GAME_CONFIG.profiles.maxProfiles);
+      expect(loaded.map((p) => p.id)).toContain(imported.id);
+      expect(loaded.map((p) => p.id)).not.toContain(activeId);
+      expect(await ProfileManager.getActiveProfileId()).toBe(imported.id);
+    });
+
+    it('throws rather than clobbering when at the maximum with no resolvable active profile', async () => {
+      const created = [];
+      for (let i = 0; i < GAME_CONFIG.profiles.maxProfiles; i++) {
+        created.push(await ProfileManager.addProfile(`Profile ${i}`));
+      }
+      await ProfileManager.setActiveProfileId('nonexistent_id');
+
+      const imported = ProfileManager.createProfile('Imported');
+      await expect(ProfileManager.importProfile(imported)).rejects.toThrow(
+        /Maximum number of profiles/
+      );
+
+      const loaded = await ProfileManager.loadProfiles();
+      expect(loaded.map((p) => p.id)).toEqual(created.map((p) => p.id));
+    });
+  });
+
+  // ------------------------------------------------------------------
   // getActiveProfile
   // ------------------------------------------------------------------
   describe('getActiveProfile', () => {

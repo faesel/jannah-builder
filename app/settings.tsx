@@ -14,9 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { Storage } from '../src/persistence/storage';
 import { AppInitializer } from '../src/logic/appInitializer';
 import { ProfileManager } from '../src/persistence/profileManager';
+import { parseImportedState } from '../src/logic/stateImport';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -88,6 +90,62 @@ export default function SettingsScreen() {
       Alert.alert('Export failed', 'Could not export game state.');
     }
   }, []);
+
+  const handleImportState = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets?.[0]) {
+        return;
+      }
+
+      const json = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      const parsed = parseImportedState(json);
+      if (!parsed.ok || !parsed.profile) {
+        Alert.alert('Import failed', parsed.error ?? 'Could not read this file.');
+        return;
+      }
+
+      const profile = parsed.profile;
+      const repairNote =
+        parsed.repairs && parsed.repairs.length > 0
+          ? `\n\nA few totals were gently tidied up:\n• ${parsed.repairs.join('\n• ')}`
+          : '';
+
+      Alert.alert(
+        'Restore this garden?',
+        `This will restore the saved garden for "${profile.name}" and make it your active garden.${repairNote}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Restore',
+            onPress: async () => {
+              try {
+                await ProfileManager.importProfile(profile);
+                Alert.alert('Garden restored', 'Your saved garden has been imported.', [
+                  { text: 'Continue', onPress: () => router.back() },
+                ]);
+              } catch (err) {
+                console.error('[Settings] Error importing state:', err);
+                const message =
+                  err instanceof Error ? err.message : 'Could not save the imported garden.';
+                Alert.alert('Import failed', message);
+              }
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      console.error('[Settings] Error importing state:', err);
+      Alert.alert('Import failed', 'Could not read the selected file.');
+    }
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -183,6 +241,26 @@ export default function SettingsScreen() {
             >
               <Ionicons name="share-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
               <Text style={styles.exportText}>Export State</Text>
+            </Pressable>
+          </View>
+          <View style={styles.exportCard}>
+            <View style={styles.exportInfo}>
+              <Ionicons name="cloud-upload-outline" size={20} color="#4A7C59" style={{ marginRight: 10 }} />
+              <Text style={styles.exportDescription}>
+                Restore a previously exported garden from a JSON file. This replaces your current garden.
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.exportButton,
+                pressed && styles.exportButtonPressed,
+              ]}
+              onPress={handleImportState}
+              accessibilityRole="button"
+              accessibilityLabel="Import game state from a JSON file"
+            >
+              <Ionicons name="folder-open-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
+              <Text style={styles.exportText}>Import State</Text>
             </Pressable>
           </View>
           <View style={styles.dangerCard}>
