@@ -7,8 +7,9 @@
  * They never affect core gameplay, trees, or permanent progress.
  */
 
-import { IllustriousItem, Position, Tree } from '../types/models';
+import { IllustriousItem, Position, Tree, PlacementBounds } from '../types/models';
 import { IllustriousItemType, GAME_CONFIG } from '../config/game.config';
+import { defaultPlacementBounds, isWithinBounds } from './placement';
 
 export class IllustriousItemLogic {
   /**
@@ -18,7 +19,8 @@ export class IllustriousItemLogic {
   static evaluate(
     currentStreak: number,
     existingItems: IllustriousItem[],
-    existingTrees: Tree[]
+    existingTrees: Tree[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): { itemsToAdd: IllustriousItem[]; itemIdsToRemove: string[] } {
     if (!GAME_CONFIG.illustriousItems.enabled) {
       return { itemsToAdd: [], itemIdsToRemove: [] };
@@ -38,7 +40,7 @@ export class IllustriousItemLogic {
       if (currentStreak >= threshold && !alreadyExists) {
         // Earned a new item
         itemsToAdd.push(
-          this.createItem(itemType, currentStreak, existingTrees, existingItems)
+          this.createItem(itemType, currentStreak, existingTrees, existingItems, bounds)
         );
       } else if (currentStreak < threshold && alreadyExists) {
         // Streak broken — item fades away gently
@@ -59,10 +61,11 @@ export class IllustriousItemLogic {
     type: IllustriousItemType,
     streakDays: number,
     existingTrees: Tree[],
-    existingItems: IllustriousItem[]
+    existingItems: IllustriousItem[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): IllustriousItem {
     const now = Date.now();
-    const position = this.findPosition(existingTrees, existingItems);
+    const position = this.findPosition(existingTrees, existingItems, bounds);
 
     return {
       id: `illustrious_${type}_${now}`,
@@ -79,7 +82,8 @@ export class IllustriousItemLogic {
    */
   static findPosition(
     existingTrees: Tree[],
-    existingItems: IllustriousItem[]
+    existingItems: IllustriousItem[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Position {
     const occupied = new Set([
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
@@ -106,12 +110,15 @@ export class IllustriousItemLogic {
 
     for (const offset of offsets) {
       const key = `${offset.x},${offset.y}`;
-      if (!occupied.has(key)) {
+      if (isWithinBounds(offset.x, offset.y, bounds) && !occupied.has(key)) {
         return offset;
       }
     }
 
-    // Fallback — place adjacent to centre
-    return { x: offsetBase, y: 1 };
+    // Fallback — place adjacent to centre, clamped within bounds
+    return {
+      x: Math.max(-bounds.halfX, Math.min(bounds.halfX, offsetBase)),
+      y: Math.max(-bounds.halfY, Math.min(bounds.halfY, 1)),
+    };
   }
 }

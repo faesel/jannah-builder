@@ -478,4 +478,34 @@ describe('WorldElementLogic', () => {
       expect(result).toHaveLength(2);
     });
   });
+
+  describe('bounds-aware placement', () => {
+    it('spreads initial obstacles across the full vertical extent', () => {
+      // A tall portrait bounds (wide-ish X, much taller Y).
+      const bounds = { halfX: 9, halfY: 19 };
+      const obstacles = WorldElementLogic.generateInitialObstacles(bounds);
+
+      const ys = obstacles.map((o) => o.position.y);
+      const maxY = Math.max(...ys);
+      const minY = Math.min(...ys);
+
+      // Every obstacle stays within bounds...
+      obstacles.forEach((o) => {
+        expect(Math.abs(o.position.x)).toBeLessThanOrEqual(bounds.halfX);
+        expect(Math.abs(o.position.y)).toBeLessThanOrEqual(bounds.halfY);
+      });
+      // ...and at least some reach the outer thirds (not just the centre).
+      expect(maxY).toBeGreaterThan(9);
+      expect(minY).toBeLessThan(-9);
+    });
+
+    it('keeps spawned obstacles within the supplied bounds', () => {
+      const bounds = { halfX: 3, halfY: 12 };
+      for (let i = 0; i < 50; i++) {
+        const obstacle = WorldElementLogic.spawnObstacle([], [], [], bounds);
+        expect(Math.abs(obstacle.position.x)).toBeLessThanOrEqual(bounds.halfX);
+        expect(Math.abs(obstacle.position.y)).toBeLessThanOrEqual(bounds.halfY);
+      }
+    });
+  });
 });

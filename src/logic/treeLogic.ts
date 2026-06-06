@@ -3,8 +3,9 @@
  * Pure functions for managing tree growth and decay
  */
 
-import { Tree, Position } from '../types/models';
+import { Tree, Position, PlacementBounds } from '../types/models';
 import { TreeStage, GAME_CONFIG, RESERVED_POSITIONS } from '../config/game.config';
+import { defaultPlacementBounds, randomPositionInBounds } from './placement';
 
 export class TreeLogic {
   /**
@@ -70,11 +71,15 @@ export class TreeLogic {
   /**
    * Generate multiple trees for placement
    */
-  static generateTrees(count: number, existingTrees: Tree[]): Tree[] {
+  static generateTrees(
+    count: number,
+    existingTrees: Tree[],
+    bounds: PlacementBounds = defaultPlacementBounds()
+  ): Tree[] {
     const newTrees: Tree[] = [];
-    
+
     for (let i = 0; i < count; i++) {
-      const position = this.findAvailablePosition(existingTrees, newTrees);
+      const position = this.findAvailablePosition(existingTrees, newTrees, bounds);
       newTrees.push(this.createTree(position));
     }
 
@@ -87,7 +92,8 @@ export class TreeLogic {
    */
   static findAvailablePosition(
     existingTrees: Tree[],
-    newTrees: Tree[]
+    newTrees: Tree[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Position {
     const allTrees = [...existingTrees, ...newTrees];
     const occupied = new Set(
@@ -95,28 +101,7 @@ export class TreeLogic {
     );
     RESERVED_POSITIONS.forEach((p) => occupied.add(p));
 
-    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
-
-    // Try random positions within the grid
-    for (let attempt = 0; attempt < 200; attempt++) {
-      const x = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
-      const y = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
-      const key = `${x},${y}`;
-      if (!occupied.has(key)) {
-        return { x, y };
-      }
-    }
-
-    // Fallback: scan for any free position
-    for (let x = -gridHalf; x <= gridHalf; x++) {
-      for (let y = -gridHalf; y <= gridHalf; y++) {
-        if (!occupied.has(`${x},${y}`)) {
-          return { x, y };
-        }
-      }
-    }
-
-    return { x: 0, y: 0 };
+    return randomPositionInBounds(occupied, bounds);
   }
 
   /**

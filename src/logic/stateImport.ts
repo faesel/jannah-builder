@@ -155,6 +155,15 @@ function normaliseWorldState(raw: unknown, now: number): WorldState {
     lastUpdated: asNumber(ws.lastUpdated, now),
     lastProcessedDate:
       typeof ws.lastProcessedDate === 'string' ? ws.lastProcessedDate : undefined,
+    placementBounds:
+      isObject(ws.placementBounds) &&
+      typeof ws.placementBounds.halfX === 'number' &&
+      typeof ws.placementBounds.halfY === 'number'
+        ? {
+            halfX: Math.max(1, Math.floor(ws.placementBounds.halfX)),
+            halfY: Math.max(1, Math.floor(ws.placementBounds.halfY)),
+          }
+        : undefined,
   };
 }
 

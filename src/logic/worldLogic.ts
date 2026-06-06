@@ -13,6 +13,7 @@ import { PrayerLogic } from './prayerLogic';
 import { TreeLogic } from './treeLogic';
 import { IllustriousItemLogic } from './illustriousItemLogic';
 import { WorldElementLogic } from './worldElementLogic';
+import { defaultPlacementBounds } from './placement';
 
 export class WorldLogic {
   /**
@@ -49,6 +50,11 @@ export class WorldLogic {
     const dayLog = profile.prayerLogs.find((log) => log.date === date);
     const dayComplete = dayLog?.isComplete ?? false;
 
+    // Placement bounds derived from the player's actual screen extent (persisted
+    // in worldState). Falls back to a square default when unknown so that
+    // background processing without screen access still behaves sensibly.
+    const bounds = profile.worldState.placementBounds ?? defaultPlacementBounds();
+
     // --- Trees: generation/upgrade or decay ---
     if (dayComplete) {
       const consecutiveDays = PrayerLogic.countConsecutiveDaysFrom(
@@ -78,7 +84,7 @@ export class WorldLogic {
             const newTrees = TreeLogic.generateTrees(1, [
               ...workingTrees,
               ...result.treesAdded,
-            ]);
+            ], bounds);
             result.treesAdded.push(...newTrees);
             workingTrees.push(...newTrees);
           }
@@ -96,7 +102,7 @@ export class WorldLogic {
         const isFirstCompleteDay =
           completeLogs.length === 1 && completeLogs[0].date === date;
         if (isFirstCompleteDay) {
-          result.treesAdded = TreeLogic.generateTrees(1, profile.worldState.trees);
+          result.treesAdded = TreeLogic.generateTrees(1, profile.worldState.trees, bounds);
         }
       }
     } else {
@@ -136,7 +142,9 @@ export class WorldLogic {
       // Spawn an obstacle on missed day
       const newObstacle = WorldElementLogic.spawnObstacle(
         projectedTrees,
-        profile.worldState.obstacles ?? []
+        profile.worldState.obstacles ?? [],
+        [],
+        bounds
       );
       result.obstaclesAdded.push(newObstacle);
     }
@@ -145,19 +153,22 @@ export class WorldLogic {
     const flowerResult = WorldElementLogic.evaluateFlowers(
       projectedTreeCount,
       profile.worldState.flowers,
-      projectedTrees
+      projectedTrees,
+      bounds
     );
     result.flowersAdded = flowerResult.added;
     result.flowersUpgraded.push(...flowerResult.upgraded);
     result.buildingsAdded = WorldElementLogic.evaluateBuildings(
       projectedTreeCount,
       profile.worldState.buildings,
-      projectedTrees
+      projectedTrees,
+      bounds
     );
     result.animalsAdded = WorldElementLogic.evaluateAnimals(
       projectedTreeCount,
       profile.worldState.animals,
-      projectedTrees
+      projectedTrees,
+      bounds
     );
 
     // --- Barakah flowers (permanent basic flower / bush) ---
@@ -170,7 +181,8 @@ export class WorldLogic {
       const barakahFlower = WorldElementLogic.spawnDhikrFlower(
         projectedTrees,
         profile.worldState.flowers,
-        profile.worldState.dhikrFlowers ?? []
+        profile.worldState.dhikrFlowers ?? [],
+        bounds
       );
       result.dhikrFlowersAdded.push(barakahFlower);
     }
@@ -199,7 +211,8 @@ export class WorldLogic {
       projectedTreeCount,
       profile.worldState.rivers,
       projectedTrees,
-      [...profile.worldState.buildings, ...result.buildingsAdded]
+      [...profile.worldState.buildings, ...result.buildingsAdded],
+      bounds
     );
 
     // --- Illustrious items ---
@@ -210,7 +223,8 @@ export class WorldLogic {
     const illustriousResult = IllustriousItemLogic.evaluate(
       streak,
       profile.worldState.illustriousItems,
-      projectedTrees
+      projectedTrees,
+      bounds
     );
     result.illustriousItemsAdded = illustriousResult.itemsToAdd;
     result.illustriousItemsRemoved = illustriousResult.itemIdsToRemove;
@@ -457,9 +471,11 @@ export class WorldLogic {
     if (existingCat) return profile;
 
     const now = Date.now();
+    const bounds = profile.worldState.placementBounds ?? defaultPlacementBounds();
     const position = WorldElementLogic.findPositionForAnimal(
       profile.worldState.trees,
-      profile.worldState.animals
+      profile.worldState.animals,
+      bounds
     );
 
     const cat = {

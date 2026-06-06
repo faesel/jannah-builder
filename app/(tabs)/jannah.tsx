@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,8 @@ import { GAME_CONFIG } from '../../src/config/game.config';
 import { UserProfile, WorldState } from '../../src/types/models';
 import { PrayerLogic } from '../../src/logic/prayerLogic';
 import { WorldLogic } from '../../src/logic/worldLogic';
+import { WorldElementLogic } from '../../src/logic/worldElementLogic';
+import { computePlacementBounds, boundsEqual } from '../../src/logic/placement';
 import { ProfileManager } from '../../src/persistence/profileManager';
 import { JannahCanvas } from '../../src/rendering/JannahCanvas';
 import { COLORS } from '../../src/config/colors';
@@ -31,10 +33,12 @@ const DEFAULT_WORLD: WorldState = {
 
 export default function JannahScreen() {
   // Game loop processes missed days on first mount
-  useGameLoop();
+  const { processing: gameLoopProcessing } = useGameLoop();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [layout, setLayout] = useState<{ width: number; height: number } | null>(null);
+  // Guards the bounds-persistence effect against overlapping async writes.
+  const boundsSyncInFlight = useRef(false);
 
   // Reload and reprocess profile every time this tab gets focus
   useFocusEffect(
@@ -125,6 +129,72 @@ export default function JannahScreen() {
       return { width, height };
     });
   }, []);
+
+  // Persist screen-derived placement bounds so that all future spawning fills
+  // the whole visible map rather than clustering in the centre. We never move
+  // existing elements — only record the bounds for subsequent growth. For a
+  // brand-new world (no progress yet) we also regenerate the initial obstacles
+  // within the real screen bounds so a first-time user sees them spread out.
+  useEffect(() => {
+    if (!layout || layout.width <= 0 || layout.height <= 0) return;
+    if (!profile) return;
+    // Wait until the game loop has finished processing any missed days, so we
+    // never race its whole-profile write and lose progress (or our bounds).
+    if (gameLoopProcessing) return;
+    if (boundsSyncInFlight.current) return;
+
+    const bounds = computePlacementBounds(layout.width, layout.height);
+    if (
+      profile.worldState.placementBounds &&
+      boundsEqual(profile.worldState.placementBounds, bounds)
+    ) {
+      return;
+    }
+
+    const syncBounds = async () => {
+      boundsSyncInFlight.current = true;
+      try {
+        // Re-read fresh so we never clobber a concurrent reprocess write.
+        const current = await ProfileManager.getActiveProfile();
+        if (!current) return;
+
+        const existing = current.worldState.placementBounds;
+        if (existing && boundsEqual(existing, bounds)) return;
+
+        // A brand-new world has no progress at all. Detect it by content rather
+        // than lastProcessedDate (which the focus reprocess sets to today before
+        // this effect runs). Only such worlds get their initial obstacles
+        // regenerated within the real screen bounds — existing gardens keep
+        // every cleared-obstacle of progress untouched.
+        const isFreshWorld =
+          existing === undefined &&
+          current.statistics.totalPrayersLogged === 0 &&
+          current.worldState.trees.length === 0;
+
+        const updated: UserProfile = {
+          ...current,
+          worldState: {
+            ...current.worldState,
+            placementBounds: bounds,
+            obstacles: isFreshWorld
+              ? WorldElementLogic.generateInitialObstacles(bounds)
+              : current.worldState.obstacles,
+          },
+        };
+
+        await ProfileManager.updateProfile(updated);
+        setProfile((prev) =>
+          prev && prev.id === updated.id ? updated : prev
+        );
+      } catch (err) {
+        console.error('[JannahScreen] Error syncing placement bounds:', err);
+      } finally {
+        boundsSyncInFlight.current = false;
+      }
+    };
+
+    syncBounds();
+  }, [layout, profile, gameLoopProcessing]);
 
   const worldState = profile?.worldState ?? DEFAULT_WORLD;
 

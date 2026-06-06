@@ -171,6 +171,24 @@ describe('parseImportedState', () => {
     expect(result.profile?.name).toBe('My Journey');
   });
 
+  it('preserves valid placement bounds from the export', () => {
+    const result = parseImportedState(
+      baseExport({
+        worldState: { trees: [makeTree(0)], placementBounds: { halfX: 9, halfY: 19 } },
+      })
+    );
+    expect(result.profile?.worldState.placementBounds).toEqual({ halfX: 9, halfY: 19 });
+  });
+
+  it('drops malformed placement bounds', () => {
+    const result = parseImportedState(
+      baseExport({
+        worldState: { trees: [makeTree(0)], placementBounds: { halfX: 'wide' } },
+      })
+    );
+    expect(result.profile?.worldState.placementBounds).toBeUndefined();
+  });
+
   it('drops malformed world elements that would crash rendering', () => {
     const result = parseImportedState(
       baseExport({

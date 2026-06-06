@@ -39,6 +39,17 @@ export interface Position {
 
 // ===== World State =====
 
+/**
+ * The half-extent (in tiles, from the centre) within which world elements may
+ * be placed. Derived from the device screen so assets spread across the whole
+ * visible map rather than clustering in the centre. `halfX`/`halfY` allow the
+ * region to be taller than it is wide on portrait screens.
+ */
+export interface PlacementBounds {
+  halfX: number;
+  halfY: number;
+}
+
 export interface WorldState {
   trees: Tree[];
   flowers: Flower[];
@@ -57,6 +68,13 @@ export interface WorldState {
   lastUpdated: number;
   /** The last date (YYYY-MM-DD) for which processDay was applied */
   lastProcessedDate?: string;
+  /**
+   * Screen-derived bounds within which new elements spawn. Persisted so that
+   * background day-processing (which has no screen access) spreads spawns
+   * across the full map. Absent on older saves — placement falls back to a
+   * square default until the Jannah screen records the real screen size.
+   */
+  placementBounds?: PlacementBounds;
 }
 
 export interface Flower {

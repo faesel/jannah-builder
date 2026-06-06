@@ -16,8 +16,10 @@ import {
   River,
   Tree,
   Position,
+  PlacementBounds,
 } from '../types/models';
 import { GAME_CONFIG, FlowerVariety, ObstacleType, RESERVED_POSITIONS } from '../config/game.config';
+import { defaultPlacementBounds, randomPositionInBounds, isWithinBounds } from './placement';
 
 type BuildingType = Building['type'];
 type AnimalType = Animal['type'];
@@ -63,7 +65,8 @@ export class WorldElementLogic {
   static evaluateBuildings(
     treeCount: number,
     existingBuildings: Building[],
-    existingTrees: Tree[]
+    existingTrees: Tree[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Building[] {
     const newBuildings: Building[] = [];
 
@@ -74,7 +77,7 @@ export class WorldElementLogic {
 
       for (let i = 0; i < needed; i++) {
         newBuildings.push(
-          this.createBuilding(type, existingTrees, existingBuildings, newBuildings)
+          this.createBuilding(type, existingTrees, existingBuildings, newBuildings, bounds)
         );
       }
     }
@@ -88,7 +91,8 @@ export class WorldElementLogic {
   static evaluateAnimals(
     treeCount: number,
     existingAnimals: Animal[],
-    existingTrees: Tree[]
+    existingTrees: Tree[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Animal[] {
     const newAnimals: Animal[] = [];
 
@@ -99,7 +103,7 @@ export class WorldElementLogic {
 
       for (let i = 0; i < needed; i++) {
         newAnimals.push(
-          this.createAnimal(type, existingTrees, existingAnimals, newAnimals)
+          this.createAnimal(type, existingTrees, existingAnimals, newAnimals, bounds)
         );
       }
     }
@@ -114,7 +118,8 @@ export class WorldElementLogic {
   static evaluateFlowers(
     treeCount: number,
     existingFlowers: Flower[],
-    existingTrees: Tree[]
+    existingTrees: Tree[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): { added: Flower[]; upgraded: Flower[] } {
     const fc = GAME_CONFIG.world.flowers;
     const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
@@ -147,7 +152,7 @@ export class WorldElementLogic {
         workingFlowers[idx] = upgradedFlower;
       } else {
         // All pre-existing flowers are at max stage — create a new one
-        const position = this.findFlowerPosition(existingTrees, occupied);
+        const position = this.findFlowerPosition(existingTrees, occupied, bounds);
         const variety = this.randomFlowerVariety();
         const now = Date.now();
         const flower: Flower = {
@@ -228,7 +233,8 @@ export class WorldElementLogic {
   static spawnDhikrFlower(
     existingTrees: Tree[],
     existingFlowers: Flower[],
-    existingDhikrFlowers: DhikrFlower[]
+    existingDhikrFlowers: DhikrFlower[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): DhikrFlower {
     const types = GAME_CONFIG.world.dhikrFlowers.types;
     const type = types[Math.floor(Math.random() * types.length)];
@@ -238,7 +244,7 @@ export class WorldElementLogic {
       ...existingDhikrFlowers.map((f) => `${f.position.x},${f.position.y}`),
     ]);
     addReserved(occupied);
-    const position = this.findFlowerPosition(existingTrees, occupied);
+    const position = this.findFlowerPosition(existingTrees, occupied, bounds);
     const now = Date.now();
 
     return {
@@ -254,12 +260,13 @@ export class WorldElementLogic {
   /**
    * Generate initial obstacles for a new profile.
    */
-  static generateInitialObstacles(): Obstacle[] {
+  static generateInitialObstacles(
+    bounds: PlacementBounds = defaultPlacementBounds()
+  ): Obstacle[] {
     const config = GAME_CONFIG.world.obstacles;
     const obstacles: Obstacle[] = [];
     const occupied = new Set<string>();
     addReserved(occupied);
-    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
     const now = Date.now();
 
     for (let i = 0; i < config.initialCount; i++) {
@@ -267,17 +274,8 @@ export class WorldElementLogic {
       const maxVariant = type === 'stump' ? config.stumpVariants : config.rockVariants;
       const variant = Math.floor(Math.random() * maxVariant) + 1;
 
-      // Find random position
-      let position: Position = { x: 0, y: 0 };
-      for (let attempt = 0; attempt < 100; attempt++) {
-        const x = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
-        const y = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
-        if (!occupied.has(`${x},${y}`)) {
-          position = { x, y };
-          occupied.add(`${x},${y}`);
-          break;
-        }
-      }
+      const position = randomPositionInBounds(occupied, bounds, 100);
+      occupied.add(`${position.x},${position.y}`);
 
       obstacles.push({
         id: `obstacle_${type}_${now}_${i}`,
@@ -314,30 +312,24 @@ export class WorldElementLogic {
    */
   static spawnObstacle(
     existingTrees: Tree[],
-    existingObstacles: Obstacle[]
+    existingObstacles: Obstacle[],
+    extraOccupied: Position[] = [],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Obstacle {
     const config = GAME_CONFIG.world.obstacles;
     const type = config.types[Math.floor(Math.random() * config.types.length)];
     const maxVariant = type === 'stump' ? config.stumpVariants : config.rockVariants;
     const variant = Math.floor(Math.random() * maxVariant) + 1;
-    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
     const now = Date.now();
 
     const occupied = new Set([
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...(existingObstacles ?? []).map((o) => `${o.position.x},${o.position.y}`),
+      ...extraOccupied.map((p) => `${p.x},${p.y}`),
     ]);
     addReserved(occupied);
 
-    let position: Position = { x: 0, y: 0 };
-    for (let attempt = 0; attempt < 200; attempt++) {
-      const x = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
-      const y = Math.floor(Math.random() * (gridHalf * 2 + 1)) - gridHalf;
-      if (!occupied.has(`${x},${y}`)) {
-        position = { x, y };
-        break;
-      }
-    }
+    const position = randomPositionInBounds(occupied, bounds);
 
     return {
       id: `obstacle_${type}_${now}`,
@@ -438,11 +430,13 @@ export class WorldElementLogic {
    */
   static findPositionForAnimal(
     trees: Tree[],
-    existingAnimals: Animal[]
+    existingAnimals: Animal[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Position {
     return this.findClearPosition(
       trees.map((t) => t.position),
-      existingAnimals.map((a) => a.position)
+      existingAnimals.map((a) => a.position),
+      bounds
     );
   }
 
@@ -452,7 +446,8 @@ export class WorldElementLogic {
     type: BuildingType,
     trees: Tree[],
     existingBuildings: Building[],
-    newBuildings: Building[]
+    newBuildings: Building[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Building {
     const now = Date.now();
     const allBuildings = [...existingBuildings, ...newBuildings];
@@ -475,17 +470,19 @@ export class WorldElementLogic {
         // Start a new cluster away from existing ones
         position = this.findClearPosition(
           trees.map((t) => t.position),
-          allBuildings.map((b) => b.position)
+          allBuildings.map((b) => b.position),
+          bounds
         );
       } else {
         // Continue current cluster (street pattern)
-        position = this.findClusterPosition(latestCluster, allOccupied);
+        position = this.findClusterPosition(latestCluster, allOccupied, bounds);
       }
     } else {
       // First of this type: place near tree cluster
       position = this.findClearPosition(
         trees.map((t) => t.position),
-        allBuildings.map((b) => b.position)
+        allBuildings.map((b) => b.position),
+        bounds
       );
     }
 
@@ -537,7 +534,8 @@ export class WorldElementLogic {
    */
   private static findClusterPosition(
     clusterPositions: Position[],
-    allOccupied: Position[]
+    allOccupied: Position[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Position {
     const occupied = new Set(allOccupied.map((p) => `${p.x},${p.y}`));
     addReserved(occupied);
@@ -553,7 +551,7 @@ export class WorldElementLogic {
         for (const dir of directions) {
           const x = pos.x + dir.dx * dist;
           const y = pos.y + dir.dy * dist;
-          if (!occupied.has(`${x},${y}`)) {
+          if (isWithinBounds(x, y, bounds) && !occupied.has(`${x},${y}`)) {
             return { x, y };
           }
         }
@@ -567,20 +565,22 @@ export class WorldElementLogic {
       for (let angle = 0; angle < 8; angle++) {
         const x = cx + Math.round(r * Math.cos((angle * Math.PI) / 4));
         const y = cy + Math.round(r * Math.sin((angle * Math.PI) / 4));
-        if (!occupied.has(`${x},${y}`)) {
+        if (isWithinBounds(x, y, bounds) && !occupied.has(`${x},${y}`)) {
           return { x, y };
         }
       }
     }
 
-    return { x: cx + 4, y: cy };
+    // Last resort: any free tile within bounds
+    return randomPositionInBounds(occupied, bounds);
   }
 
   private static createAnimal(
     type: AnimalType,
     trees: Tree[],
     existingAnimals: Animal[],
-    newAnimals: Animal[]
+    newAnimals: Animal[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Animal {
     const now = Date.now();
     return {
@@ -591,7 +591,8 @@ export class WorldElementLogic {
         [
           ...existingAnimals.map((a) => a.position),
           ...newAnimals.map((a) => a.position),
-        ]
+        ],
+        bounds
       ),
       createdAt: now,
     };
@@ -602,7 +603,8 @@ export class WorldElementLogic {
    */
   private static findClearPosition(
     treePositions: Position[],
-    occupiedPositions: Position[]
+    occupiedPositions: Position[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Position {
     const occupied = new Set([
       ...treePositions.map((p) => `${p.x},${p.y}`),
@@ -616,14 +618,14 @@ export class WorldElementLogic {
       for (let angle = 0; angle < 8; angle++) {
         const x = Math.round(r * Math.cos((angle * Math.PI) / 4));
         const y = Math.round(r * Math.sin((angle * Math.PI) / 4));
-        const key = `${x},${y}`;
-        if (!occupied.has(key)) {
+        if (isWithinBounds(x, y, bounds) && !occupied.has(`${x},${y}`)) {
           return { x, y };
         }
       }
     }
 
-    return { x: radius + 1, y: 0 };
+    // Fallback: any free tile within bounds
+    return randomPositionInBounds(occupied, bounds);
   }
 
   /**
@@ -650,7 +652,8 @@ export class WorldElementLogic {
    */
   private static findFlowerPosition(
     trees: Tree[],
-    occupied: Set<string>
+    occupied: Set<string>,
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): Position {
     const directions = [
       { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
@@ -666,7 +669,7 @@ export class WorldElementLogic {
       for (const dir of shuffledDirs) {
         const x = tree.position.x + dir.dx;
         const y = tree.position.y + dir.dy;
-        if (!occupied.has(`${x},${y}`)) {
+        if (isWithinBounds(x, y, bounds) && !occupied.has(`${x},${y}`)) {
           return { x, y };
         }
       }
@@ -678,7 +681,8 @@ export class WorldElementLogic {
       [...occupied].map((key) => {
         const [x, y] = key.split(',').map(Number);
         return { x, y };
-      })
+      }),
+      bounds
     );
   }
 
@@ -691,7 +695,8 @@ export class WorldElementLogic {
     treeCount: number,
     existingRivers: River[],
     trees: Tree[],
-    buildings: Building[]
+    buildings: Building[],
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): River[] {
     const rc = GAME_CONFIG.world.rivers;
     const desired = targetCount(treeCount, rc.threshold, rc.repeatEvery);
@@ -714,7 +719,7 @@ export class WorldElementLogic {
 
     const newRivers: River[] = [];
     for (let i = 0; i < needed; i++) {
-      const river = this.generateRiver(riverLength, occupied);
+      const river = this.generateRiver(riverLength, occupied, bounds);
       if (river) {
         river.tiles.forEach((t) => occupied.add(`${t.x},${t.y}`));
         newRivers.push(river);
@@ -730,17 +735,17 @@ export class WorldElementLogic {
    */
   private static generateRiver(
     targetLength: number,
-    occupied: Set<string>
+    occupied: Set<string>,
+    bounds: PlacementBounds = defaultPlacementBounds()
   ): River | null {
     const now = Date.now();
-    const gridHalf = Math.floor(GAME_CONFIG.map.initialGridSize / 2) - 1;
     const maxAttempts = 10;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const start = this.findRiverStart(gridHalf, occupied);
+      const start = this.findRiverStart(bounds, occupied);
       if (!start) continue;
 
-      const path = this.walkRiverPath(start, targetLength, gridHalf, occupied);
+      const path = this.walkRiverPath(start, targetLength, bounds, occupied);
       if (path.length >= Math.max(3, Math.floor(targetLength * 0.5))) {
         return {
           id: `river_${now}_${attempt}`,
@@ -756,16 +761,18 @@ export class WorldElementLogic {
    * Find a starting position for a river near the map edge.
    */
   private static findRiverStart(
-    gridHalf: number,
+    bounds: PlacementBounds,
     occupied: Set<string>
   ): Position | null {
     // Try random positions along the map edges
     const edges: Position[] = [];
-    for (let i = -gridHalf; i <= gridHalf; i++) {
-      edges.push({ x: i, y: -gridHalf }); // top
-      edges.push({ x: i, y: gridHalf });  // bottom
-      edges.push({ x: -gridHalf, y: i }); // left
-      edges.push({ x: gridHalf, y: i });  // right
+    for (let x = -bounds.halfX; x <= bounds.halfX; x++) {
+      edges.push({ x, y: -bounds.halfY }); // top
+      edges.push({ x, y: bounds.halfY });  // bottom
+    }
+    for (let y = -bounds.halfY; y <= bounds.halfY; y++) {
+      edges.push({ x: -bounds.halfX, y }); // left
+      edges.push({ x: bounds.halfX, y });  // right
     }
     // Shuffle edges
     for (let i = edges.length - 1; i > 0; i--) {
@@ -790,7 +797,7 @@ export class WorldElementLogic {
   private static walkRiverPath(
     start: Position,
     targetLength: number,
-    gridHalf: number,
+    bounds: PlacementBounds,
     occupied: Set<string>
   ): Position[] {
     const path: Position[] = [start];
@@ -812,7 +819,7 @@ export class WorldElementLogic {
         const key = `${nx},${ny}`;
 
         // Bounds check
-        if (Math.abs(nx) > gridHalf || Math.abs(ny) > gridHalf) continue;
+        if (Math.abs(nx) > bounds.halfX || Math.abs(ny) > bounds.halfY) continue;
         // Already occupied by tree/building/other river
         if (occupied.has(key)) continue;
         // Already in this path

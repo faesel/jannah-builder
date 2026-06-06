@@ -225,43 +225,39 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Data</Text>
           <View style={styles.exportCard}>
             <View style={styles.exportInfo}>
-              <Ionicons name="download-outline" size={20} color="#4A7C59" style={{ marginRight: 10 }} />
+              <Ionicons name="save-outline" size={20} color="#4A7C59" style={{ marginRight: 10 }} />
               <Text style={styles.exportDescription}>
-                Export your full game state as a JSON file. If you spot a bug, share this file with the developer to help get it fixed.
+                Export your full game state as a JSON file to back it up or share with the developer, or import a previously exported file to restore your garden.
               </Text>
             </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.exportButton,
-                pressed && styles.exportButtonPressed,
-              ]}
-              onPress={handleExportState}
-              accessibilityRole="button"
-              accessibilityLabel="Export game state as JSON"
-            >
-              <Ionicons name="share-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
-              <Text style={styles.exportText}>Export State</Text>
-            </Pressable>
-          </View>
-          <View style={styles.exportCard}>
-            <View style={styles.exportInfo}>
-              <Ionicons name="cloud-upload-outline" size={20} color="#4A7C59" style={{ marginRight: 10 }} />
-              <Text style={styles.exportDescription}>
-                Restore a previously exported garden from a JSON file. This replaces your current garden.
-              </Text>
+            <View style={styles.buttonRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.exportButton,
+                  styles.buttonRowItem,
+                  pressed && styles.exportButtonPressed,
+                ]}
+                onPress={handleExportState}
+                accessibilityRole="button"
+                accessibilityLabel="Export game state as JSON"
+              >
+                <Ionicons name="share-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
+                <Text style={styles.exportText}>Export</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.exportButton,
+                  styles.buttonRowItem,
+                  pressed && styles.exportButtonPressed,
+                ]}
+                onPress={handleImportState}
+                accessibilityRole="button"
+                accessibilityLabel="Import game state from a JSON file"
+              >
+                <Ionicons name="folder-open-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
+                <Text style={styles.exportText}>Import</Text>
+              </Pressable>
             </View>
-            <Pressable
-              style={({ pressed }) => [
-                styles.exportButton,
-                pressed && styles.exportButtonPressed,
-              ]}
-              onPress={handleImportState}
-              accessibilityRole="button"
-              accessibilityLabel="Import game state from a JSON file"
-            >
-              <Ionicons name="folder-open-outline" size={16} color="#4A7C59" style={{ marginRight: 6 }} />
-              <Text style={styles.exportText}>Import State</Text>
-            </Pressable>
           </View>
           <View style={styles.dangerCard}>
             <View style={styles.dangerInfo}>
@@ -481,6 +477,13 @@ const styles = StyleSheet.create({
   },
   exportButtonPressed: {
     backgroundColor: 'rgba(160, 212, 160, 0.15)',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  buttonRowItem: {
+    flex: 1,
   },
   exportText: {
     fontSize: 14,
