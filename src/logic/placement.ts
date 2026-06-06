@@ -59,12 +59,16 @@ export function computeTileSize(screenWidth: number, screenHeight: number): numb
  * rows that are wholly inside the un-occluded area, reserving one tile of
  * breathing room at the bottom and one tile at the top for tree canopies.
  * `bottomInset` (in pixels) lets the caller exclude an occluded region such as
- * the bottom navigation / system inset.
+ * the bottom navigation / system inset. `topInset` (in pixels) likewise excludes
+ * the top status-bar / notch region: the map is drawn full-bleed so its grass
+ * texture flows continuously under the status bar, but nothing — not even a
+ * tree's canopy — should be placed where the status bar would cover it.
  */
 export function computePlacementBounds(
   screenWidth: number,
   screenHeight: number,
-  bottomInset = 0
+  bottomInset = 0,
+  topInset = 0
 ): PlacementBounds {
   const tileSize = computeTileSize(screenWidth, screenHeight);
   const cols = Math.ceil(screenWidth / tileSize);
@@ -75,9 +79,14 @@ export function computePlacementBounds(
   const visibleHeight = Math.max(0, screenHeight - Math.max(0, bottomInset));
   const lastFullyVisibleRow = Math.floor(visibleHeight / tileSize) - 1;
 
-  // Reserve one tile above the base for the tree canopy, and one tile of
-  // breathing room below the lowest base so a two-tile-tall tree never clips.
-  const halfYTop = centerRow - 1;
+  // Rows hidden behind the top inset (status bar / notch). No asset may render
+  // here — including a tree's canopy, which sits one tile above its base.
+  const topInsetRows = Math.ceil(Math.max(0, topInset) / tileSize);
+
+  // Reserve one tile above the top-most base for the tree canopy (plus any rows
+  // occluded by the top inset), and one tile of breathing room below the lowest
+  // base so a two-tile-tall tree never clips the bottom navigation.
+  const halfYTop = centerRow - topInsetRows - 1;
   const halfYBottom = lastFullyVisibleRow - 1 - centerRow;
 
   return {

@@ -90,6 +90,12 @@ describe('placement bounds', () => {
       expect(withInset.halfY).toBeLessThan(withoutInset.halfY);
     });
 
+    it('reserves additional room for a top inset (status bar)', () => {
+      const withoutInset = computePlacementBounds(400, 800);
+      const withTopInset = computePlacementBounds(400, 800, 0, 120);
+      expect(withTopInset.halfY).toBeLessThan(withoutInset.halfY);
+    });
+
     it('never returns a degenerate (zero) extent', () => {
       const bounds = computePlacementBounds(10, 10);
       expect(bounds.halfX).toBeGreaterThanOrEqual(1);

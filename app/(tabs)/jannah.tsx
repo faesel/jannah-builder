@@ -4,7 +4,7 @@ import {
   StyleSheet,
   LayoutChangeEvent,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useGameLoop } from '../../src/hooks/useGameLoop';
 import { GAME_CONFIG } from '../../src/config/game.config';
@@ -145,7 +145,7 @@ export default function JannahScreen() {
     if (gameLoopProcessing) return;
     if (boundsSyncInFlight.current) return;
 
-    const bounds = computePlacementBounds(layout.width, layout.height, insets.bottom);
+    const bounds = computePlacementBounds(layout.width, layout.height, insets.bottom, insets.top);
     if (
       profile.worldState.placementBounds &&
       boundsEqual(profile.worldState.placementBounds, bounds)
@@ -196,7 +196,7 @@ export default function JannahScreen() {
     };
 
     syncBounds();
-  }, [layout, profile, gameLoopProcessing, insets.bottom]);
+  }, [layout, profile, gameLoopProcessing, insets.bottom, insets.top]);
 
   const worldState = profile?.worldState ?? DEFAULT_WORLD;
 
@@ -214,7 +214,10 @@ export default function JannahScreen() {
       : undefined;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    // Full-bleed: the grass texture flows continuously under the status bar so
+    // there is no flat-colour band at the top. The status-bar region is kept
+    // free of assets via the top inset passed to computePlacementBounds above.
+    <View style={styles.safeArea}>
       <View style={styles.container} onLayout={handleLayout}>
         {layout && (
           <JannahCanvas
@@ -227,7 +230,7 @@ export default function JannahScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
