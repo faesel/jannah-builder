@@ -1,6 +1,7 @@
 import {
   defaultPlacementBounds,
   computePlacementBounds,
+  computeTileSize,
   boundsEqual,
   isWithinBounds,
   randomPositionInBounds,
@@ -17,6 +18,31 @@ describe('placement bounds', () => {
     });
   });
 
+  describe('computeTileSize', () => {
+    it('keeps a constant tile size across typical phone screens', () => {
+      // Two very different devices (slab phone vs. foldable inner screen) must
+      // draw assets at the same size — the whole point of the fix.
+      const slab = computeTileSize(411, 891);
+      const foldInner = computeTileSize(707, 883);
+      expect(slab).toBe(GAME_CONFIG.map.targetTileSize);
+      expect(foldInner).toBe(GAME_CONFIG.map.targetTileSize);
+      expect(slab).toBe(foldInner);
+    });
+
+    it('shrinks the tile on very narrow screens to keep enough tiles visible', () => {
+      const narrowAxis = GAME_CONFIG.map.minVisibleTiles * (GAME_CONFIG.map.targetTileSize - 4);
+      const tile = computeTileSize(narrowAxis, 1200);
+      expect(tile).toBeLessThan(GAME_CONFIG.map.targetTileSize);
+      // Still keeps at least the configured minimum number of tiles.
+      expect(Math.floor(narrowAxis / tile)).toBeGreaterThanOrEqual(GAME_CONFIG.map.minVisibleTiles);
+    });
+
+    it('never drops below the minimum recognisable tile size', () => {
+      const tile = computeTileSize(10, 10);
+      expect(tile).toBeGreaterThanOrEqual(GAME_CONFIG.map.minTileSize);
+    });
+  });
+
   describe('computePlacementBounds', () => {
     it('makes a tall portrait screen taller than it is wide', () => {
       // A typical tall phone viewport.
@@ -27,25 +53,24 @@ describe('placement bounds', () => {
     it('mirrors the renderer horizontal tile maths', () => {
       const width = 400;
       const height = 800;
-      const gridSize = GAME_CONFIG.map.initialGridSize;
-      const tileSize = Math.max(
-        GAME_CONFIG.map.minTileSize,
-        Math.floor(Math.min(width, height) / gridSize)
-      );
+      const tileSize = computeTileSize(width, height);
       const cols = Math.ceil(width / tileSize);
 
       const bounds = computePlacementBounds(width, height);
       expect(bounds.halfX).toBe(Math.max(1, Math.floor(cols / 2) - 1));
     });
 
+    it('gives a larger screen larger bounds (reveals more world)', () => {
+      const small = computePlacementBounds(400, 800);
+      const large = computePlacementBounds(800, 1200);
+      expect(large.halfX).toBeGreaterThan(small.halfX);
+      expect(large.halfY).toBeGreaterThan(small.halfY);
+    });
+
     it('reserves a bottom margin so tall sprites are not clipped', () => {
       const width = 400;
       const height = 800;
-      const gridSize = GAME_CONFIG.map.initialGridSize;
-      const tileSize = Math.max(
-        GAME_CONFIG.map.minTileSize,
-        Math.floor(Math.min(width, height) / gridSize)
-      );
+      const tileSize = computeTileSize(width, height);
       const rows = Math.ceil(height / tileSize);
 
       const bounds = computePlacementBounds(width, height);

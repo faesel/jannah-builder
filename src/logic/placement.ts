@@ -24,8 +24,29 @@ export function defaultPlacementBounds(): PlacementBounds {
 }
 
 /**
+ * On-screen tile size in density-independent pixels.
+ *
+ * The map neither pans nor zooms, so we keep tiles a *constant* size across
+ * devices rather than fitting a fixed number of tiles along an axis. This draws
+ * every asset at the same physical size on every screen; larger displays simply
+ * reveal more of the world. `minVisibleTiles` shrinks the tile on very narrow
+ * screens so a minimum number of tiles always fit, and `minTileSize` keeps a
+ * tile recognisable on tiny displays.
+ *
+ * This is the single source of truth for tile size — both the renderer and the
+ * placement-bounds calculation must use it so they never drift apart.
+ */
+export function computeTileSize(screenWidth: number, screenHeight: number): number {
+  const { targetTileSize, minTileSize, minVisibleTiles } = GAME_CONFIG.map;
+  const shortAxis = Math.min(screenWidth, screenHeight);
+  const fitForNarrowScreen = Math.floor(shortAxis / minVisibleTiles);
+  return Math.max(minTileSize, Math.min(targetTileSize, fitForNarrowScreen));
+}
+
+/**
  * Derive placement bounds from the rendered screen size, matching the tile
- * layout used by JannahCanvas (gridSize tiles along the shorter axis).
+ * layout used by JannahCanvas (a constant `computeTileSize`, so larger screens
+ * yield more tiles and therefore larger bounds).
  *
  * Two things would otherwise clip assets near the bottom of a tall screen:
  *   1. Tree sprites are two tiles tall, anchored at their base tile — so a tree
@@ -45,11 +66,7 @@ export function computePlacementBounds(
   screenHeight: number,
   bottomInset = 0
 ): PlacementBounds {
-  const gridSize = GAME_CONFIG.map.initialGridSize;
-  const tileSize = Math.max(
-    GAME_CONFIG.map.minTileSize,
-    Math.floor(Math.min(screenWidth, screenHeight) / gridSize)
-  );
+  const tileSize = computeTileSize(screenWidth, screenHeight);
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
   const centerRow = Math.floor(rows / 2);

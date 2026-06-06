@@ -2,15 +2,16 @@
  * JannahCanvas
  *
  * Renders the world as a static grid that always fills the viewport.
- * Tile size is computed dynamically: screenSize / gridSize.
- * As the world grows, tiles shrink to fit more content.
- * No panning or zooming needed.
+ * Tile size is a constant on-screen size (see computeTileSize): the map does
+ * not pan or zoom, so larger screens reveal more of the world rather than
+ * enlarging each asset.
  */
 
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { View, Image, Text, StyleSheet, Animated } from 'react-native';
 import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Position } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
+import { computeTileSize } from '../logic/placement';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
 import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, getFlowerSprite, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES, STUMP_SPRITES } from './sprites';
@@ -32,13 +33,10 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
     return <SpriteDebugOnMap screenWidth={screenWidth} screenHeight={screenHeight} />;
   }
 
-  const gridSize = (GAME_CONFIG.debug.simulateProgress ? GAME_CONFIG.map.initialGridSize : worldState.gridSize) ?? GAME_CONFIG.map.initialGridSize;
-
-  // Tile size: fit gridSize tiles along the shorter screen axis
-  const tileSize = Math.max(
-    GAME_CONFIG.map.minTileSize,
-    Math.floor(Math.min(screenWidth, screenHeight) / gridSize),
-  );
+  // Tile size is a constant on-screen size (see computeTileSize): the map does
+  // not pan or zoom, so larger screens reveal more of the world rather than
+  // enlarging each asset.
+  const tileSize = computeTileSize(screenWidth, screenHeight);
 
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
@@ -1367,11 +1365,7 @@ const ALL_SPRITES: { label: string; source: number; tilesWide?: number; tilesTal
 ];
 
 function SpriteDebugOnMap({ screenWidth, screenHeight }: { screenWidth: number; screenHeight: number }) {
-  const gridSize = GAME_CONFIG.map.initialGridSize;
-  const tileSize = Math.max(
-    GAME_CONFIG.map.minTileSize,
-    Math.floor(Math.min(screenWidth, screenHeight) / gridSize),
-  );
+  const tileSize = computeTileSize(screenWidth, screenHeight);
   const cols = Math.ceil(screenWidth / tileSize);
   const rows = Math.ceil(screenHeight / tileSize);
 

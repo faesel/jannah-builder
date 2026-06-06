@@ -106,6 +106,16 @@ export const GAME_CONFIG = {
     initialGridSize: 20, // Fixed grid size (no dynamic expansion)
     maxGridSize: 20, // Same as initial — map does not grow
     minTileSize: 16, // Smallest a tile can be (px) — must stay recognisable
+    // Target on-screen tile size in density-independent pixels. The map does not
+    // pan or zoom, so we keep tiles a *constant* size across devices instead of
+    // fitting a fixed number of tiles. Every asset is therefore drawn at the
+    // same physical size on every phone; larger screens simply reveal more of
+    // the world rather than zooming in. Lower this to zoom out further.
+    targetTileSize: 20,
+    // Safety net for very narrow screens (e.g. a foldable's cover display): the
+    // tile shrinks below targetTileSize only when needed to keep at least this
+    // many tiles visible along the shorter axis.
+    minVisibleTiles: 10,
     tileSize: 32, // Base reference tile size (used by sprite generation)
     growthInterval: 0, // Disabled — map is fixed size
   },
