@@ -8,7 +8,7 @@
  */
 
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { View, Image, Text, StyleSheet, Animated } from 'react-native';
+import { View, Image, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { WorldState, Tree, Flower, Building, Animal, River, IllustriousItem, Position } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
 import { computeTileSize } from '../logic/placement';
@@ -464,6 +464,15 @@ const ANIMAL_SPEED: Record<string, number> = {
 
 const FEED_FRAME_MS = 500; // time per feeding frame
 
+// Birds occasionally break into a diagonal glide — a short burst across a few
+// tiles a little quicker than their normal hop. Kept deliberately uncommon so
+// it reads as a special flourish rather than their usual motion.
+const BIRD_DIAGONAL_CHANCE = 0.4; // of a bird's moves (≈16% of all decisions)
+const BIRD_WALK_MAX_STEPS = 2; // birds barely walk — short hops between flights
+const BIRD_DIAGONAL_MIN_STEPS = 3;
+const BIRD_DIAGONAL_MAX_STEPS = 6;
+const BIRD_DIAGONAL_SPEED_FACTOR = 0.65; // per-tile time vs. a normal hop
+
 function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupiedPositions }: {
   animal: Animal; center: number; centerRow: number; tileSize: number;
   cols: number; rows: number; occupiedPositions: Set<string>;
@@ -476,6 +485,9 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
 
   const translateX = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
+  // Wing-flap: a squash/stretch the bird sprite makes only while flying, to
+  // suggest beating wings. 1 = at rest, <1 = wings down (squashed).
+  const flap = useRef(new Animated.Value(1)).current;
   const posRef = useRef({ x: animal.position.x, y: animal.position.y });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -527,21 +539,39 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
           if (!cancelled) scheduleNext();
         }, 2000 + Math.random() * 3000);
       } else {
-        // Move 1-4 tiles in a random direction
-        const steps = 1 + Math.floor(Math.random() * 4);
+        // Decide a movement: usually a 1-4 tile hop in a cardinal direction
+        // (birds barely walk, so their hops are shorter), but birds also
+        // occasionally break into a quicker diagonal glide.
+        const walkMax = isBird ? BIRD_WALK_MAX_STEPS : 4;
+        const steps = 1 + Math.floor(Math.random() * walkMax);
         const dirs: AnimalDirection[] = ['up', 'down', 'left', 'right'];
         const dir = dirs[Math.floor(Math.random() * 4)];
-        setDirection(dir);
+
+        let dx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
+        let dy = dir === 'up' ? -1 : dir === 'down' ? 1 : 0;
+        let moveSteps = steps;
+        let stepMs = moveSpeed;
+
+        if (isBird && Math.random() < BIRD_DIAGONAL_CHANCE) {
+          dx = Math.random() < 0.5 ? -1 : 1;
+          dy = Math.random() < 0.5 ? -1 : 1;
+          moveSteps =
+            BIRD_DIAGONAL_MIN_STEPS +
+            Math.floor(Math.random() * (BIRD_DIAGONAL_MAX_STEPS - BIRD_DIAGONAL_MIN_STEPS + 1));
+          stepMs = Math.round(moveSpeed * BIRD_DIAGONAL_SPEED_FACTOR);
+          // Face the way the glide is heading (left/right reads best in profile).
+          setDirection(dx < 0 ? 'left' : 'right');
+        } else {
+          setDirection(dir);
+        }
         setState('moving');
 
         let stepsDone = 0;
         const moveStep = () => {
-          if (cancelled || stepsDone >= steps) {
+          if (cancelled || stepsDone >= moveSteps) {
             if (!cancelled) scheduleNext();
             return;
           }
-          const dx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
-          const dy = dir === 'up' ? -1 : dir === 'down' ? 1 : 0;
           const newX = posRef.current.x + dx;
           const newY = posRef.current.y + dy;
 
@@ -552,15 +582,15 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
 
           // If this is the last step, ensure the animal can stop here
           // (birds can fly over water but cannot idle/feed on it)
-          if (stepsDone + 1 >= steps && !canStopAt(newX, newY)) {
+          if (stepsDone + 1 >= moveSteps && !canStopAt(newX, newY)) {
             if (!cancelled) scheduleNext();
             return;
           }
 
           posRef.current = { x: newX, y: newY };
           Animated.parallel([
-            Animated.timing(translateX, { toValue: (newX - animal.position.x) * tileSize, duration: moveSpeed, useNativeDriver: true }),
-            Animated.timing(translateY, { toValue: (newY - animal.position.y) * tileSize, duration: moveSpeed, useNativeDriver: true }),
+            Animated.timing(translateX, { toValue: (newX - animal.position.x) * tileSize, duration: stepMs, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: (newY - animal.position.y) * tileSize, duration: stepMs, useNativeDriver: true }),
           ]).start(() => {
             stepsDone++;
             setPosX(newX);
@@ -581,6 +611,25 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
     };
   }, [animal.position.x, animal.position.y, animal.type, canMoveTo, moveSpeed, tileSize, translateX, translateY]);
 
+  // Wing-flap loop: only birds, and only while moving. A quick squash/stretch
+  // reads as beating wings without needing dedicated flap frames. When the bird
+  // stops, it settles smoothly back to its resting shape.
+  useEffect(() => {
+    if (!isBird) return;
+    if (state !== 'moving') {
+      Animated.timing(flap, { toValue: 1, duration: 120, useNativeDriver: true }).start();
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(flap, { toValue: 0.72, duration: 110, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        Animated.timing(flap, { toValue: 1, duration: 110, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isBird, state, flap]);
+
   // Pick the right sprite
   let spriteSource: number;
   if (state === 'feeding') {
@@ -590,6 +639,12 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
   } else {
     spriteSource = ANIMAL_SPRITES[animal.type];
   }
+
+  // Flap by narrowing the wingspan on the axis the wings span: a bird facing
+  // up/down spreads its wings sideways (scaleX), one facing left/right spreads
+  // them vertically (scaleY). A tiny bob adds a sense of lift on each beat.
+  const wingsHorizontal = direction === 'up' || direction === 'down';
+  const flapBob = flap.interpolate({ inputRange: [0.72, 1], outputRange: [tileSize * 0.05, 0] });
 
   return (
     <Animated.View
@@ -603,7 +658,17 @@ function AnimalSprite({ animal, center, centerRow, tileSize, cols, rows, occupie
         zIndex: 10, // Animals always behind trees
       }}
     >
-      <Image source={spriteSource} style={{ width: tileSize, height: tileSize }} />
+      <Animated.Image
+        source={spriteSource}
+        style={{
+          width: tileSize,
+          height: tileSize,
+          transform: [
+            { translateY: flapBob },
+            wingsHorizontal ? { scaleX: flap } : { scaleY: flap },
+          ],
+        }}
+      />
     </Animated.View>
   );
 }
