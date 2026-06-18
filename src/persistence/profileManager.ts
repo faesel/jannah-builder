@@ -68,10 +68,13 @@ export class ProfileManager {
    */
   static async loadProfiles(): Promise<UserProfile[]> {
     const profiles = await Storage.get<UserProfile[]>(STORAGE_KEYS.PROFILES);
-    // Migrate older profiles that may lack newer fields
+    // Migrate older profiles that may lack newer fields.
+    // Only seed obstacles for legacy profiles that predate the obstacles
+    // feature (field entirely absent). A profile that already has the field —
+    // even an empty array — has legitimately cleared its obstacles through
+    // worship, so it must never be topped back up.
     return (profiles || []).map(p => {
-      const obstacles = p.worldState.obstacles ?? [];
-      const needsObstacles = obstacles.length < GAME_CONFIG.world.obstacles.initialCount;
+      const hasObstaclesField = p.worldState.obstacles !== undefined;
 
       return {
         ...p,
@@ -79,9 +82,9 @@ export class ProfileManager {
           ...p.worldState,
           rivers: p.worldState.rivers ?? [],
           dhikrFlowers: p.worldState.dhikrFlowers ?? [],
-          obstacles: needsObstacles
-            ? [...obstacles, ...WorldElementLogic.generateInitialObstacles().slice(obstacles.length)]
-            : obstacles,
+          obstacles: hasObstaclesField
+            ? p.worldState.obstacles
+            : WorldElementLogic.generateInitialObstacles(),
         },
       };
     });

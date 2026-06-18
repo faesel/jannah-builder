@@ -5,6 +5,7 @@
 
 import { ProfileManager } from '../persistence/profileManager';
 import { GAME_CONFIG } from '../config/game.config';
+import { STORAGE_KEYS } from '../persistence/storage';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
@@ -155,6 +156,50 @@ describe('ProfileManager', () => {
 
       const loaded = await ProfileManager.loadProfiles();
       expect(loaded.map((p) => p.id)).toEqual(created.map((p) => p.id));
+    });
+  });
+
+  // ------------------------------------------------------------------
+  // loadProfiles — obstacle migration
+  // ------------------------------------------------------------------
+  describe('loadProfiles obstacle migration', () => {
+    it('seeds initial obstacles for legacy profiles missing the field', async () => {
+      const legacy = ProfileManager.createProfile('Legacy');
+      // Simulate a profile saved before the obstacles feature existed.
+      delete (legacy.worldState as { obstacles?: unknown }).obstacles;
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify([legacy]));
+
+      const loaded = await ProfileManager.loadProfiles();
+      expect(loaded[0].worldState.obstacles).toHaveLength(
+        GAME_CONFIG.world.obstacles.initialCount
+      );
+    });
+
+    it('does not refill obstacles that worship has legitimately cleared', async () => {
+      const profile = ProfileManager.createProfile('Cleared');
+      // The player has cleared most obstacles through prayer/dhikr.
+      profile.worldState.obstacles = [
+        {
+          id: 'obstacle_stump_1',
+          type: 'stump',
+          variant: 1,
+          position: { x: 0, y: 0 },
+          createdAt: Date.now(),
+        },
+      ];
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify([profile]));
+
+      const loaded = await ProfileManager.loadProfiles();
+      expect(loaded[0].worldState.obstacles).toHaveLength(1);
+    });
+
+    it('preserves a fully cleared (empty) obstacle list', async () => {
+      const profile = ProfileManager.createProfile('FullyCleared');
+      profile.worldState.obstacles = [];
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify([profile]));
+
+      const loaded = await ProfileManager.loadProfiles();
+      expect(loaded[0].worldState.obstacles).toEqual([]);
     });
   });
 
