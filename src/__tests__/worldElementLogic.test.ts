@@ -1,6 +1,6 @@
 import { WorldElementLogic } from '../logic/worldElementLogic';
 import { GAME_CONFIG } from '../config/game.config';
-import { Tree, Building, Animal } from '../types/models';
+import { Tree, Building, Animal, Flower } from '../types/models';
 
 function makeTrees(count: number): Tree[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -392,6 +392,30 @@ describe('WorldElementLogic', () => {
       expect(result.upgraded[0].id).toBe('flower_1');
       expect(result.upgraded[0].stage).toBe(2);
       expect(result.added).toHaveLength(0);
+    });
+
+    it('keeps maturing flowers when the tree count has plateaued', () => {
+      // 4 trees → desired flower count is 1, already met, so no new flowers are
+      // due. A below-max flower must still progress one stage per complete day.
+      let flowers = [
+        { id: 'flower_1', position: { x: 5, y: 5 }, variety: 'pink' as const, stage: 1, createdAt: 1000 },
+      ] as Flower[];
+      const maxStage = 4; // pink has 4 stages
+      for (let day = 0; day < 10; day++) {
+        const result = WorldElementLogic.evaluateFlowers(4, flowers, makeTrees(4));
+        expect(result.added).toHaveLength(0);
+        if (result.upgraded.length > 0) {
+          flowers = flowers.map((f) =>
+            f.id === result.upgraded[0].id ? result.upgraded[0] : f
+          );
+        }
+      }
+      expect(flowers[0].stage).toBe(maxStage);
+
+      // Once at max stage, no further upgrades or additions happen.
+      const settled = WorldElementLogic.evaluateFlowers(4, flowers, makeTrees(4));
+      expect(settled.upgraded).toHaveLength(0);
+      expect(settled.added).toHaveLength(0);
     });
   });
 

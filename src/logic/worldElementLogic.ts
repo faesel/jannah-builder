@@ -126,7 +126,18 @@ export class WorldElementLogic {
   ): { added: Flower[]; upgraded: Flower[] } {
     const fc = GAME_CONFIG.world.flowers;
     const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
-    const actionsAvailable = desired - existingFlowers.length;
+    const newFlowerActions = Math.max(0, desired - existingFlowers.length);
+
+    // Flower maturation must not be coupled to new-flower demand. Once the
+    // flower count has caught up with the tree count, `newFlowerActions` is 0 —
+    // but existing flowers may still be below their variety's max stage. Grant
+    // one gentle growth action per complete day so blooms keep maturing toward
+    // full stage even while the tree count (and flower count) has plateaued.
+    const hasUpgradeable = existingFlowers.some(
+      (f) => f.stage < fc.stages[f.variety]
+    );
+    const actionsAvailable =
+      newFlowerActions > 0 ? newFlowerActions : hasUpgradeable ? 1 : 0;
 
     if (actionsAvailable <= 0) return { added: [], upgraded: [] };
 
