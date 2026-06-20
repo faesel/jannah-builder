@@ -7,7 +7,7 @@
  * produce a single DayProcessingResult for each elapsed day.
  */
 
-import { UserProfile, DayProcessingResult } from '../types/models';
+import { UserProfile, DayProcessingResult, Position } from '../types/models';
 import { GAME_CONFIG } from '../config/game.config';
 import { PrayerLogic } from './prayerLogic';
 import { TreeLogic } from './treeLogic';
@@ -55,6 +55,22 @@ export class WorldLogic {
     // background processing without screen access still behaves sensibly.
     const bounds = profile.worldState.placementBounds ?? defaultPlacementBounds();
 
+    // Running set of every tile already taken by a placed asset. Threaded into
+    // each spawner so no asset is ever placed on top of another (e.g. a radiant
+    // fountain over a stump). New positions are appended as the day proceeds so
+    // assets spawned earlier in the same day are also avoided.
+    const ws = profile.worldState;
+    const occupied: Position[] = [
+      ...ws.trees.map((t) => t.position),
+      ...ws.flowers.map((f) => f.position),
+      ...(ws.dhikrFlowers ?? []).map((f) => f.position),
+      ...(ws.obstacles ?? []).map((o) => o.position),
+      ...ws.buildings.map((b) => b.position),
+      ...ws.animals.map((a) => a.position),
+      ...ws.rivers.flatMap((r) => r.tiles),
+      ...ws.illustriousItems.map((i) => i.position),
+    ];
+
     // --- Trees: generation/upgrade or decay ---
     if (dayComplete) {
       const consecutiveDays = PrayerLogic.countConsecutiveDaysFrom(
@@ -84,7 +100,7 @@ export class WorldLogic {
             const newTrees = TreeLogic.generateTrees(1, [
               ...workingTrees,
               ...result.treesAdded,
-            ], bounds);
+            ], bounds, occupied);
             result.treesAdded.push(...newTrees);
             workingTrees.push(...newTrees);
           }
@@ -102,7 +118,7 @@ export class WorldLogic {
         const isFirstCompleteDay =
           completeLogs.length === 1 && completeLogs[0].date === date;
         if (isFirstCompleteDay) {
-          result.treesAdded = TreeLogic.generateTrees(1, profile.worldState.trees, bounds);
+          result.treesAdded = TreeLogic.generateTrees(1, profile.worldState.trees, bounds, occupied);
         }
       }
     } else {
@@ -143,7 +159,7 @@ export class WorldLogic {
       const newObstacle = WorldElementLogic.spawnObstacle(
         projectedTrees,
         profile.worldState.obstacles ?? [],
-        [],
+        occupied,
         bounds
       );
       result.obstaclesAdded.push(newObstacle);
@@ -154,22 +170,30 @@ export class WorldLogic {
       projectedTreeCount,
       profile.worldState.flowers,
       projectedTrees,
-      bounds
+      bounds,
+      occupied
     );
     result.flowersAdded = flowerResult.added;
     result.flowersUpgraded.push(...flowerResult.upgraded);
+    occupied.push(...result.flowersAdded.map((f) => f.position));
+
     result.buildingsAdded = WorldElementLogic.evaluateBuildings(
       projectedTreeCount,
       profile.worldState.buildings,
       projectedTrees,
-      bounds
+      bounds,
+      occupied
     );
+    occupied.push(...result.buildingsAdded.map((b) => b.position));
+
     result.animalsAdded = WorldElementLogic.evaluateAnimals(
       projectedTreeCount,
       profile.worldState.animals,
       projectedTrees,
-      bounds
+      bounds,
+      occupied
     );
+    occupied.push(...result.animalsAdded.map((a) => a.position));
 
     // --- Barakah flowers (permanent basic flower / bush) ---
     // Spawned at a low chance whenever Qur'an OR dhikr is logged. They are a
@@ -182,9 +206,11 @@ export class WorldLogic {
         projectedTrees,
         profile.worldState.flowers,
         profile.worldState.dhikrFlowers ?? [],
-        bounds
+        bounds,
+        occupied
       );
       result.dhikrFlowersAdded.push(barakahFlower);
+      occupied.push(barakahFlower.position);
     }
 
     // --- Obstacle clearing (progress tames the untamed map) ---
@@ -206,14 +232,32 @@ export class WorldLogic {
     );
     result.obstaclesRemoved.push(...rocksToClear, ...stumpsToClear);
 
+    // Free up the tiles of any obstacles cleared today so later assets (e.g.
+    // illustrious items) can grow on the freshly tamed land.
+    const clearedIds = new Set(result.obstaclesRemoved);
+    const clearedKeys = new Set(
+      obstacles
+        .filter((o) => clearedIds.has(o.id))
+        .map((o) => `${o.position.x},${o.position.y}`)
+    );
+    if (clearedKeys.size > 0) {
+      for (let i = occupied.length - 1; i >= 0; i--) {
+        if (clearedKeys.has(`${occupied[i].x},${occupied[i].y}`)) {
+          occupied.splice(i, 1);
+        }
+      }
+    }
+
     // --- Rivers ---
     result.riversAdded = WorldElementLogic.evaluateRivers(
       projectedTreeCount,
       profile.worldState.rivers,
       projectedTrees,
       [...profile.worldState.buildings, ...result.buildingsAdded],
-      bounds
+      bounds,
+      occupied
     );
+    occupied.push(...result.riversAdded.flatMap((r) => r.tiles));
 
     // --- Illustrious items ---
     const streak = PrayerLogic.countConsecutiveDaysFrom(
@@ -224,7 +268,8 @@ export class WorldLogic {
       streak,
       profile.worldState.illustriousItems,
       projectedTrees,
-      bounds
+      bounds,
+      occupied
     );
     result.illustriousItemsAdded = illustriousResult.itemsToAdd;
     result.illustriousItemsRemoved = illustriousResult.itemIdsToRemove;
@@ -472,10 +517,20 @@ export class WorldLogic {
 
     const now = Date.now();
     const bounds = profile.worldState.placementBounds ?? defaultPlacementBounds();
+    const ws = profile.worldState;
+    const occupied: Position[] = [
+      ...ws.flowers.map((f) => f.position),
+      ...(ws.dhikrFlowers ?? []).map((f) => f.position),
+      ...(ws.obstacles ?? []).map((o) => o.position),
+      ...ws.buildings.map((b) => b.position),
+      ...ws.rivers.flatMap((r) => r.tiles),
+      ...ws.illustriousItems.map((i) => i.position),
+    ];
     const position = WorldElementLogic.findPositionForAnimal(
       profile.worldState.trees,
       profile.worldState.animals,
-      bounds
+      bounds,
+      occupied
     );
 
     const cat = {

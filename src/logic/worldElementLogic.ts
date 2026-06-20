@@ -66,7 +66,8 @@ export class WorldElementLogic {
     treeCount: number,
     existingBuildings: Building[],
     existingTrees: Tree[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Building[] {
     const newBuildings: Building[] = [];
 
@@ -77,7 +78,7 @@ export class WorldElementLogic {
 
       for (let i = 0; i < needed; i++) {
         newBuildings.push(
-          this.createBuilding(type, existingTrees, existingBuildings, newBuildings, bounds)
+          this.createBuilding(type, existingTrees, existingBuildings, newBuildings, bounds, extraOccupied)
         );
       }
     }
@@ -92,7 +93,8 @@ export class WorldElementLogic {
     treeCount: number,
     existingAnimals: Animal[],
     existingTrees: Tree[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Animal[] {
     const newAnimals: Animal[] = [];
 
@@ -103,7 +105,7 @@ export class WorldElementLogic {
 
       for (let i = 0; i < needed; i++) {
         newAnimals.push(
-          this.createAnimal(type, existingTrees, existingAnimals, newAnimals, bounds)
+          this.createAnimal(type, existingTrees, existingAnimals, newAnimals, bounds, extraOccupied)
         );
       }
     }
@@ -119,7 +121,8 @@ export class WorldElementLogic {
     treeCount: number,
     existingFlowers: Flower[],
     existingTrees: Tree[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): { added: Flower[]; upgraded: Flower[] } {
     const fc = GAME_CONFIG.world.flowers;
     const desired = targetCount(treeCount, fc.baseThreshold, fc.repeatEvery);
@@ -133,6 +136,7 @@ export class WorldElementLogic {
     const occupied = new Set([
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
+      ...extraOccupied.map((p) => `${p.x},${p.y}`),
     ]);
     addReserved(occupied);
 
@@ -234,7 +238,8 @@ export class WorldElementLogic {
     existingTrees: Tree[],
     existingFlowers: Flower[],
     existingDhikrFlowers: DhikrFlower[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): DhikrFlower {
     const types = GAME_CONFIG.world.dhikrFlowers.types;
     const type = types[Math.floor(Math.random() * types.length)];
@@ -242,6 +247,7 @@ export class WorldElementLogic {
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...existingFlowers.map((f) => `${f.position.x},${f.position.y}`),
       ...existingDhikrFlowers.map((f) => `${f.position.x},${f.position.y}`),
+      ...extraOccupied.map((p) => `${p.x},${p.y}`),
     ]);
     addReserved(occupied);
     const position = this.findFlowerPosition(existingTrees, occupied, bounds);
@@ -431,11 +437,12 @@ export class WorldElementLogic {
   static findPositionForAnimal(
     trees: Tree[],
     existingAnimals: Animal[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Position {
     return this.findClearPosition(
       trees.map((t) => t.position),
-      existingAnimals.map((a) => a.position),
+      [...existingAnimals.map((a) => a.position), ...extraOccupied],
       bounds
     );
   }
@@ -447,7 +454,8 @@ export class WorldElementLogic {
     trees: Tree[],
     existingBuildings: Building[],
     newBuildings: Building[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Building {
     const now = Date.now();
     const allBuildings = [...existingBuildings, ...newBuildings];
@@ -455,6 +463,7 @@ export class WorldElementLogic {
     const allOccupied = [
       ...trees.map((t) => t.position),
       ...allBuildings.map((b) => b.position),
+      ...extraOccupied,
     ];
 
     let position: Position;
@@ -470,7 +479,7 @@ export class WorldElementLogic {
         // Start a new cluster away from existing ones
         position = this.findClearPosition(
           trees.map((t) => t.position),
-          allBuildings.map((b) => b.position),
+          [...allBuildings.map((b) => b.position), ...extraOccupied],
           bounds
         );
       } else {
@@ -481,7 +490,7 @@ export class WorldElementLogic {
       // First of this type: place near tree cluster
       position = this.findClearPosition(
         trees.map((t) => t.position),
-        allBuildings.map((b) => b.position),
+        [...allBuildings.map((b) => b.position), ...extraOccupied],
         bounds
       );
     }
@@ -580,7 +589,8 @@ export class WorldElementLogic {
     trees: Tree[],
     existingAnimals: Animal[],
     newAnimals: Animal[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Animal {
     const now = Date.now();
     return {
@@ -591,6 +601,7 @@ export class WorldElementLogic {
         [
           ...existingAnimals.map((a) => a.position),
           ...newAnimals.map((a) => a.position),
+          ...extraOccupied,
         ],
         bounds
       ),
@@ -696,7 +707,8 @@ export class WorldElementLogic {
     existingRivers: River[],
     trees: Tree[],
     buildings: Building[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): River[] {
     const rc = GAME_CONFIG.world.rivers;
     const desired = targetCount(treeCount, rc.threshold, rc.repeatEvery);
@@ -707,6 +719,7 @@ export class WorldElementLogic {
       ...trees.map((t) => `${t.position.x},${t.position.y}`),
       ...buildings.map((b) => `${b.position.x},${b.position.y}`),
       ...existingRivers.flatMap((r) => r.tiles.map((t) => `${t.x},${t.y}`)),
+      ...extraOccupied.map((p) => `${p.x},${p.y}`),
     ]);
     addReserved(occupied);
 

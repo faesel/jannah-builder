@@ -74,12 +74,13 @@ export class TreeLogic {
   static generateTrees(
     count: number,
     existingTrees: Tree[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Tree[] {
     const newTrees: Tree[] = [];
 
     for (let i = 0; i < count; i++) {
-      const position = this.findAvailablePosition(existingTrees, newTrees, bounds);
+      const position = this.findAvailablePosition(existingTrees, newTrees, bounds, extraOccupied);
       newTrees.push(this.createTree(position));
     }
 
@@ -93,12 +94,14 @@ export class TreeLogic {
   static findAvailablePosition(
     existingTrees: Tree[],
     newTrees: Tree[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Position {
     const allTrees = [...existingTrees, ...newTrees];
     const occupied = new Set(
       allTrees.map((t) => `${t.position.x},${t.position.y}`)
     );
+    extraOccupied.forEach((p) => occupied.add(`${p.x},${p.y}`));
     RESERVED_POSITIONS.forEach((p) => occupied.add(p));
 
     return randomPositionInBounds(occupied, bounds);

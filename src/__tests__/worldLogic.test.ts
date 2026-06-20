@@ -315,6 +315,78 @@ describe('WorldLogic', () => {
     });
   });
 
+  describe('no asset overlaps', () => {
+    function allPositionKeys(ws: UserProfile['worldState']): string[] {
+      return [
+        ...ws.trees.map((t) => `${t.position.x},${t.position.y}`),
+        ...ws.flowers.map((f) => `${f.position.x},${f.position.y}`),
+        ...(ws.dhikrFlowers ?? []).map((f) => `${f.position.x},${f.position.y}`),
+        ...(ws.obstacles ?? []).map((o) => `${o.position.x},${o.position.y}`),
+        ...ws.buildings.map((b) => `${b.position.x},${b.position.y}`),
+        ...ws.animals.map((a) => `${a.position.x},${a.position.y}`),
+        ...ws.rivers.flatMap((r) => r.tiles.map((t) => `${t.x},${t.y}`)),
+        ...ws.illustriousItems.map((i) => `${i.position.x},${i.position.y}`),
+      ];
+    }
+
+    it('never spawns an illustrious item on top of an existing stump', () => {
+      // Stumps sit on the exact ring the fountain prefers for this cluster.
+      const trees = [
+        { id: 't1', stage: 'mature' as const, position: { x: 0, y: 0 }, createdAt: 0, lastUpdated: 0 },
+        { id: 't2', stage: 'mature' as const, position: { x: 1, y: 0 }, createdAt: 0, lastUpdated: 0 },
+        { id: 't3', stage: 'mature' as const, position: { x: 0, y: 1 }, createdAt: 0, lastUpdated: 0 },
+      ];
+      const obstacles = [
+        { id: 'o1', type: 'stump' as const, variant: 1, position: { x: 3, y: 0 }, createdAt: 0 },
+        { id: 'o2', type: 'stump' as const, variant: 1, position: { x: -3, y: 0 }, createdAt: 0 },
+        { id: 'o3', type: 'stump' as const, variant: 1, position: { x: 0, y: 3 }, createdAt: 0 },
+        { id: 'o4', type: 'stump' as const, variant: 1, position: { x: 0, y: -3 }, createdAt: 0 },
+      ];
+      const profile = makeProfile({
+        worldState: { ...makeProfile().worldState, trees, obstacles },
+        prayerLogs: consecutiveLogs('2026-03-20', 35),
+      });
+
+      const result = WorldLogic.processDay(profile, '2026-03-20');
+      const updated = WorldLogic.applyProcessingResult(profile, result);
+
+      const obstacleKeys = new Set(
+        (updated.worldState.obstacles ?? []).map((o) => `${o.position.x},${o.position.y}`)
+      );
+      for (const item of updated.worldState.illustriousItems) {
+        expect(obstacleKeys.has(`${item.position.x},${item.position.y}`)).toBe(false);
+      }
+    });
+
+    it('keeps every placed asset on a distinct tile after a processed day', () => {
+      const trees = Array.from({ length: 4 }, (_, i) => ({
+        id: `t${i}`,
+        stage: 'mature' as const,
+        position: { x: i - 1, y: 0 },
+        createdAt: 0,
+        lastUpdated: 0,
+      }));
+      const obstacles = [
+        { id: 'o1', type: 'stump' as const, variant: 1, position: { x: 3, y: 0 }, createdAt: 0 },
+        { id: 'o2', type: 'rock' as const, variant: 1, position: { x: -3, y: 0 }, createdAt: 0 },
+      ];
+      const log = {
+        ...makeLog('2026-03-21', true),
+        quranLogged: true,
+        dhikrLogged: true,
+      };
+      const profile = makeProfile({
+        worldState: { ...makeProfile().worldState, trees, obstacles },
+        prayerLogs: [...consecutiveLogs('2026-03-20', 34), log],
+      });
+
+      const result = WorldLogic.processDay(profile, '2026-03-21');
+      const updated = WorldLogic.applyProcessingResult(profile, result);
+      const keys = allPositionKeys(updated.worldState);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+  });
+
   describe('applyProcessingResult', () => {
     it('adds trees to world state', () => {
       const profile = makeProfile();

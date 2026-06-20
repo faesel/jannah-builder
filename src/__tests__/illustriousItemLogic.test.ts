@@ -1,5 +1,6 @@
 import { IllustriousItemLogic } from '../logic/illustriousItemLogic';
 import { IllustriousItem, Tree } from '../types/models';
+import { defaultPlacementBounds } from '../logic/placement';
 
 function makeTree(x: number, y: number): Tree {
   return {
@@ -58,6 +59,43 @@ describe('IllustriousItemLogic', () => {
       const result = IllustriousItemLogic.evaluate(0, [], trees);
       expect(result.itemsToAdd).toHaveLength(0);
       expect(result.itemIdsToRemove).toHaveLength(0);
+    });
+  });
+
+  describe('findPosition collision avoidance', () => {
+    const bounds = defaultPlacementBounds();
+
+    it('never places an item on a tile occupied by another asset', () => {
+      // {3,0} is the first preferred offset for a 3-tree cluster — the exact
+      // tile the radiant fountain used to land on top of a stump.
+      const stump = { x: 3, y: 0 };
+      const pos = IllustriousItemLogic.findPosition(trees, [], bounds, [stump]);
+      expect(pos).not.toEqual(stump);
+    });
+
+    it('falls back to a free tile when every preferred offset is blocked', () => {
+      const blocked = [
+        { x: 3, y: 0 }, { x: -3, y: 0 }, { x: 0, y: 3 }, { x: 0, y: -3 },
+        { x: 3, y: 1 }, { x: -3, y: -1 }, { x: 1, y: -3 }, { x: -1, y: 3 },
+      ];
+      const occupiedKeys = new Set(
+        [...blocked, ...trees.map((t) => t.position)].map((p) => `${p.x},${p.y}`)
+      );
+      const pos = IllustriousItemLogic.findPosition(trees, [], bounds, blocked);
+      expect(occupiedKeys.has(`${pos.x},${pos.y}`)).toBe(false);
+    });
+
+    it('routes extraOccupied through evaluate so a fountain avoids a stump', () => {
+      const stump = { x: 3, y: 0 };
+      const result = IllustriousItemLogic.evaluate(30, [], trees, bounds, [stump]);
+      expect(result.itemsToAdd).toHaveLength(1);
+      expect(result.itemsToAdd[0].position).not.toEqual(stump);
+    });
+
+    it('places multiple new items on distinct tiles', () => {
+      const result = IllustriousItemLogic.evaluate(120, [], trees, bounds, []);
+      const keys = result.itemsToAdd.map((i) => `${i.position.x},${i.position.y}`);
+      expect(new Set(keys).size).toBe(keys.length);
     });
   });
 });

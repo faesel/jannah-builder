@@ -9,7 +9,7 @@
 
 import { IllustriousItem, Position, Tree, PlacementBounds } from '../types/models';
 import { IllustriousItemType, GAME_CONFIG } from '../config/game.config';
-import { defaultPlacementBounds, isWithinBounds } from './placement';
+import { defaultPlacementBounds, isWithinBounds, randomPositionInBounds } from './placement';
 
 export class IllustriousItemLogic {
   /**
@@ -20,7 +20,8 @@ export class IllustriousItemLogic {
     currentStreak: number,
     existingItems: IllustriousItem[],
     existingTrees: Tree[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): { itemsToAdd: IllustriousItem[]; itemIdsToRemove: string[] } {
     if (!GAME_CONFIG.illustriousItems.enabled) {
       return { itemsToAdd: [], itemIdsToRemove: [] };
@@ -38,10 +39,17 @@ export class IllustriousItemLogic {
       const alreadyExists = existingTypes.has(itemType);
 
       if (currentStreak >= threshold && !alreadyExists) {
-        // Earned a new item
-        itemsToAdd.push(
-          this.createItem(itemType, currentStreak, existingTrees, existingItems, bounds)
+        // Earned a new item. Include any items added earlier in this same pass
+        // so two new illustrious items never share a tile.
+        const item = this.createItem(
+          itemType,
+          currentStreak,
+          existingTrees,
+          [...existingItems, ...itemsToAdd],
+          bounds,
+          extraOccupied
         );
+        itemsToAdd.push(item);
       } else if (currentStreak < threshold && alreadyExists) {
         // Streak broken — item fades away gently
         const item = existingItems.find((i) => i.type === itemType);
@@ -62,10 +70,11 @@ export class IllustriousItemLogic {
     streakDays: number,
     existingTrees: Tree[],
     existingItems: IllustriousItem[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): IllustriousItem {
     const now = Date.now();
-    const position = this.findPosition(existingTrees, existingItems, bounds);
+    const position = this.findPosition(existingTrees, existingItems, bounds, extraOccupied);
 
     return {
       id: `illustrious_${type}_${now}`,
@@ -78,16 +87,19 @@ export class IllustriousItemLogic {
 
   /**
    * Find a position for an illustrious item, near the tree cluster
-   * but not overlapping existing elements.
+   * but not overlapping any existing element (trees, other illustrious
+   * items, or anything passed via `extraOccupied`).
    */
   static findPosition(
     existingTrees: Tree[],
     existingItems: IllustriousItem[],
-    bounds: PlacementBounds = defaultPlacementBounds()
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
   ): Position {
     const occupied = new Set([
       ...existingTrees.map((t) => `${t.position.x},${t.position.y}`),
       ...existingItems.map((i) => `${i.position.x},${i.position.y}`),
+      ...extraOccupied.map((p) => `${p.x},${p.y}`),
     ]);
 
     // Place items just outside the tree cluster, but stay close to centre
@@ -115,10 +127,8 @@ export class IllustriousItemLogic {
       }
     }
 
-    // Fallback — place adjacent to centre, clamped within bounds
-    return {
-      x: Math.max(-bounds.halfX, Math.min(bounds.halfX, offsetBase)),
-      y: Math.max(-bounds.halfY, Math.min(bounds.halfY, 1)),
-    };
+    // Fallback — scan for any free tile within bounds so the item never
+    // lands on top of another asset.
+    return randomPositionInBounds(occupied, bounds);
   }
 }
