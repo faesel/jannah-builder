@@ -313,6 +313,23 @@ describe('WorldLogic', () => {
         Math.random = realRandom;
       }
     });
+
+    it('spawns an obstacle only on an incomplete day, never on a complete day', () => {
+      // Obstacle spawning is the missed-day penalty. A complete day must never
+      // add one; an incomplete day (e.g. today still in progress) does — which
+      // is why the in-progress screen path strips obstaclesAdded before applying.
+      const completeProfile = makeProfile({
+        prayerLogs: [makeLog('2026-03-20', true)],
+      });
+      const completeResult = WorldLogic.processDay(completeProfile, '2026-03-20');
+      expect(completeResult.obstaclesAdded).toHaveLength(0);
+
+      const incompleteProfile = makeProfile({
+        prayerLogs: [makeLog('2026-03-21', false)],
+      });
+      const incompleteResult = WorldLogic.processDay(incompleteProfile, '2026-03-21');
+      expect(incompleteResult.obstaclesAdded).toHaveLength(1);
+    });
   });
 
   describe('no asset overlaps', () => {

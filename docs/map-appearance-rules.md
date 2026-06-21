@@ -2,6 +2,8 @@
 
 A summary of all the rules that govern what appears on the Jannah map and when.
 
+> For a one-glance threshold lookup, see [`spawn-thresholds-quick-reference.md`](./spawn-thresholds-quick-reference.md).
+
 ---
 
 ## Map Grid
@@ -55,12 +57,12 @@ Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
 | Variety | Stages |
 |---------|--------|
-| Pink | 3 |
-| Leaf | 3 |
-| Purple | 4 |
+| Pink | 4 |
+| Leaf | 4 |
+| Purple | 3 |
 | Red | 3 |
-| Teal | 3 |
-| Dark | 3 |
+| Teal | 4 |
+| Dark | 4 |
 | Wild | 4 |
 
 - When a new flower is created, a **random variety** is chosen.
@@ -138,7 +140,7 @@ Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
 | Rule | Value |
 |------|-------|
-| Spawn chance | 8% per prayer logged |
+| Spawn chance | 5% per prayer logged |
 | Duration | 2 days then disappears |
 | Limit | One active at a time |
 

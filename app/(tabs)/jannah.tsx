@@ -92,6 +92,9 @@ export default function JannahScreen() {
           if (hasGrowth || hasTemporaryFade) {
             // Strip out decay results before applying, but keep temporary-gift
             // fades (black cat expiry and illustrious streak-break fades).
+            // Obstacle spawning is the missed-day penalty, so it must NOT happen
+            // for today while the day is still in progress — only genuinely
+            // missed (un-opened) days spawn obstacles, handled by the game loop.
             const growthOnly = {
               ...result,
               treesDecayed: [],
@@ -99,6 +102,9 @@ export default function JannahScreen() {
               buildingsDecayed: [],
               buildingsRemoved: [],
               animalsRemoved: blackCatRemovals,
+              flowersRemoved: [],
+              riversRemoved: [],
+              obstaclesAdded: [],
               illustriousItemsRemoved: result.illustriousItemsRemoved,
             };
             current = WorldLogic.applyProcessingResult(current, growthOnly);
