@@ -79,6 +79,10 @@ export const GAME_CONFIG = {
       types: ['stump', 'rock'] as const,
       stumpVariants: 5,
       rockVariants: 7,
+      // Grace period: a single missed day never returns an obstacle. One stump
+      // or rock only reappears once prayers have been missed for this many
+      // consecutive days, and never for the current day still in progress.
+      spawnAfterConsecutiveMissedDays: 2,
     },
     buildings: {
       home: { threshold: 12, repeatEvery: 10, clusterSize: { min: 3, max: 6 } },

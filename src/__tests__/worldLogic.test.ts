@@ -314,21 +314,39 @@ describe('WorldLogic', () => {
       }
     });
 
-    it('spawns an obstacle only on an incomplete day, never on a complete day', () => {
-      // Obstacle spawning is the missed-day penalty. A complete day must never
-      // add one; an incomplete day (e.g. today still in progress) does — which
-      // is why the in-progress screen path strips obstaclesAdded before applying.
+    it('never spawns an obstacle on a complete day', () => {
       const completeProfile = makeProfile({
         prayerLogs: [makeLog('2026-03-20', true)],
       });
       const completeResult = WorldLogic.processDay(completeProfile, '2026-03-20');
       expect(completeResult.obstaclesAdded).toHaveLength(0);
+    });
 
-      const incompleteProfile = makeProfile({
-        prayerLogs: [makeLog('2026-03-21', false)],
+    it('does not spawn an obstacle on the first missed day (grace period)', () => {
+      // A complete day followed by a single missed day must not return an
+      // obstacle — one lapsed day is forgiven.
+      const profile = makeProfile({
+        prayerLogs: [makeLog('2026-03-20', true), makeLog('2026-03-21', false)],
       });
-      const incompleteResult = WorldLogic.processDay(incompleteProfile, '2026-03-21');
-      expect(incompleteResult.obstaclesAdded).toHaveLength(1);
+      const result = WorldLogic.processDay(profile, '2026-03-21');
+      expect(result.obstaclesAdded).toHaveLength(0);
+    });
+
+    it('spawns an obstacle once prayers are missed for two consecutive days', () => {
+      // Complete, then two consecutive missed days → the second missed day
+      // returns one obstacle.
+      const profile = makeProfile({
+        prayerLogs: [
+          makeLog('2026-03-20', true),
+          makeLog('2026-03-21', false),
+          makeLog('2026-03-22', false),
+        ],
+      });
+      const firstMissed = WorldLogic.processDay(profile, '2026-03-21');
+      expect(firstMissed.obstaclesAdded).toHaveLength(0);
+
+      const secondMissed = WorldLogic.processDay(profile, '2026-03-22');
+      expect(secondMissed.obstaclesAdded).toHaveLength(1);
     });
   });
 

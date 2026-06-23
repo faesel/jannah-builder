@@ -110,7 +110,7 @@ Present from the start; cleared by worship, returning only on missed days.
 | Types | Stump (5 variants), Rock (7 variants) |
 | Rock removal | 1 per prayer logged that day |
 | Stump removal | 1 for Qur'an + 1 for dhikr logged that day |
-| Return trigger | One stump/rock per **missed** day |
+| Return trigger | One stump/rock once prayers are missed **2+ consecutive days** (1st missed day forgiven; current in-progress day excluded) |
 
 ---
 

@@ -97,9 +97,9 @@ Obstacles represent the untamed state of the map. They are cleared by progress a
 | Types | Stump (5 variants), Rock (7 variants) |
 | Rock removal | One rock cleared per **prayer logged** that day (oldest first) |
 | Stump removal | One stump cleared for **Qur'an logged** and one for **dhikr logged** that day (oldest first) |
-| Addition trigger | Missed prayer day — one random stump or rock appears |
+| Addition trigger | Returns once prayers are missed for **2 consecutive days** (a single missed day is forgiven; the current in-progress day never spawns one). Configurable via `obstacles.spawnAfterConsecutiveMissedDays`. One random stump or rock appears per qualifying missed day. |
 
-All obstacles are gradually cleared as the user logs prayers, Qur'an and dhikr; they only return on missed days.
+All obstacles are gradually cleared as the user logs prayers, Qur'an and dhikr. A single lapsed day is forgiven; they only begin to return after a short grace period of consecutive missed days, and never for the day still in progress.
 Obstacles never block game mechanics or prevent element placement.
 
 ---
@@ -267,7 +267,7 @@ Triggered on a missed day when tree count drops below an animal type's threshold
 
 | Rule | Value |
 |------|-------|
-| Trigger | Missed prayer day |
+| Trigger | Prayers missed for 2+ consecutive days (single missed day forgiven; current day excluded) |
 | Effect | One random stump or rock appears on the map |
 | Removal | Happens when new elements are added (see Addition Rules) |
 

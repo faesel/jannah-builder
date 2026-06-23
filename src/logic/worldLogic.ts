@@ -155,14 +155,27 @@ export class WorldLogic {
         profile.worldState.rivers
       );
 
-      // Spawn an obstacle on missed day
-      const newObstacle = WorldElementLogic.spawnObstacle(
-        projectedTrees,
-        profile.worldState.obstacles ?? [],
-        occupied,
-        bounds
+      // Spawn an obstacle on a missed day — but only after a grace period of
+      // consecutive missed days. A single missed day never returns an obstacle,
+      // and the current in-progress day is excluded by the Jannah screen (it
+      // strips obstaclesAdded), so untamed land only creeps back once prayers
+      // have genuinely lapsed for several days.
+      const consecutiveMissed = PrayerLogic.countConsecutiveMissedDaysFrom(
+        profile.prayerLogs,
+        date
       );
-      result.obstaclesAdded.push(newObstacle);
+      if (
+        consecutiveMissed >=
+        GAME_CONFIG.world.obstacles.spawnAfterConsecutiveMissedDays
+      ) {
+        const newObstacle = WorldElementLogic.spawnObstacle(
+          projectedTrees,
+          profile.worldState.obstacles ?? [],
+          occupied,
+          bounds
+        );
+        result.obstaclesAdded.push(newObstacle);
+      }
     }
 
     // --- Flowers, buildings & animals ---

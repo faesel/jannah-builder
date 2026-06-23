@@ -160,4 +160,31 @@ export class PrayerLogic {
     const log = prayerLogs.find((l) => l.date === date);
     return !log || !log.isComplete;
   }
+
+  /**
+   * Count consecutive missed days ending on (and including) the given date.
+   *
+   * Walks backwards while each day is missed, stopping at the first complete
+   * day or once it passes the earliest logged day (days before the user ever
+   * started playing are not counted as "missed"). Returns 0 when there is no
+   * history yet.
+   */
+  static countConsecutiveMissedDaysFrom(
+    prayerLogs: PrayerLog[],
+    fromDate: string
+  ): number {
+    if (prayerLogs.length === 0) return 0;
+    const earliestDate = prayerLogs
+      .map((l) => l.date)
+      .reduce((a, b) => (a < b ? a : b));
+
+    let count = 0;
+    let cursor = fromDate;
+    while (cursor >= earliestDate && this.wasDayMissed(prayerLogs, cursor)) {
+      count++;
+      cursor = this.getPreviousDate(cursor);
+    }
+
+    return count;
+  }
 }
