@@ -202,7 +202,7 @@ Signing is handled by **EAS**, which generates and securely stores the release k
 2. **Generate the release keystore once** so non-interactive CI builds have credentials to use:
 
    ```bash
-   npm i -g eas-cli
+   npm i -g eas-cli   # or: pnpm add -g eas-cli
    eas login
    eas build --platform android --profile production
    ```
@@ -258,13 +258,13 @@ npx expo export --platform android
 # 3. Copy the exported bundle into the Android project
 cp -r dist/* android/app/src/main/assets/
 
-# 4. Build the release AAB (for Play Store)
+# 4. Build the AAB (debug-signed — local testing only, not for Play Store)
 cd android
 JAVA_HOME=~/jdk17/jdk-17.0.19+10/Contents/Home \
 ANDROID_HOME=~/Library/Android/sdk \
 ./gradlew app:bundleRelease
 
-# 5. Or build APK (for sideloading)
+# 5. Or build an APK (debug-signed — for sideloading onto your own device)
 ./gradlew app:assembleRelease
 ```
 
