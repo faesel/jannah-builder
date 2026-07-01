@@ -211,18 +211,20 @@ Signing is handled by **EAS**, which generates and securely stores the release k
 
 > **Important:** Keep Google **Play App Signing** enabled (the default). The EAS keystore acts as your *upload key*; Google re-signs with the app signing key. This is why builds must be release-signed — a debug-signed AAB is rejected by the Play Console.
 
-#### 3. Trigger the release workflow
+#### 3. Tag the release
 
-1. Go to **Actions** → **Release** in the GitHub repository
-2. Click **Run workflow**
-3. Enter the version number (must match `app.json`)
-4. Click **Run workflow**
+Create and push a `v`-prefixed tag matching the `app.json` version:
 
-The workflow will:
-- Validate the version format and match against `app.json`
+```bash
+git tag v2.2.0
+git push origin v2.2.0
+```
+
+Pushing the tag triggers the **Release** workflow, which will:
+- Validate the tag format and check it matches the `app.json` version
 - Run lint, type checks, and all tests
 - Build a release-signed AAB (Play Store) and APK (sideloading) on EAS
-- Create a GitHub Release tagged `v{version}` with both files attached
+- Create a GitHub Release for the tag with both files attached
 
 #### 4. Publish to Google Play
 
