@@ -42,3 +42,7 @@ yarn-error.*
 
 # user-exported profile/state snapshots (personal data)
 jannah-state-*.json
+
+# EAS credentials export (contains keystore + passwords — never commit)
+credentials.json
+credentials/
