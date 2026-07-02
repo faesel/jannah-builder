@@ -21,7 +21,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4A7C59"
       },
-      "package": "com.jannahbuilder.app",
+      "package": "com.jannahbuilder",
       "versionCode": 21
     },
     "web": {
