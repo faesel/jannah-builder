@@ -117,6 +117,23 @@ jobs:
           '
           npx expo prebuild --platform android --no-install
 
+      - name: Enable R8 minification + resource shrinking
+        run: |
+          # Turn on code minification and resource shrinking for the release
+          # build. With an AAB, R8's mapping file is embedded in the bundle
+          # metadata automatically, so Play associates it without a manual upload.
+          props=android/gradle.properties
+          set_prop() {
+            if grep -q "^$1=" "$props"; then
+              sed -i "s|^$1=.*|$1=$2|" "$props"
+            else
+              echo "$1=$2" >> "$props"
+            fi
+          }
+          set_prop android.enableMinifyInReleaseBuilds true
+          set_prop android.enableShrinkResourcesInReleaseBuilds true
+          grep -nE "enableMinify|enableShrink" "$props"
+
       - name: Configure release signing
         run: |
           # Decode the keystore next to the app module.

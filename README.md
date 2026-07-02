@@ -224,7 +224,7 @@ git push origin v2.2.0
 Pushing the tag triggers the **Release** workflow, which will:
 - Validate the tag format and check it matches the `app.json` version
 - Run lint, type checks, and all tests
-- Build a release-signed AAB (Play Store) and APK (sideloading) with Gradle
+- Build a release-signed AAB (Play Store) and APK (sideloading) with Gradle, with R8 code minification and resource shrinking enabled (the R8 mapping file is embedded in the AAB automatically, so Play associates it without a manual upload)
 - Create a GitHub Release for the tag with both files attached
 
 #### 4. Publish to Google Play
