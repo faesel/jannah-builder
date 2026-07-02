@@ -170,7 +170,7 @@ npm test              # Jest test suite
 
 ### Creating a Release
 
-Releases are built and published via GitHub Actions. The workflow builds a release-signed AAB (for Google Play) and APK (for sideloading) on [EAS Build](https://docs.expo.dev/build/introduction/), runs all checks, and creates a GitHub Release.
+Releases are built and published via GitHub Actions. The workflow generates the native Android project with `expo prebuild`, builds a release-signed AAB (for Google Play) and APK (for sideloading) with Gradle — signed using a keystore stored in repository secrets — runs all checks, and creates a GitHub Release.
 
 #### 1. Bump the version
 
@@ -189,27 +189,28 @@ Update the `version` field in `app.json`:
   - **Minor** (2.1.3 → 2.2.0) — new features, visual changes
   - **Major** (2.2.0 → 3.0.0) — breaking changes, major redesigns
 
-> **`versionCode`** (the integer Google Play requires to increment on every upload) is managed automatically by EAS via `cli.appVersionSource: "remote"` in `eas.json` — you don't need to bump it by hand.
+> **`versionCode`** (the integer Google Play requires to increment on every upload) is derived automatically from the tag by the workflow as `major × 10000 + minor × 100 + patch` (e.g. `2.14.12 → 21412`) — you don't need to set it by hand. Keep the minor and patch components below 100 so ordering is preserved.
 
 Commit and push the version bump to `main`.
 
 #### 2. Set up signing (first time only)
 
-Signing is handled by **EAS**, which generates and securely stores the release keystore for you.
+Signing is handled by **Gradle** using an Android keystore stored in GitHub Actions secrets. The keystore must be your **Play upload key** — the key Google Play has registered for this app — otherwise the Play Console rejects the upload with a "signed with the wrong key" error.
 
-1. **Create an Expo access token** at [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens) and add it as a repository secret named **`EXPO_TOKEN`** in **Settings → Secrets and variables → Actions**.
+Add the following four repository secrets in **Settings → Secrets and variables → Actions**:
 
-2. **Generate the release keystore once** so non-interactive CI builds have credentials to use:
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_B64` | The keystore file, base64-encoded: `base64 -i upload-keystore.jks \| pbcopy` |
+| `ANDROID_KEYSTORE_PASSWORD` | The keystore (store) password |
+| `ANDROID_KEY_ALIAS` | The key alias inside the keystore |
+| `ANDROID_KEY_PASSWORD` | The password for that key |
 
-   ```bash
-   npm i -g eas-cli   # or: pnpm add -g eas-cli
-   eas login
-   eas build --platform android --profile production
-   ```
+The workflow decodes the keystore, injects a release `signingConfig` into the prebuilt Gradle project (via `scripts/patch-android-signing.js`), and signs both artifacts. A final step verifies the AAB's certificate fingerprint matches the expected Play upload key before publishing.
 
-   Accept **"Generate a new Android Keystore"** when prompted. EAS stores it securely and reuses it for every build.
+> **Keep a secure backup** of the keystore file and its passwords (e.g. in a password manager or encrypted store). Losing the upload key means you must request an upload-key reset from Google Play. **Never commit the keystore** — `credentials.json`, `credentials/`, and `keystore-backup/` are gitignored.
 
-> **Important:** Keep Google **Play App Signing** enabled (the default). The EAS keystore acts as your *upload key*; Google re-signs with the app signing key. This is why builds must be release-signed — a debug-signed AAB is rejected by the Play Console.
+> **Important:** Keep Google **Play App Signing** enabled (the default). Your keystore acts as the *upload key*; Google re-signs with the app signing key on its side.
 
 #### 3. Tag the release
 
@@ -223,7 +224,7 @@ git push origin v2.2.0
 Pushing the tag triggers the **Release** workflow, which will:
 - Validate the tag format and check it matches the `app.json` version
 - Run lint, type checks, and all tests
-- Build a release-signed AAB (Play Store) and APK (sideloading) on EAS
+- Build a release-signed AAB (Play Store) and APK (sideloading) with Gradle
 - Create a GitHub Release for the tag with both files attached
 
 #### 4. Publish to Google Play
@@ -236,7 +237,7 @@ Pushing the tag triggers the **Release** workflow, which will:
 
 ### Building Locally
 
-> **Note:** Local Gradle builds are **debug-signed** and are only suitable for testing on your own device — the Play Console rejects them. For a release-signed AAB, use the EAS workflow above (or run `eas build --platform android --profile production` locally).
+> **Note:** Local Gradle builds are **debug-signed** and are only suitable for testing on your own device — the Play Console rejects them. Release-signed AABs are produced by the GitHub Actions workflow above, which signs with the upload keystore from repository secrets.
 
 If you need a debug build on your machine:
 

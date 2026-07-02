@@ -50,3 +50,7 @@ jannah-state-*.json
 # EAS credentials export (contains keystore + passwords)
 credentials.json
 credentials/
+
+# Local keystore backup (secrets — never commit)
+keystore-backup/
+*.jks.b64
