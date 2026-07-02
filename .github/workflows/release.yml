@@ -92,53 +92,50 @@ jobs:
       - name: Build release-signed AAB + APK on EAS
         run: |
           set -uo pipefail
-          # Submit both builds in parallel so they share a single queue window.
-          # On the free tier they still run back-to-back (1 concurrent build),
-          # but the APK is already queued while the AAB builds — avoiding a
-          # second full queue wait and roughly halving total release time.
-          eas build --platform android --profile production --non-interactive --wait --json > eas-aab.json 2> aab.log &
-          AAB_PID=$!
-          eas build --platform android --profile preview --non-interactive --wait --json > eas-apk.json 2> apk.log &
-          APK_PID=$!
+          # Enqueue both builds without waiting so they enter the queue
+          # back-to-back and share a single queue window. Enqueuing is
+          # sequential (a few seconds each) to avoid racing on the working
+          # directory; the actual builds then run back-to-back on the free
+          # tier without paying the queue wait twice.
+          eas build --platform android --profile production --non-interactive --no-wait --json > eas-aab.json
+          eas build --platform android --profile preview --non-interactive --no-wait --json > eas-apk.json
+          AAB_ID=$(node -p "require('./eas-aab.json')[0].id")
+          APK_ID=$(node -p "require('./eas-apk.json')[0].id")
+          echo "Enqueued builds — AAB=$AAB_ID  APK=$APK_ID"
 
-          wait "$AAB_PID"; AAB_RC=$?
-          wait "$APK_PID"; APK_RC=$?
+          # Poll a build until it finishes; fail on errored/canceled.
+          poll_build() {
+            local id="$1" label="$2" i status
+            for i in $(seq 1 180); do   # up to ~3h at 60s intervals
+              eas build:view "$id" --json > view.json 2>/dev/null || echo '{}' > view.json
+              status=$(node -e "let s='';try{s=(JSON.parse(require('fs').readFileSync('view.json','utf8')).status||'').toString().toLowerCase()}catch(e){};console.log(s)")
+              echo "[$label] status: ${status:-unknown} (check $i)"
+              case "$status" in
+                finished) return 0 ;;
+                errored|canceled|cancelled) echo "::error::$label build $id ended with status: $status"; return 1 ;;
+              esac
+              sleep 60
+            done
+            echo "::error::$label build $id did not finish in time"; return 1
+          }
 
-          echo "===== AAB build log ====="; cat aab.log || true
-          echo "===== APK build log ====="; cat apk.log || true
+          poll_build "$AAB_ID" AAB || exit 1
+          poll_build "$APK_ID" APK || exit 1
 
-          if [ "$AAB_RC" -ne 0 ]; then
-            echo "::error::AAB (production) build failed — see the AAB build log above."
-            exit 1
+          # Resolve artifact URLs from the finished builds and download them.
+          AAB_URL=$(eas build:view "$AAB_ID" --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).artifacts.applicationArchiveUrl")
+          APK_URL=$(eas build:view "$APK_ID" --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).artifacts.applicationArchiveUrl")
+          if [ -z "$AAB_URL" ] || [ "$AAB_URL" = "undefined" ] || [ "$AAB_URL" = "null" ]; then
+            echo "::error::Could not resolve the AAB download URL."; exit 1
           fi
-          if [ "$APK_RC" -ne 0 ]; then
-            echo "::error::APK (preview) build failed — see the APK build log above."
-            exit 1
+          if [ -z "$APK_URL" ] || [ "$APK_URL" = "undefined" ] || [ "$APK_URL" = "null" ]; then
+            echo "::error::Could not resolve the APK download URL."; exit 1
           fi
-
-      - name: Download AAB from EAS
-        run: |
-          URL=$(node -p "require('./eas-aab.json')[0].artifacts.applicationArchiveUrl")
-          if [ -z "$URL" ] || [ "$URL" = "undefined" ]; then
-            echo "::error::Could not resolve the AAB download URL from EAS output."
-            cat eas-aab.json
-            exit 1
-          fi
-          echo "Downloading AAB from $URL"
-          curl -fL -o app-release.aab "$URL"
-          ls -la app-release.aab
-
-      - name: Download APK from EAS
-        run: |
-          URL=$(node -p "require('./eas-apk.json')[0].artifacts.applicationArchiveUrl")
-          if [ -z "$URL" ] || [ "$URL" = "undefined" ]; then
-            echo "::error::Could not resolve the APK download URL from EAS output."
-            cat eas-apk.json
-            exit 1
-          fi
-          echo "Downloading APK from $URL"
-          curl -fL -o app-release.apk "$URL"
-          ls -la app-release.apk
+          echo "Downloading AAB from $AAB_URL"
+          curl -fL -o app-release.aab "$AAB_URL"
+          echo "Downloading APK from $APK_URL"
+          curl -fL -o app-release.apk "$APK_URL"
+          ls -la app-release.aab app-release.apk
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
