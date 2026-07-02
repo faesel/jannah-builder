@@ -89,14 +89,32 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build release-signed AAB (Play Store)
+      - name: Build release-signed AAB + APK on EAS
         run: |
-          eas build \
-            --platform android \
-            --profile production \
-            --non-interactive \
-            --wait \
-            --json > eas-aab.json
+          set -uo pipefail
+          # Submit both builds in parallel so they share a single queue window.
+          # On the free tier they still run back-to-back (1 concurrent build),
+          # but the APK is already queued while the AAB builds — avoiding a
+          # second full queue wait and roughly halving total release time.
+          eas build --platform android --profile production --non-interactive --wait --json > eas-aab.json 2> aab.log &
+          AAB_PID=$!
+          eas build --platform android --profile preview --non-interactive --wait --json > eas-apk.json 2> apk.log &
+          APK_PID=$!
+
+          wait "$AAB_PID"; AAB_RC=$?
+          wait "$APK_PID"; APK_RC=$?
+
+          echo "===== AAB build log ====="; cat aab.log || true
+          echo "===== APK build log ====="; cat apk.log || true
+
+          if [ "$AAB_RC" -ne 0 ]; then
+            echo "::error::AAB (production) build failed — see the AAB build log above."
+            exit 1
+          fi
+          if [ "$APK_RC" -ne 0 ]; then
+            echo "::error::APK (preview) build failed — see the APK build log above."
+            exit 1
+          fi
 
       - name: Download AAB from EAS
         run: |
@@ -109,15 +127,6 @@ jobs:
           echo "Downloading AAB from $URL"
           curl -fL -o app-release.aab "$URL"
           ls -la app-release.aab
-
-      - name: Build release-signed APK (direct install)
-        run: |
-          eas build \
-            --platform android \
-            --profile preview \
-            --non-interactive \
-            --wait \
-            --json > eas-apk.json
 
       - name: Download APK from EAS
         run: |
