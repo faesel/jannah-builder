@@ -25,7 +25,7 @@ const WEEK_ROW_ICONS = {
   dhikr: require('../../assets/dhikr.png'),
 };
 
-type DayStatus = 'complete' | 'partial' | 'missed' | 'pending';
+type DayStatus = 'complete' | 'partial' | 'missed' | 'pending' | 'rest';
 
 interface DayInfo {
   date: string;
@@ -36,7 +36,7 @@ interface DayInfo {
   dhikrLogged: boolean;
 }
 
-function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
+function getLast7Days(prayerLogs: PrayerLog[], restMode = false): DayInfo[] {
   const today = PrayerLogic.getTodayDate();
   const days: DayInfo[] = [];
   let cursor = today;
@@ -51,11 +51,16 @@ function getLast7Days(prayerLogs: PrayerLog[]): DayInfo[] {
     const prayerCount = log
       ? Object.values(log.prayers).filter(Boolean).length
       : 0;
-    let status: DayStatus = cursor === today ? 'pending' : 'missed';
+    const isToday = cursor === today;
+    let status: DayStatus;
     if (log?.isComplete) {
       status = 'complete';
+    } else if (log?.isRestDay || (isToday && restMode)) {
+      status = 'rest';
     } else if (prayerCount > 0) {
       status = 'partial';
+    } else {
+      status = isToday ? 'pending' : 'missed';
     }
 
     days.unshift({
@@ -77,10 +82,11 @@ const STATUS_COLOURS: Record<DayStatus, string> = {
   partial: '#D4A017',
   missed: '#C0392B',
   pending: '#D4D9D0',
+  rest: '#8E86C4',
 };
 
 /** Get all days in a given month with their status */
-function getMonthDays(year: number, month: number, prayerLogs: PrayerLog[]): DayInfo[] {
+function getMonthDays(year: number, month: number, prayerLogs: PrayerLog[], restMode = false): DayInfo[] {
   const today = PrayerLogic.getTodayDate();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const days: DayInfo[] = [];
@@ -97,9 +103,13 @@ function getMonthDays(year: number, month: number, prayerLogs: PrayerLog[]): Day
     if (date > today) {
       status = 'pending';
     } else if (date === today) {
-      status = log?.isComplete ? 'complete' : prayerCount > 0 ? 'partial' : 'pending';
+      status = log?.isComplete ? 'complete' : restMode ? 'rest' : prayerCount > 0 ? 'partial' : 'pending';
+    } else if (log?.isComplete) {
+      status = 'complete';
+    } else if (log?.isRestDay) {
+      status = 'rest';
     } else {
-      status = log?.isComplete ? 'complete' : prayerCount > 0 ? 'partial' : 'missed';
+      status = prayerCount > 0 ? 'partial' : 'missed';
     }
 
     days.push({ date, dayLabel, status, prayerCount, quranLogged: log?.quranLogged ?? false, dhikrLogged: log?.dhikrLogged ?? false });
@@ -109,7 +119,7 @@ function getMonthDays(year: number, month: number, prayerLogs: PrayerLog[]): Day
 }
 
 /** Get month summary stats */
-function getMonthSummary(year: number, month: number, prayerLogs: PrayerLog[]) {
+function getMonthSummary(year: number, month: number, prayerLogs: PrayerLog[], restMode = false) {
   const today = PrayerLogic.getTodayDate();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   let totalPrayers = 0;
@@ -121,9 +131,14 @@ function getMonthSummary(year: number, month: number, prayerLogs: PrayerLog[]) {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     if (date > today) break;
-    eligibleDays++;
 
     const log = prayerLogs.find((l) => l.date === date);
+    // Rest days are a gentle pause — they don't count against completion rate.
+    // Today counts as rest too while rest mode is currently on.
+    const isRest = (log?.isRestDay && !log.isComplete) || (date === today && restMode && !log?.isComplete);
+    if (isRest) continue;
+    eligibleDays++;
+
     if (log) {
       totalPrayers += Object.values(log.prayers).filter(Boolean).length;
       if (log.isComplete) completeDays++;
@@ -155,13 +170,14 @@ const STATUS_ICONS: Record<DayStatus, string> = {
   partial: '!',
   missed: '✕',
   pending: '·',
+  rest: '☾',
 };
-
 const STATUS_LABELS: Record<DayStatus, string> = {
   complete: 'All prayers logged',
   partial: 'Some prayers missed',
   missed: 'All prayers missed',
   pending: 'In progress',
+  rest: 'Rest day',
 };
 
 type StatsView = 'current' | 'allTime';
@@ -284,12 +300,13 @@ export default function StatisticsScreen() {
   }
 
   const { statistics, worldState, prayerLogs } = profile;
+  const restMode = profile.settings?.restMode ?? false;
 
   const gardenAge = Math.max(
     0,
     Math.floor((Date.now() - profile.createdAt) / (1000 * 60 * 60 * 24))
   );
-  const days = getLast7Days(prayerLogs);
+  const days = getLast7Days(prayerLogs, restMode);
 
   const totalPrayersLogged = prayerLogs.reduce(
     (sum, log) => sum + Object.values(log.prayers).filter(Boolean).length, 0
@@ -450,8 +467,8 @@ export default function StatisticsScreen() {
           )}
 
           {timeView === 'month' && (() => {
-            const monthDays = getMonthDays(viewYear, viewMonth, prayerLogs);
-            const summary = getMonthSummary(viewYear, viewMonth, prayerLogs);
+            const monthDays = getMonthDays(viewYear, viewMonth, prayerLogs, restMode);
+            const summary = getMonthSummary(viewYear, viewMonth, prayerLogs, restMode);
             const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
             const startOffset = (firstDayOfWeek + 6) % 7;
             const monthName = new Date(viewYear, viewMonth).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
@@ -521,7 +538,7 @@ export default function StatisticsScreen() {
                     return rows;
                   })()}
                   <View style={styles.calendarLegend}>
-                    {(['complete', 'partial', 'missed', 'pending'] as DayStatus[]).map((s) => (
+                    {(['complete', 'partial', 'missed', 'rest', 'pending'] as DayStatus[]).map((s) => (
                       <View key={s} style={styles.legendItem}>
                         <View style={[styles.legendDot, { backgroundColor: STATUS_COLOURS[s] }]} />
                         <Text style={styles.legendText}>{STATUS_LABELS[s]}</Text>

@@ -190,6 +190,7 @@ function sanitisePrayerLog(raw: unknown): PrayerLog | null {
     isComplete: completedCount === 5,
     quranLogged: raw.quranLogged === true,
     dhikrLogged: raw.dhikrLogged === true,
+    isRestDay: raw.isRestDay === true,
     timestamp: asNumber(raw.timestamp, Date.parse(raw.date) || Date.now()),
   };
 }

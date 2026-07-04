@@ -64,7 +64,7 @@ The app emphasises:
 - Affects one tree at a time (gradual degradation, never cascades)
 - Buildings and animals also gently disappear when trees drop below their thresholds
 - Newest elements are removed first, preserving older progress
-- **Rest days** — a private toggle in Settings pauses all decay while it's on, so stepping back for a while (illness, travel, or any period of rest) never costs you progress; growth simply waits until you return
+- **Rest days** — a private toggle in Settings pauses all decay while it's on, so stepping back for a while (illness, travel, or any period of rest) never costs you progress; growth simply waits until you return. Rest days don't break your streak — it bridges across them — and they appear with a gentle moon marker on the week and month charts
 
 ### Supportive Practices
 - **Qur'an logging** — simple "I read Qur'an today" toggle

@@ -19,6 +19,12 @@ export interface PrayerLog {
   isComplete: boolean; // All 5 prayers logged
   quranLogged: boolean; // Simple boolean - no tracking
   dhikrLogged: boolean; // Simple boolean - no tracking
+  /**
+   * True when this was a "rest day" — a day skipped while rest mode was on.
+   * Rest days never break the prayer streak and are shown distinctly on charts.
+   * Absent on older saves and on ordinary days.
+   */
+  isRestDay?: boolean;
   timestamp: number; // Unix timestamp when created
 }
 

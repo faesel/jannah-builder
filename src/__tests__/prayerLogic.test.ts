@@ -134,6 +134,60 @@ describe('PrayerLogic', () => {
       const logs = [makeLog('2026-03-01', true)];
       expect(PrayerLogic.wasDayMissed(logs, '2026-03-01')).toBe(false);
     });
+
+    it('returns false for a rest day (not counted as missed)', () => {
+      const logs = [{ ...makeLog('2026-03-01', false), isRestDay: true }];
+      expect(PrayerLogic.wasDayMissed(logs, '2026-03-01')).toBe(false);
+    });
+  });
+
+  describe('rest days and the streak', () => {
+    it('markRestDay creates a rest-marked log when none exists', () => {
+      const result = PrayerLogic.markRestDay([], '2026-03-05');
+      expect(result).toHaveLength(1);
+      expect(result[0].date).toBe('2026-03-05');
+      expect(result[0].isRestDay).toBe(true);
+      expect(result[0].isComplete).toBe(false);
+    });
+
+    it('markRestDay never marks a completed day as rest', () => {
+      const logs = [makeLog('2026-03-05', true)];
+      expect(PrayerLogic.markRestDay(logs, '2026-03-05')).toBe(logs);
+      expect(logs[0].isRestDay).toBeUndefined();
+    });
+
+    it('logging to completion clears a rest-day flag', () => {
+      let log: PrayerLog = { ...PrayerLogic.createPrayerLog('2026-03-05'), isRestDay: true };
+      for (const p of ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const) {
+        log = PrayerLogic.logPrayer(log, p);
+      }
+      expect(log.isComplete).toBe(true);
+      expect(log.isRestDay).toBe(false);
+    });
+
+    it('rest days do not break the streak — it bridges across them', () => {
+      // Prayed 1-2 Mar, rested 3-9 Mar (7 rest days), prayed again 10 Mar.
+      const logs: PrayerLog[] = [
+        makeLog('2026-03-01', true),
+        makeLog('2026-03-02', true),
+        ...['03', '04', '05', '06', '07', '08', '09'].map((d) => ({
+          ...makeLog(`2026-03-${d}`, false),
+          isRestDay: true,
+        })),
+        makeLog('2026-03-10', true),
+      ];
+      // 3 real complete days (1, 2, 10) with the rest gap treated as transparent.
+      expect(PrayerLogic.countConsecutiveDaysFrom(logs, '2026-03-10')).toBe(3);
+    });
+
+    it('a genuine missed day still breaks the streak', () => {
+      const logs: PrayerLog[] = [
+        makeLog('2026-03-01', true),
+        makeLog('2026-03-02', false), // genuine miss (not rest)
+        makeLog('2026-03-03', true),
+      ];
+      expect(PrayerLogic.countConsecutiveDaysFrom(logs, '2026-03-03')).toBe(1);
+    });
   });
 
   // ================================================================

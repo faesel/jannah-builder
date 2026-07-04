@@ -24,6 +24,7 @@ export class PrayerLogic {
       isComplete: false,
       quranLogged: false,
       dhikrLogged: false,
+      isRestDay: false,
       timestamp: Date.now(),
     };
   }
@@ -43,6 +44,8 @@ export class PrayerLogic {
       ...prayerLog,
       prayers: updatedPrayers,
       isComplete,
+      // A day the user actively prays to completion is no longer a rest day.
+      isRestDay: isComplete ? false : prayerLog.isRestDay,
     };
   }
 
@@ -111,17 +114,30 @@ export class PrayerLogic {
 
   /**
    * Count consecutive complete days ending on or before the given date.
+   *
+   * Rest days (days skipped while rest mode was on) are transparent: they
+   * neither count towards nor break the streak, so a streak bridges across a
+   * period of rest rather than resetting.
    */
   static countConsecutiveDaysFrom(prayerLogs: PrayerLog[], fromDate: string): number {
     const completeDates = new Set(
       prayerLogs.filter((l) => l.isComplete).map((l) => l.date)
     );
+    const restDates = new Set(
+      prayerLogs.filter((l) => l.isRestDay && !l.isComplete).map((l) => l.date)
+    );
 
     let count = 0;
     let cursor = fromDate;
 
-    while (completeDates.has(cursor)) {
-      count++;
+    while (true) {
+      if (completeDates.has(cursor)) {
+        count++;
+      } else if (!restDates.has(cursor)) {
+        // A genuine gap (missed / partial / no log) ends the streak.
+        break;
+      }
+      // Complete or rest day — keep walking backwards.
       cursor = this.getPreviousDate(cursor);
     }
 
@@ -154,11 +170,34 @@ export class PrayerLogic {
   }
 
   /**
-   * Check if a date was missed (no log or incomplete)
+   * Check if a date was missed (no log or incomplete).
+   *
+   * Rest days are deliberately not counted as missed — they are a gentle,
+   * intentional pause, so they never trigger penalties such as returning
+   * obstacles.
    */
   static wasDayMissed(prayerLogs: PrayerLog[], date: string): boolean {
     const log = prayerLogs.find((l) => l.date === date);
+    if (log?.isRestDay && !log.isComplete) return false;
     return !log || !log.isComplete;
+  }
+
+  /**
+   * Mark a date as a rest day, returning an updated logs array. Never marks a
+   * completed day as rest. Creates a minimal log when none exists yet so the
+   * rest day is recorded for the streak logic and charts. Returns the original
+   * array reference unchanged when there is nothing to do.
+   */
+  static markRestDay(prayerLogs: PrayerLog[], date: string): PrayerLog[] {
+    const index = prayerLogs.findIndex((l) => l.date === date);
+    if (index >= 0) {
+      const existing = prayerLogs[index];
+      if (existing.isComplete || existing.isRestDay) return prayerLogs;
+      const updated = [...prayerLogs];
+      updated[index] = { ...existing, isRestDay: true };
+      return updated;
+    }
+    return [...prayerLogs, { ...this.createPrayerLog(date), isRestDay: true }];
   }
 
   /**

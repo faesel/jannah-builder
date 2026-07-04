@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDayBoundary } from './useDayBoundary';
 import { WorldLogic } from '../logic/worldLogic';
+import { PrayerLogic } from '../logic/prayerLogic';
 import { ProfileManager } from '../persistence/profileManager';
 import { UserProfile } from '../types/models';
 
@@ -72,6 +73,15 @@ export function useGameLoop(): GameLoopState {
           let processed = 0;
 
           for (const date of datesToProcess) {
+            // While rest mode is on, record each processed past missed day as a
+            // rest day so it doesn't break the streak and shows on the charts.
+            if (currentProfile.settings?.restMode) {
+              const marked = PrayerLogic.markRestDay(currentProfile.prayerLogs, date);
+              if (marked !== currentProfile.prayerLogs) {
+                currentProfile = { ...currentProfile, prayerLogs: marked };
+              }
+            }
+
             const result = WorldLogic.processDay(currentProfile, date);
 
             const hasChanges = Object.values(result).some(
