@@ -84,6 +84,14 @@ export const GAME_CONFIG = {
       // consecutive days, and never for the current day still in progress.
       spawnAfterConsecutiveMissedDays: 2,
     },
+    mushrooms: {
+      // Mushrooms are scattered across a brand-new world and cleared gently as
+      // the user logs Qur'an — one mushroom per day Qur'an is logged — until
+      // none remain. They never decay, spread, or return once cleared.
+      initialCount: 10,
+      colors: ['red', 'blue'] as const,
+      stages: 3, // Sprite stage variants per colour (visual variety only)
+    },
     buildings: {
       home: { threshold: 12, repeatEvery: 10, clusterSize: { min: 3, max: 6 } },
       mansion: { threshold: 35, repeatEvery: 40, clusterSize: { min: 2, max: 4 } },
@@ -102,6 +110,12 @@ export const GAME_CONFIG = {
       length: { min: 6, max: 10 }, // Base river length in tiles
       lengthGrowth: 0.1, // Extra tiles per tree above threshold
       maxLength: 25, // Cap on river length
+      // Chance, per water tile, of decorating it with a reed or a water rock
+      // sitting on top of the water. Purely visual.
+      decorationChance: 0.05,
+      decorationTypes: ['reed', 'rock'] as const,
+      reedVariants: 6, // reed_1, reed_2 + water_plant_1..4
+      rockVariants: 7, // water/rocks/rock_*
     },
   },
 

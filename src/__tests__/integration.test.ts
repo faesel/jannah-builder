@@ -15,6 +15,7 @@ function createFreshProfile(): UserProfile {
     trees: [],
     flowers: [],
     dhikrFlowers: [],
+          mushrooms: [],
     obstacles: [],
     buildings: [],
     animals: [],

@@ -12,6 +12,7 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
       trees: [],
       flowers: [],
       dhikrFlowers: [],
+          mushrooms: [],
       obstacles: [],
       buildings: [],
       animals: [],
@@ -111,6 +112,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -144,6 +146,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -182,6 +185,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -212,6 +216,7 @@ describe('WorldLogic', () => {
           rivers: [],
       illustriousItems: [],
       dhikrFlowers: [],
+          mushrooms: [],
       obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -222,6 +227,40 @@ describe('WorldLogic', () => {
       expect(
         result.treesDecayed.length + result.treesRemoved.length
       ).toBe(1);
+    });
+
+    it('suspends all decay on a missed day when rest mode is enabled', () => {
+      const tree = {
+        id: 'tree_1',
+        stage: 'mature' as const,
+        position: { x: 0, y: 0 },
+        createdAt: 0,
+        lastUpdated: 0,
+      };
+      const profile = makeProfile({
+        prayerLogs: [],
+        settings: { restMode: true },
+        worldState: {
+          trees: [tree],
+          flowers: [],
+          buildings: [],
+          animals: [],
+          rivers: [],
+          illustriousItems: [],
+          dhikrFlowers: [],
+          mushrooms: [],
+          obstacles: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-01');
+      expect(result.treesDecayed).toHaveLength(0);
+      expect(result.treesRemoved).toHaveLength(0);
+      expect(result.buildingsRemoved).toHaveLength(0);
+      expect(result.animalsRemoved).toHaveLength(0);
+      expect(result.obstaclesAdded).toHaveLength(0);
     });
 
     it('clears one rock per prayer logged that day', () => {
@@ -241,7 +280,8 @@ describe('WorldLogic', () => {
         prayerLogs: [partialLog],
         worldState: {
           trees: [], flowers: [], buildings: [], animals: [], rivers: [],
-          illustriousItems: [], dhikrFlowers: [], obstacles,
+          illustriousItems: [], dhikrFlowers: [],
+          mushrooms: [], obstacles,
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
           lastUpdated: 0,
@@ -270,7 +310,8 @@ describe('WorldLogic', () => {
         prayerLogs: [log],
         worldState: {
           trees: [], flowers: [], buildings: [], animals: [], rivers: [],
-          illustriousItems: [], dhikrFlowers: [], obstacles,
+          illustriousItems: [], dhikrFlowers: [],
+          mushrooms: [], obstacles,
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
           lastUpdated: 0,
@@ -279,6 +320,57 @@ describe('WorldLogic', () => {
       const result = WorldLogic.processDay(profile, '2026-03-11');
       // 2 oldest stumps cleared; no rocks present
       expect(result.obstaclesRemoved).toEqual(['stump_1', 'stump_2']);
+    });
+
+    it('clears one mushroom (oldest first) on a day Qur\'an is logged', () => {
+      const mushrooms = [
+        { id: 'm_1', color: 'red' as const, stage: 1, position: { x: 1, y: 0 }, createdAt: 100 },
+        { id: 'm_2', color: 'blue' as const, stage: 2, position: { x: 2, y: 0 }, createdAt: 200 },
+      ];
+      const log: PrayerLog = {
+        ...makeLog('2026-03-12', false),
+        prayers: { Fajr: false, Dhuhr: false, Asr: false, Maghrib: false, Isha: false },
+        isComplete: false,
+        quranLogged: true,
+      };
+      const profile = makeProfile({
+        prayerLogs: [log],
+        worldState: {
+          trees: [], flowers: [], buildings: [], animals: [], rivers: [],
+          illustriousItems: [], dhikrFlowers: [],
+          mushrooms, obstacles: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-12');
+      expect(result.mushroomsRemoved).toEqual(['m_1']);
+    });
+
+    it('does not clear mushrooms when Qur\'an is not logged', () => {
+      const mushrooms = [
+        { id: 'm_1', color: 'red' as const, stage: 1, position: { x: 1, y: 0 }, createdAt: 100 },
+      ];
+      const log: PrayerLog = {
+        ...makeLog('2026-03-13', false),
+        prayers: { Fajr: true, Dhuhr: true, Asr: true, Maghrib: true, Isha: true },
+        isComplete: true,
+        dhikrLogged: true,
+      };
+      const profile = makeProfile({
+        prayerLogs: [log],
+        worldState: {
+          trees: [], flowers: [], buildings: [], animals: [], rivers: [],
+          illustriousItems: [], dhikrFlowers: [],
+          mushrooms, obstacles: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+      const result = WorldLogic.processDay(profile, '2026-03-13');
+      expect(result.mushroomsRemoved).toHaveLength(0);
     });
 
     it('spawns a permanent barakah flower when Qur\'an or dhikr is logged', () => {
@@ -458,6 +550,7 @@ describe('WorldLogic', () => {
           rivers: [],
       illustriousItems: [],
       dhikrFlowers: [],
+          mushrooms: [],
       obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -476,6 +569,7 @@ describe('WorldLogic', () => {
         dhikrFlowersRemoved: [],
         obstaclesAdded: [],
         obstaclesRemoved: [],
+        mushroomsRemoved: [],
         buildingsAdded: [],
         buildingsDecayed: [],
         buildingsRemoved: [],
@@ -508,6 +602,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -526,6 +621,7 @@ describe('WorldLogic', () => {
         dhikrFlowersRemoved: [],
         obstaclesAdded: [],
         obstaclesRemoved: [],
+        mushroomsRemoved: [],
         buildingsAdded: [],
         buildingsDecayed: [],
         buildingsRemoved: ['home_1'],
@@ -556,6 +652,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -574,6 +671,7 @@ describe('WorldLogic', () => {
         dhikrFlowersRemoved: [],
         obstaclesAdded: [],
         obstaclesRemoved: [],
+        mushroomsRemoved: [],
         buildingsAdded: [],
         buildingsDecayed: [],
         buildingsRemoved: [],
@@ -622,6 +720,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -651,6 +750,7 @@ describe('WorldLogic', () => {
           rivers: [],
           illustriousItems: [],
           dhikrFlowers: [],
+          mushrooms: [],
           obstacles: [],
           mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
           gridSize: GAME_CONFIG.map.initialGridSize,
@@ -669,6 +769,7 @@ describe('WorldLogic', () => {
         dhikrFlowersRemoved: [],
         obstaclesAdded: [],
         obstaclesRemoved: [],
+        mushroomsRemoved: [],
         buildingsAdded: [],
         buildingsDecayed: [],
         buildingsRemoved: [],

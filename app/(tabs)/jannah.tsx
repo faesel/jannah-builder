@@ -22,6 +22,7 @@ const DEFAULT_WORLD: WorldState = {
   flowers: [],
   dhikrFlowers: [],
   obstacles: [],
+  mushrooms: [],
   buildings: [],
   animals: [],
   rivers: [],
@@ -80,6 +81,7 @@ export default function JannahScreen() {
             result.flowersUpgraded.length > 0 ||
             result.dhikrFlowersAdded.length > 0 ||
             result.obstaclesRemoved.length > 0 ||
+            result.mushroomsRemoved.length > 0 ||
             result.buildingsAdded.length > 0 ||
             result.animalsAdded.length > 0 ||
             result.riversAdded.length > 0 ||

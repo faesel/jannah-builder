@@ -36,6 +36,7 @@ export class WorldLogic {
       dhikrFlowersRemoved: [],
       obstaclesAdded: [],
       obstaclesRemoved: [],
+      mushroomsRemoved: [],
       buildingsAdded: [],
       buildingsDecayed: [],
       buildingsRemoved: [],
@@ -49,6 +50,12 @@ export class WorldLogic {
 
     const dayLog = profile.prayerLogs.find((log) => log.date === date);
     const dayComplete = dayLog?.isComplete ?? false;
+
+    // "Rest days" mode: when enabled, a missed day causes no decay at all —
+    // growth simply pauses and nothing is destroyed. A gentle, private way to
+    // step back for a while without losing progress. Growth and worship-based
+    // clearing (obstacles, mushrooms, barakah flowers) still apply as normal.
+    const restMode = profile.settings?.restMode ?? false;
 
     // Placement bounds derived from the player's actual screen extent (persisted
     // in worldState). Falls back to a square default when unknown so that
@@ -65,6 +72,7 @@ export class WorldLogic {
       ...ws.flowers.map((f) => f.position),
       ...(ws.dhikrFlowers ?? []).map((f) => f.position),
       ...(ws.obstacles ?? []).map((o) => o.position),
+      ...(ws.mushrooms ?? []).map((m) => m.position),
       ...ws.buildings.map((b) => b.position),
       ...ws.animals.map((a) => a.position),
       ...ws.rivers.flatMap((r) => r.tiles),
@@ -121,7 +129,7 @@ export class WorldLogic {
           result.treesAdded = TreeLogic.generateTrees(1, profile.worldState.trees, bounds, occupied);
         }
       }
-    } else {
+    } else if (!restMode) {
       const decayResult = TreeLogic.applyDecay(profile.worldState.trees);
       result.treesDecayed = decayResult.degradedTrees;
       result.treesRemoved = decayResult.removedTreeIds;
@@ -132,7 +140,7 @@ export class WorldLogic {
     const projectedTreeCount = projectedTrees.length;
 
     // --- Building, animal, flower & river decay (when trees drop below thresholds) ---
-    if (!dayComplete) {
+    if (!dayComplete && !restMode) {
       const buildingDecayResult = WorldElementLogic.decayBuildings(
         projectedTreeCount,
         profile.worldState.buildings
@@ -244,6 +252,14 @@ export class WorldLogic {
       (dayLog?.quranLogged ? 1 : 0) + (dayLog?.dhikrLogged ? 1 : 0)
     );
     result.obstaclesRemoved.push(...rocksToClear, ...stumpsToClear);
+
+    // --- Mushroom clearing (Qur'an gently clears them) ---
+    // Each day the user logs Qur'an, one mushroom is cleared (oldest first)
+    // until none remain — mirroring how logged prayers clear rocks.
+    const mushrooms = profile.worldState.mushrooms ?? [];
+    result.mushroomsRemoved.push(
+      ...WorldElementLogic.removeMushrooms(mushrooms, dayLog?.quranLogged ? 1 : 0)
+    );
 
     // Free up the tiles of any obstacles cleared today so later assets (e.g.
     // illustrious items) can grow on the freshly tamed land.
@@ -382,6 +398,11 @@ export class WorldLogic {
       ...result.obstaclesAdded,
     ].filter((o) => !result.obstaclesRemoved.includes(o.id));
 
+    // Mushrooms (cleared gently as Qur'an is logged; never added post-seeding)
+    const updatedMushrooms = (profile.worldState.mushrooms ?? []).filter(
+      (m) => !result.mushroomsRemoved.includes(m.id)
+    );
+
     // Map expansion
     const newMapSize =
       WorldElementLogic.evaluateMapExpansion(
@@ -422,6 +443,7 @@ export class WorldLogic {
         flowers: filteredFlowers,
         dhikrFlowers: updatedDhikrFlowers,
         obstacles: updatedObstacles,
+        mushrooms: updatedMushrooms,
         buildings: filteredBuildings,
         animals: [
           ...profile.worldState.animals,
@@ -535,6 +557,7 @@ export class WorldLogic {
       ...ws.flowers.map((f) => f.position),
       ...(ws.dhikrFlowers ?? []).map((f) => f.position),
       ...(ws.obstacles ?? []).map((o) => o.position),
+      ...(ws.mushrooms ?? []).map((m) => m.position),
       ...ws.buildings.map((b) => b.position),
       ...ws.rivers.flatMap((r) => r.tiles),
       ...ws.illustriousItems.map((i) => i.position),

@@ -16,11 +16,16 @@ export class ProfileManager {
     const now = Date.now();
     const profileId = `profile_${now}_${Math.random().toString(36).substring(2, 11)}`;
 
+    const initialObstacles = WorldElementLogic.generateInitialObstacles();
     const worldState: WorldState = {
       trees: [],
       flowers: [],
       dhikrFlowers: [],
-      obstacles: WorldElementLogic.generateInitialObstacles(),
+      obstacles: initialObstacles,
+      mushrooms: WorldElementLogic.generateInitialMushrooms(
+        undefined,
+        initialObstacles.map((o) => o.position)
+      ),
       buildings: [],
       animals: [],
       rivers: [],
@@ -60,6 +65,7 @@ export class ProfileManager {
       prayerLogs: [],
       statistics,
       streaks,
+      settings: { restMode: false },
     };
   }
 
@@ -75,9 +81,11 @@ export class ProfileManager {
     // worship, so it must never be topped back up.
     return (profiles || []).map(p => {
       const hasObstaclesField = p.worldState.obstacles !== undefined;
+      const hasMushroomsField = p.worldState.mushrooms !== undefined;
 
       return {
         ...p,
+        settings: p.settings ?? { restMode: false },
         worldState: {
           ...p.worldState,
           rivers: p.worldState.rivers ?? [],
@@ -85,6 +93,15 @@ export class ProfileManager {
           obstacles: hasObstaclesField
             ? p.worldState.obstacles
             : WorldElementLogic.generateInitialObstacles(),
+          // Seed mushrooms only for profiles predating the feature (field
+          // absent). A profile with the field — even an empty array — has
+          // legitimately cleared them through Qur'an, so never top back up.
+          mushrooms: hasMushroomsField
+            ? p.worldState.mushrooms
+            : WorldElementLogic.generateInitialMushrooms(
+                undefined,
+                (p.worldState.obstacles ?? []).map((o) => o.position)
+              ),
         },
       };
     });
@@ -198,6 +215,22 @@ export class ProfileManager {
     };
 
     await this.saveProfiles(profiles);
+  }
+
+  /**
+   * Update the active profile's rest-mode preference. Returns the updated
+   * profile, or null when there is no active profile.
+   */
+  static async setRestMode(enabled: boolean): Promise<UserProfile | null> {
+    const profile = await this.getActiveProfile();
+    if (!profile) return null;
+
+    const updated: UserProfile = {
+      ...profile,
+      settings: { ...(profile.settings ?? { restMode: false }), restMode: enabled },
+    };
+    await this.updateProfile(updated);
+    return updated;
   }
 
   /**

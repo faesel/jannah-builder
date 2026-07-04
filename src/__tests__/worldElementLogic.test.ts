@@ -503,6 +503,71 @@ describe('WorldElementLogic', () => {
     });
   });
 
+  describe('mushrooms', () => {
+    it('generates the configured number of mushrooms', () => {
+      const mushrooms = WorldElementLogic.generateInitialMushrooms();
+      expect(mushrooms).toHaveLength(GAME_CONFIG.world.mushrooms.initialCount);
+    });
+
+    it('avoids tiles already occupied by obstacles', () => {
+      const bounds = { halfX: 5, halfY: 5 };
+      const occupied = [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: -1, y: 1 }];
+      const mushrooms = WorldElementLogic.generateInitialMushrooms(bounds, occupied);
+      const taken = new Set(occupied.map((p) => `${p.x},${p.y}`));
+      mushrooms.forEach((m) => {
+        expect(taken.has(`${m.position.x},${m.position.y}`)).toBe(false);
+      });
+      // No two mushrooms share a tile either.
+      const keys = mushrooms.map((m) => `${m.position.x},${m.position.y}`);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it('clears the oldest mushrooms first', () => {
+      const mushrooms = [
+        { id: 'm_new', color: 'red' as const, stage: 1, position: { x: 0, y: 0 }, createdAt: 300 },
+        { id: 'm_old', color: 'blue' as const, stage: 2, position: { x: 1, y: 0 }, createdAt: 100 },
+      ];
+      expect(WorldElementLogic.removeMushrooms(mushrooms, 1)).toEqual(['m_old']);
+    });
+
+    it('returns nothing for a count of zero and never more than exist', () => {
+      const mushrooms = [
+        { id: 'm1', color: 'red' as const, stage: 1, position: { x: 0, y: 0 }, createdAt: 100 },
+      ];
+      expect(WorldElementLogic.removeMushrooms(mushrooms, 0)).toHaveLength(0);
+      expect(WorldElementLogic.removeMushrooms(mushrooms, 5)).toHaveLength(1);
+    });
+  });
+
+  describe('water decorations', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('decorates water tiles with valid reeds/rocks when the roll succeeds', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0); // always below decorationChance
+      const trees = makeTrees(18);
+      const rivers = WorldElementLogic.evaluateRivers(18, [], trees, []);
+      expect(rivers.length).toBeGreaterThan(0);
+      const river = rivers[0];
+      const tileKeys = new Set(river.tiles.map((t) => `${t.x},${t.y}`));
+      expect(river.decorations && river.decorations.length).toBeGreaterThan(0);
+      for (const d of river.decorations ?? []) {
+        expect(['reed', 'rock']).toContain(d.type);
+        expect(d.variant).toBeGreaterThanOrEqual(1);
+        expect(tileKeys.has(`${d.position.x},${d.position.y}`)).toBe(true);
+      }
+    });
+
+    it('adds no decorations when the roll always fails', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99); // always above decorationChance
+      const trees = makeTrees(18);
+      const rivers = WorldElementLogic.evaluateRivers(18, [], trees, []);
+      for (const river of rivers) {
+        expect(river.decorations ?? []).toHaveLength(0);
+      }
+    });
+  });
+
+
   describe('bounds-aware placement', () => {
     it('spreads initial obstacles across the full vertical extent', () => {
       // A tall portrait bounds (wide-ish X, much taller Y).

@@ -55,6 +55,7 @@ export interface WorldState {
   flowers: Flower[];
   dhikrFlowers: DhikrFlower[];
   obstacles: Obstacle[];
+  mushrooms: Mushroom[];
   buildings: Building[];
   animals: Animal[];
   rivers: River[];
@@ -100,6 +101,19 @@ export interface Obstacle {
   createdAt: number;
 }
 
+/**
+ * Decorative mushrooms scattered across a new world. They are cleared gently,
+ * one at a time, as the user logs Qur'an — mirroring how prayers clear rocks —
+ * until none remain. They never decay, spread, or return once cleared.
+ */
+export interface Mushroom {
+  id: string;
+  color: 'red' | 'blue';
+  stage: number; // Which sprite stage (1-based)
+  position: Position;
+  createdAt: number;
+}
+
 export interface Building {
   id: string;
   type: 'home' | 'mansion' | 'palace';
@@ -119,6 +133,15 @@ export interface River {
   id: string;
   tiles: Position[]; // Ordered sequence of cardinally-connected water tiles
   createdAt: number;
+  /** Optional reeds / rocks sitting on top of individual water tiles. */
+  decorations?: WaterDecoration[];
+}
+
+/** A reed or rock rendered on top of a single river water tile. */
+export interface WaterDecoration {
+  position: Position;
+  type: 'reed' | 'rock';
+  variant: number; // Which sprite variant (1-based)
 }
 
 export interface IllustriousItem {
@@ -140,6 +163,22 @@ export interface UserProfile {
   prayerLogs: PrayerLog[];
   statistics: Statistics;
   streaks: StreakData;
+  /** Per-profile preferences. Optional on older saves — defaults applied on load. */
+  settings?: ProfileSettings;
+}
+
+/**
+ * Per-profile user preferences.
+ */
+export interface ProfileSettings {
+  /**
+   * "Rest days" mode. When enabled, missed days no longer cause any decay —
+   * trees, buildings, flowers and rivers are left untouched and no obstacles
+   * return. Growth simply pauses until worship resumes. A gentle, private way
+   * to step back for a while (illness, travel, or any period of rest) without
+   * losing progress. No reason is ever asked for or recorded.
+   */
+  restMode: boolean;
 }
 
 export interface Statistics {
@@ -192,6 +231,7 @@ export interface DayProcessingResult {
   dhikrFlowersRemoved: string[];
   obstaclesAdded: Obstacle[];
   obstaclesRemoved: string[];
+  mushroomsRemoved: string[];
   buildingsAdded: Building[];
   buildingsDecayed: Building[]; // Buildings degraded to dilapidated state
   buildingsRemoved: string[];

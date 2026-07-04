@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
   Alert,
   Platform,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,6 +23,34 @@ import { parseImportedState } from '../src/logic/stateImport';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const [restMode, setRestMode] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const profile = await ProfileManager.getActiveProfile();
+        if (active) setRestMode(profile?.settings?.restMode ?? false);
+      } catch (err) {
+        console.error('[Settings] Error loading rest mode:', err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleToggleRestMode = useCallback(async (value: boolean) => {
+    setRestMode(value);
+    try {
+      await ProfileManager.setRestMode(value);
+    } catch (err) {
+      console.error('[Settings] Error saving rest mode:', err);
+      // Revert on failure so the toggle reflects the persisted state.
+      setRestMode(!value);
+      Alert.alert('Could not save', 'Your rest days setting could not be saved.');
+    }
+  }, []);
 
   const handleResetGarden = useCallback(() => {
     Alert.alert(
@@ -66,6 +95,7 @@ export default function SettingsScreen() {
           prayerLogs: profile.prayerLogs,
           statistics: profile.statistics,
           streaks: profile.streaks,
+          settings: profile.settings,
         },
       };
 
@@ -164,63 +194,34 @@ export default function SettingsScreen() {
           <View style={styles.backButton} />
         </View>
 
-        {/* About section */}
+        {/* User settings section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About Jannah Builder</Text>
-          <View style={styles.aboutCard}>
-            <View style={styles.aboutIconRow}>
-              <View style={styles.aboutIconCircle}>
-                <Ionicons name="sparkles" size={28} color="#DAA520" />
+          <Text style={styles.sectionTitle}>User Settings</Text>
+          <View style={styles.settingCard}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingIconCircle}>
+                <Ionicons name="moon-outline" size={20} color="#4A7C59" />
               </View>
-            </View>
-            <Text style={styles.aboutText}>
-              Jannah Builder is a gentle motivational tool designed to inspire Muslims by visualising the beauty and reward that awaits them in Jannah (paradise).
-            </Text>
-            <Text style={styles.aboutText}>
-              Every prayer you log nurtures your garden — trees grow, flowers bloom, animals appear, and your world flourishes. This is a reminder that every act of worship, no matter how small, is seen and rewarded by Allah ﷻ.
-            </Text>
-            <Text style={styles.aboutText}>
-              This app does not track perfection. It celebrates consistency, encourages gentle return after absence, and honours the quiet, sincere effort of daily worship.
-            </Text>
-            <Text style={styles.aboutVerse}>
-              "And give good tidings to those who believe and do righteous deeds that they will have gardens beneath which rivers flow."
-            </Text>
-            <Text style={styles.aboutReference}>— Al-Baqarah 2:25</Text>
-          </View>
-        </View>
-
-        {/* Tips section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tips</Text>
-          <View style={styles.tipsCard}>
-            <View style={styles.tipRow}>
-              <Ionicons name="hand-left-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
-              <Text style={styles.tipText}>
-                <Text style={styles.tipBold}>Undo a prayer:</Text> Long-press on a logged prayer to undo it. You'll be asked to confirm before it's unmarked.
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <Ionicons name="calendar-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
-              <Text style={styles.tipText}>
-                <Text style={styles.tipBold}>Missed a day?</Text> Long-press on a past day in the Statistics screen to complete all prayers for that day.
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <Ionicons name="book-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
-              <Text style={styles.tipText}>
-                <Text style={styles.tipBold}>Qur'an &amp; Dhikr:</Text> Tap the Qur'an or Dhikr icons to log them for today. These add gentle visual effects to your garden but don't affect tree growth.
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <Ionicons name="leaf-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
-              <Text style={styles.tipText}>
-                <Text style={styles.tipBold}>Growing trees:</Text> Complete all 5 prayers for 3 consecutive days to grow a new tree. On your very first complete day, you'll receive a seedling as encouragement.
-              </Text>
+              <View style={styles.settingTextWrap}>
+                <Text style={styles.settingTitle}>Rest days</Text>
+                <Text style={styles.settingDescription}>
+                  Gently pause your garden for a while. While rest days are on, missed days won't cause any decay — nothing is lost, growth simply waits until you return.
+                </Text>
+              </View>
+              <Switch
+                value={restMode}
+                onValueChange={handleToggleRestMode}
+                trackColor={{ false: '#D5DED0', true: '#A0D4A0' }}
+                thumbColor={Platform.OS === 'android' ? (restMode ? '#4A7C59' : '#F4F7F2') : undefined}
+                ios_backgroundColor="#D5DED0"
+                accessibilityLabel="Rest days"
+                accessibilityHint="When on, missed days will not cause your garden to decay"
+              />
             </View>
           </View>
         </View>
 
-        {/* Danger zone */}
+        {/* Data section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
           <View style={styles.exportCard}>
@@ -282,6 +283,58 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* About & tips section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About &amp; Tips</Text>
+          <View style={styles.aboutCard}>
+            <View style={styles.aboutIconRow}>
+              <View style={styles.aboutIconCircle}>
+                <Ionicons name="sparkles" size={28} color="#DAA520" />
+              </View>
+            </View>
+            <Text style={styles.aboutText}>
+              Jannah Builder is a gentle motivational tool designed to inspire Muslims by visualising the beauty and reward that awaits them in Jannah (paradise).
+            </Text>
+            <Text style={styles.aboutText}>
+              Every prayer you log nurtures your garden — trees grow, flowers bloom, animals appear, and your world flourishes. This is a reminder that every act of worship, no matter how small, is seen and rewarded by Allah ﷻ.
+            </Text>
+            <Text style={styles.aboutText}>
+              This app does not track perfection. It celebrates consistency, encourages gentle return after absence, and honours the quiet, sincere effort of daily worship.
+            </Text>
+            <Text style={styles.aboutVerse}>
+              "And give good tidings to those who believe and do righteous deeds that they will have gardens beneath which rivers flow."
+            </Text>
+            <Text style={styles.aboutReference}>— Al-Baqarah 2:25</Text>
+          </View>
+
+          <View style={styles.tipsCard}>
+            <View style={styles.tipRow}>
+              <Ionicons name="hand-left-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Undo a prayer:</Text> Long-press on a logged prayer to undo it. You'll be asked to confirm before it's unmarked.
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <Ionicons name="calendar-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Missed a day?</Text> Long-press on a past day in the Statistics screen to complete all prayers for that day.
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <Ionicons name="book-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Qur'an &amp; Dhikr:</Text> Tap the Qur'an or Dhikr icons to log them for today. These add gentle visual effects to your garden but don't affect tree growth.
+              </Text>
+            </View>
+            <View style={styles.tipRow}>
+              <Ionicons name="leaf-outline" size={18} color="#4A7C59" style={{ marginRight: 10, marginTop: 2 }} />
+              <Text style={styles.tipText}>
+                <Text style={styles.tipBold}>Growing trees:</Text> Complete all 5 prayers for 3 consecutive days to grow a new tree. On your very first complete day, you'll receive a seedling as encouragement.
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Version */}
         <Text style={styles.versionText}>
           Jannah Builder v{Constants.expoConfig?.version ?? '1.0.0'}
@@ -332,6 +385,52 @@ const styles = StyleSheet.create({
     color: '#2C4A3E',
     letterSpacing: 0.3,
     marginBottom: 12,
+  },
+
+  /* ── Setting card (toggles) ── */
+  settingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8ECE5',
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2C4A3E',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(74, 124, 89, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  settingTextWrap: {
+    flex: 1,
+    marginRight: 12,
+  },
+  settingTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2C4A3E',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 13,
+    color: '#5A7A5A',
+    lineHeight: 19,
   },
 
   /* ── About card ── */
@@ -394,6 +493,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8ECE5',
     padding: 20,
+    marginTop: 16,
     ...Platform.select({
       ios: {
         shadowColor: '#2C4A3E',

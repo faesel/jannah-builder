@@ -54,11 +54,17 @@ The app emphasises:
 - Over time, consistent worship clears every obstacle from the map
 - Obstacles never block placement of trees, flowers, or buildings; a missed prayer day gently returns one
 
+### Mushrooms (Cleared by Qur'an)
+- A new map starts with 10 mushrooms scattered across the land
+- Each day you log Qur'an, one mushroom is cleared (oldest first) until none remain
+- Mushrooms never decay, spread, or return once cleared — nothing is lost if you skip a day
+
 ### Gentle Decay
 - Only triggered when an entire day is missed
 - Affects one tree at a time (gradual degradation, never cascades)
 - Buildings and animals also gently disappear when trees drop below their thresholds
 - Newest elements are removed first, preserving older progress
+- **Rest days** — a private toggle in Settings pauses all decay while it's on, so stepping back for a while (illness, travel, or any period of rest) never costs you progress; growth simply waits until you return
 
 ### Supportive Practices
 - **Qur'an logging** — simple "I read Qur'an today" toggle
@@ -72,6 +78,7 @@ The app emphasises:
 - Rivers cannot overlap trees or buildings
 - Ground animals cannot cross water (birds can fly over but not land)
 - Sand borders automatically surround every body of water
+- Water tiles have a small (5%) chance of a reed or rock resting on the surface
 
 ### Statistics
 - Current streak and longest streak

@@ -13,7 +13,9 @@ import {
   Flower,
   DhikrFlower,
   Obstacle,
+  Mushroom,
   River,
+  WaterDecoration,
   Tree,
   Position,
   PlacementBounds,
@@ -355,6 +357,53 @@ export class WorldElementLogic {
       position,
       createdAt: now,
     };
+  }
+
+  // --- Mushroom logic ---
+
+  /**
+   * Generate the initial scattering of mushrooms for a brand-new profile.
+   * `extraOccupied` lets the caller avoid tiles already taken by obstacles.
+   */
+  static generateInitialMushrooms(
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
+  ): Mushroom[] {
+    const config = GAME_CONFIG.world.mushrooms;
+    const mushrooms: Mushroom[] = [];
+    const occupied = new Set<string>(extraOccupied.map((p) => `${p.x},${p.y}`));
+    addReserved(occupied);
+    const now = Date.now();
+
+    for (let i = 0; i < config.initialCount; i++) {
+      const color = config.colors[Math.floor(Math.random() * config.colors.length)];
+      const stage = Math.floor(Math.random() * config.stages) + 1;
+
+      const position = randomPositionInBounds(occupied, bounds, 100);
+      occupied.add(`${position.x},${position.y}`);
+
+      mushrooms.push({
+        id: `mushroom_${color}_${now}_${i}`,
+        color,
+        stage,
+        position,
+        createdAt: now,
+      });
+    }
+
+    return mushrooms;
+  }
+
+  /**
+   * Select the oldest `count` mushrooms to clear (oldest first). Progress
+   * clears them one at a time as the user logs Qur'an, until none remain.
+   */
+  static removeMushrooms(mushrooms: Mushroom[], count: number): string[] {
+    if (count <= 0 || mushrooms.length === 0) return [];
+    return [...mushrooms]
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .slice(0, count)
+      .map((m) => m.id);
   }
 
   /**
@@ -775,10 +824,30 @@ export class WorldElementLogic {
           id: `river_${now}_${attempt}`,
           tiles: path,
           createdAt: now,
+          decorations: this.generateWaterDecorations(path),
         };
       }
     }
     return null;
+  }
+
+  /**
+   * Decorate a river's water tiles with the occasional reed or rock sitting on
+   * top of the water. Each tile has a small independent chance of a decoration.
+   */
+  private static generateWaterDecorations(tiles: Position[]): WaterDecoration[] {
+    const rc = GAME_CONFIG.world.rivers;
+    const decorations: WaterDecoration[] = [];
+    for (const tile of tiles) {
+      if (Math.random() >= rc.decorationChance) continue;
+      const type = rc.decorationTypes[
+        Math.floor(Math.random() * rc.decorationTypes.length)
+      ];
+      const maxVariant = type === 'reed' ? rc.reedVariants : rc.rockVariants;
+      const variant = Math.floor(Math.random() * maxVariant) + 1;
+      decorations.push({ position: { x: tile.x, y: tile.y }, type, variant });
+    }
+    return decorations;
   }
 
   /**

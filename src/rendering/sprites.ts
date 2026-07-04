@@ -57,6 +57,42 @@ export const STUMP_SPRITES = [
   require('../../assets/sprites/bushes/stump_5.png'),
 ];
 
+// --- Mushrooms (scattered on a new world, cleared by logging Qur'an) ---
+
+export const MUSHROOM_SPRITES: Record<'red' | 'blue', number[]> = {
+  red: [
+    require('../../assets/sprites/mushrooms/mushroom_red_stage_1.png'),
+    require('../../assets/sprites/mushrooms/mushroom_red_stage_2.png'),
+    require('../../assets/sprites/mushrooms/mushroom_red_stage_3.png'),
+  ],
+  blue: [
+    require('../../assets/sprites/mushrooms/mushroom_blue_stage_1.png'),
+    require('../../assets/sprites/mushrooms/mushroom_blue_stage_2.png'),
+    require('../../assets/sprites/mushrooms/mushroom_blue_stage_3.png'),
+  ],
+};
+
+// --- Water decorations (reeds & rocks on top of river tiles) ---
+
+export const WATER_REED_SPRITES = [
+  require('../../assets/sprites/water/reed_1.png'),
+  require('../../assets/sprites/water/reed_2.png'),
+  require('../../assets/sprites/water/water_plant_1.png'),
+  require('../../assets/sprites/water/water_plant_2.png'),
+  require('../../assets/sprites/water/water_plant_3.png'),
+  require('../../assets/sprites/water/water_plant_4.png'),
+];
+
+export const WATER_ROCK_SPRITES = [
+  require('../../assets/sprites/water/rocks/rock_3.png'),
+  require('../../assets/sprites/water/rocks/rock_4.png'),
+  require('../../assets/sprites/water/rocks/rock_5.png'),
+  require('../../assets/sprites/water/rocks/rock_6.png'),
+  require('../../assets/sprites/water/rocks/rock_7.png'),
+  require('../../assets/sprites/water/rocks/rock_9.png'),
+  require('../../assets/sprites/water/rocks/rock_10.png'),
+];
+
 // --- Trees ---
 
 export const TREE_SPRITES: Record<TreeStage, number> = {

@@ -14,7 +14,7 @@ import { GAME_CONFIG } from '../config/game.config';
 import { computeTileSize } from '../logic/placement';
 import type { TreeStage, IllustriousItemType } from '../config/game.config';
 import { COLORS } from '../config/colors';
-import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, getFlowerSprite, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES, STUMP_SPRITES } from './sprites';
+import { TILE_SPRITES, TREE_SPRITES, FLOWER_SPRITES, getFlowerSprite, BUILDING_SPRITES, BUILDING_SIZES, ANIMAL_SPRITES, ANIMAL_FEED_SPRITES, ANIMAL_MOVE_SPRITES, ILLUSTRIOUS_SPRITES, LANDMARK_SPRITES, ROCK_SPRITES, STUMP_SPRITES, MUSHROOM_SPRITES, WATER_REED_SPRITES, WATER_ROCK_SPRITES } from './sprites';
 import type { AnimalDirection } from './sprites';
 
 // Debug flag moved to GAME_CONFIG.debug.showAllSprites
@@ -261,6 +261,24 @@ export const JannahCanvas = React.memo(function JannahCanvas({ worldState, scree
         />
       ))}
 
+      {/* Mushrooms (scattered on a new world, cleared as Qur'an is logged) */}
+      {(activeWorld.mushrooms ?? []).map((m) => {
+        const stages = MUSHROOM_SPRITES[m.color] ?? MUSHROOM_SPRITES.red;
+        return (
+          <Image
+            key={m.id}
+            source={stages[(m.stage - 1) % stages.length]}
+            style={{
+              position: 'absolute',
+              left: (m.position.x + centerCol) * tileSize,
+              top: (m.position.y + centerRow) * tileSize,
+              width: tileSize,
+              height: tileSize,
+            }}
+          />
+        );
+      })}
+
       {/* Barakah flowers — permanent basic flowers & bushes from logging
           Qur'an or dhikr. A gentle, lasting reward for spiritual practice. */}
       {(activeWorld.dhikrFlowers ?? []).map((f) => (
@@ -386,6 +404,25 @@ const WaterTiles = React.memo(function WaterTiles({ rivers, centerCol, centerRow
             }}
           />
         ))
+      )}
+      {/* Reeds & rocks sitting on top of the water */}
+      {rivers.map((r) =>
+        (r.decorations ?? []).map((d, idx) => {
+          const sprites = d.type === 'reed' ? WATER_REED_SPRITES : WATER_ROCK_SPRITES;
+          return (
+            <Image
+              key={`${r.id}_deco_${idx}`}
+              source={sprites[(d.variant - 1) % sprites.length]}
+              style={{
+                position: 'absolute',
+                left: (d.position.x + centerCol) * tileSize,
+                top: (d.position.y + centerRow) * tileSize,
+                width: tileSize,
+                height: tileSize,
+              }}
+            />
+          );
+        })
       )}
     </>
   );
@@ -1377,6 +1414,7 @@ function buildSimulatedWorld(level: 'days' | 'months' | 'years', cols: number, r
     trees, flowers, buildings, animals, rivers, illustriousItems,
     dhikrFlowers: [],
     obstacles: [],
+    mushrooms: [],
     mapSize: { width: gridSize, height: gridSize },
     gridSize,
     lastUpdated: now,

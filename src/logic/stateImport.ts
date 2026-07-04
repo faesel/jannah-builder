@@ -49,6 +49,7 @@ function asNonNegativeInt(value: unknown): number {
 const TREE_STAGES = new Set<string>(GAME_CONFIG.trees.growthStages as readonly string[]);
 const FLOWER_VARIETIES = new Set<string>(GAME_CONFIG.world.flowers.varieties as readonly string[]);
 const OBSTACLE_TYPES = new Set<string>(GAME_CONFIG.world.obstacles.types as readonly string[]);
+const MUSHROOM_COLORS = new Set<string>(GAME_CONFIG.world.mushrooms.colors as readonly string[]);
 const ILLUSTRIOUS_TYPES = new Set<string>(GAME_CONFIG.illustriousItems.types as readonly string[]);
 const DHIKR_FLOWER_TYPES = new Set<string>(['basic', 'bush']);
 const BUILDING_TYPES = new Set<string>(['home', 'mansion', 'palace']);
@@ -130,6 +131,10 @@ function normaliseWorldState(raw: unknown, now: number): WorldState {
     obstacles: filterValid(
       ws.obstacles,
       (o) => isValidPosition(o.position) && OBSTACLE_TYPES.has(o.type as string)
+    ),
+    mushrooms: filterValid(
+      ws.mushrooms,
+      (m) => isValidPosition(m.position) && MUSHROOM_COLORS.has(m.color as string)
     ),
     buildings: filterValid(
       ws.buildings,
@@ -318,6 +323,9 @@ export function parseImportedState(raw: string, now: number = Date.now()): Impor
 
   const streaks = normaliseStreaks(rawProfile.streaks, statistics);
 
+  const rawSettings = isObject(rawProfile.settings) ? rawProfile.settings : undefined;
+  const settings = { restMode: rawSettings?.restMode === true };
+
   const profile: UserProfile = {
     id: typeof rawProfile.id === 'string' ? rawProfile.id : `profile_${now}`,
     name: typeof rawProfile.name === 'string' && rawProfile.name.trim() ? rawProfile.name : 'My Journey',
@@ -327,6 +335,7 @@ export function parseImportedState(raw: string, now: number = Date.now()): Impor
     prayerLogs,
     statistics,
     streaks,
+    settings,
   };
 
   return { ok: true, profile, repairs };
