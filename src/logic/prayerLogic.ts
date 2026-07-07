@@ -170,6 +170,28 @@ export class PrayerLogic {
   }
 
   /**
+   * Return every calendar date strictly between `lastActiveDate` and `today`
+   * (both exclusive), in chronological order.
+   *
+   * These are the days that elapsed while the app was closed and therefore
+   * need to be "caught up" on the next launch — each one is replayed so that
+   * growth, worship-based clearing and (when rest mode is off) gentle decay are
+   * applied. `today` itself is excluded because it is still in progress.
+   */
+  static getMissedDatesBetween(
+    lastActiveDate: string,
+    today: string
+  ): string[] {
+    const missed: string[] = [];
+    let cursor = this.getNextDate(lastActiveDate);
+    while (cursor < today) {
+      missed.push(cursor);
+      cursor = this.getNextDate(cursor);
+    }
+    return missed;
+  }
+
+  /**
    * Check if a date was missed (no log or incomplete).
    *
    * Rest days are deliberately not counted as missed — they are a gentle,

@@ -85,33 +85,30 @@ export class WorldLogic {
         profile.prayerLogs,
         date
       );
-      const treesToGenerate = TreeLogic.shouldGenerateTrees(consecutiveDays);
-      const currentTreeCount = profile.worldState.trees.length;
-      const actionsAvailable = treesToGenerate - currentTreeCount;
 
-      if (actionsAvailable > 0) {
-        // Build a working copy of trees to track upgrades across multiple actions
-        const workingTrees = [...profile.worldState.trees];
+      // A tree action is earned each time the *current* streak completes another
+      // full `daysForNewTree` block. This is intentionally independent of how
+      // many trees already exist: comparing against the lifetime tree count
+      // meant growth stalled for many days after any streak break (the new,
+      // shorter streak's target sat below the accumulated tree count), which is
+      // exactly the "logged every prayer but no trees grow" symptom.
+      if (TreeLogic.earnsTreeOnDay(consecutiveDays)) {
+        // Prioritise upgrading an existing sapling/young tree over planting a
+        // brand new one, so a player's garden matures before it spreads.
+        const candidate = TreeLogic.findUpgradeCandidate(profile.worldState.trees);
 
-        for (let i = 0; i < actionsAvailable; i++) {
-          // Prioritise upgrading existing trees over creating new ones
-          const candidate = TreeLogic.findUpgradeCandidate(workingTrees);
-
-          if (candidate) {
-            const upgraded = TreeLogic.upgradeTree(candidate)!;
-            result.treesUpgraded.push(upgraded);
-            // Update working copy so next iteration sees the upgraded state
-            const idx = workingTrees.findIndex((t) => t.id === candidate.id);
-            workingTrees[idx] = upgraded;
-          } else {
-            // All trees are mature — create a new sapling
-            const newTrees = TreeLogic.generateTrees(1, [
-              ...workingTrees,
-              ...result.treesAdded,
-            ], bounds, occupied);
-            result.treesAdded.push(...newTrees);
-            workingTrees.push(...newTrees);
-          }
+        if (candidate) {
+          const upgraded = TreeLogic.upgradeTree(candidate)!;
+          result.treesUpgraded.push(upgraded);
+        } else {
+          // All existing trees are mature — create a new sapling.
+          const newTrees = TreeLogic.generateTrees(
+            1,
+            profile.worldState.trees,
+            bounds,
+            occupied
+          );
+          result.treesAdded.push(...newTrees);
         }
       }
 
@@ -460,6 +457,64 @@ export class WorldLogic {
       },
       statistics,
     };
+  }
+
+  /**
+   * Replay a chronological list of elapsed ("missed") days on app launch.
+   *
+   * This is the pure core of the game loop: for each date it optionally marks
+   * a rest day (when rest mode is on), runs {@link processDay}, applies the
+   * result, and advances `lastProcessedDate`. Because it reads the previous
+   * day's world state before processing the next, decay and growth compound
+   * correctly across a multi-day absence (e.g. a week away decays several
+   * trees, one per missed day).
+   *
+   * Keeping this separate from the React hooks makes the catch-up logic
+   * deterministic and unit-testable, and removes any dependency on render
+   * timing when detecting missed days.
+   */
+  static processMissedDays(
+    profile: UserProfile,
+    missedDates: string[]
+  ): { profile: UserProfile; daysProcessed: number } {
+    let currentProfile = profile;
+    let daysProcessed = 0;
+
+    for (const date of missedDates) {
+      // While rest mode is on, record each processed past missed day as a rest
+      // day so it doesn't break the streak and shows on the charts.
+      if (currentProfile.settings?.restMode) {
+        const marked = PrayerLogic.markRestDay(currentProfile.prayerLogs, date);
+        if (marked !== currentProfile.prayerLogs) {
+          currentProfile = { ...currentProfile, prayerLogs: marked };
+        }
+      }
+
+      const result = WorldLogic.processDay(currentProfile, date);
+
+      const hasChanges = Object.values(result).some(
+        (arr) => Array.isArray(arr) && arr.length > 0
+      );
+
+      if (hasChanges) {
+        currentProfile = WorldLogic.applyProcessingResult(currentProfile, result);
+        daysProcessed++;
+      }
+
+      currentProfile = {
+        ...currentProfile,
+        worldState: {
+          ...currentProfile.worldState,
+          lastProcessedDate: date,
+        },
+      };
+    }
+
+    if (missedDates.length > 0) {
+      currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
+    }
+
+    return { profile: currentProfile, daysProcessed };
   }
 
   /**

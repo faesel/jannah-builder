@@ -74,6 +74,26 @@ describe('TreeLogic', () => {
     });
   });
 
+  describe('earnsTreeOnDay', () => {
+    it('is false before a full block is completed', () => {
+      expect(TreeLogic.earnsTreeOnDay(0)).toBe(false);
+      expect(TreeLogic.earnsTreeOnDay(1)).toBe(false);
+      expect(TreeLogic.earnsTreeOnDay(2)).toBe(false);
+    });
+
+    it('is true on each completed multi-day block', () => {
+      expect(TreeLogic.earnsTreeOnDay(3)).toBe(true);
+      expect(TreeLogic.earnsTreeOnDay(6)).toBe(true);
+      expect(TreeLogic.earnsTreeOnDay(9)).toBe(true);
+    });
+
+    it('is false on days between blocks', () => {
+      expect(TreeLogic.earnsTreeOnDay(4)).toBe(false);
+      expect(TreeLogic.earnsTreeOnDay(5)).toBe(false);
+      expect(TreeLogic.earnsTreeOnDay(7)).toBe(false);
+    });
+  });
+
   describe('applyDecay', () => {
     it('returns empty results for empty tree list', () => {
       const result = TreeLogic.applyDecay([]);

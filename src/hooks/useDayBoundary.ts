@@ -1,91 +1,48 @@
 /**
  * useDayBoundary
  *
- * Detects when a new calendar day has started since the last time
- * the app was active. Returns the list of missed/unprocessed dates
- * so the game loop can process each one.
+ * Lightweight trigger source for the game loop. It reports today's date and
+ * bumps a token whenever the game loop should re-run its catch-up: on mount and
+ * whenever the app returns to the foreground (when a new day may have started).
+ *
+ * Detection of *which* days were missed, and all persistence, now lives in the
+ * game loop itself so the whole catch-up is a single sequential operation. This
+ * hook intentionally holds no missed-date state — that split previously caused a
+ * race where the loop could run and reset the last-active marker before the
+ * missed days had been computed, silently skipping decay after an absence.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { PrayerLogic } from '../logic/prayerLogic';
-import { Storage } from '../persistence/storage';
-
-const LAST_ACTIVE_DATE_KEY = '@jannah_builder:last_active_date';
 
 export interface DayBoundaryResult {
   /** Today's date in YYYY-MM-DD format */
   today: string;
-  /** Dates that have passed since the app was last active (excludes today) */
-  missedDates: string[];
-  /** Whether a new day has started since last check */
-  dayChanged: boolean;
-  /** Mark the current day as processed */
-  markProcessed: () => Promise<void>;
+  /** Increments whenever the game loop should re-check for missed days */
+  changeToken: number;
 }
 
-/**
- * Returns info about unprocessed days since the app was last active.
- * Re-checks whenever the app returns to the foreground.
- */
 export function useDayBoundary(): DayBoundaryResult {
   const [today, setToday] = useState(PrayerLogic.getTodayDate());
-  const [missedDates, setMissedDates] = useState<string[]>([]);
-  const [dayChanged, setDayChanged] = useState(false);
+  const [changeToken, setChangeToken] = useState(0);
   const appStateRef = useRef(AppState.currentState);
 
-  const checkBoundary = async () => {
-    const currentDate = PrayerLogic.getTodayDate();
-    setToday(currentDate);
-
-    const lastActiveDate = await Storage.get<string>(LAST_ACTIVE_DATE_KEY);
-
-    if (!lastActiveDate) {
-      // First ever launch — no missed dates, just record today
-      await Storage.set(LAST_ACTIVE_DATE_KEY, currentDate);
-      setMissedDates([]);
-      setDayChanged(false);
-      return;
-    }
-
-    if (lastActiveDate === currentDate) {
-      setMissedDates([]);
-      setDayChanged(false);
-      return;
-    }
-
-    // Collect all dates between lastActiveDate (exclusive) and today (exclusive)
-    const missed: string[] = [];
-    let cursor = PrayerLogic.getNextDate(lastActiveDate);
-    while (cursor < currentDate) {
-      missed.push(cursor);
-      cursor = PrayerLogic.getNextDate(cursor);
-    }
-
-    setMissedDates(missed);
-    setDayChanged(true);
-  };
-
-  const markProcessed = async () => {
-    const currentDate = PrayerLogic.getTodayDate();
-    await Storage.set(LAST_ACTIVE_DATE_KEY, currentDate);
-    setMissedDates([]);
-    setDayChanged(false);
-  };
-
-  // Check on mount
+  // Initial check on mount.
   useEffect(() => {
-    checkBoundary();
+    setToday(PrayerLogic.getTodayDate());
+    setChangeToken((t) => t + 1);
   }, []);
 
-  // Re-check when app comes to foreground
+  // Re-check when the app returns to the foreground.
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
       if (
         appStateRef.current.match(/inactive|background/) &&
         nextState === 'active'
       ) {
-        checkBoundary();
+        setToday(PrayerLogic.getTodayDate());
+        setChangeToken((t) => t + 1);
       }
       appStateRef.current = nextState;
     };
@@ -94,5 +51,5 @@ export function useDayBoundary(): DayBoundaryResult {
     return () => subscription.remove();
   }, []);
 
-  return { today, missedDates, dayChanged, markProcessed };
+  return { today, changeToken };
 }

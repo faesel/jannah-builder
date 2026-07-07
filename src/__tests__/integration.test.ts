@@ -178,12 +178,13 @@ describe('Integration: full game flow', () => {
     const treesAfterGrowth = profile.worldState.trees.length;
     expect(treesAfterGrowth).toBeGreaterThan(0);
 
-    // Phase 2: Miss a day — no prayer log for this date
+    // Phase 2: Miss a day — no prayer log for this date. Decay is gentle: the
+    // tree steps down one stage (young → sapling) rather than necessarily being
+    // removed, so assert that a decay occurred rather than a strict count drop.
     const missedDate = dateOffset(baseDate, dayIndex++);
     const decayResult = WorldLogic.processDay(profile, missedDate);
     profile = WorldLogic.applyProcessingResult(profile, decayResult);
-    const treesAfterDecay = profile.worldState.trees.length;
-    expect(treesAfterDecay).toBeLessThan(treesAfterGrowth);
+    expect(decayResult.treesDecayed.length + decayResult.treesRemoved.length).toBeGreaterThan(0);
 
     // Phase 3: Return with incomplete day (no further decay on incomplete vs no log)
     const incompleteDate = dateOffset(baseDate, dayIndex++);

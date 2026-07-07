@@ -61,11 +61,29 @@ export class TreeLogic {
   }
 
   /**
-   * Determine if new trees should be generated based on consecutive days
+   * Determine how many trees a given consecutive streak length is worth in
+   * total. Kept for statistics/among callers that reason about a whole streak.
    */
   static shouldGenerateTrees(consecutiveDays: number): number {
     const daysPerTree = GAME_CONFIG.trees.daysForNewTree;
     return Math.floor(consecutiveDays / daysPerTree);
+  }
+
+  /**
+   * Whether the day that brings the streak to `consecutiveDays` earns a single
+   * tree action (a new sapling or an upgrade of an existing tree).
+   *
+   * This is deliberately based purely on the *current* streak length reaching a
+   * multiple of `daysForNewTree` — it does NOT compare against the total number
+   * of existing trees. Tying generation to the lifetime tree count meant that
+   * once a streak was broken and restarted, the new (shorter) streak's target
+   * fell below the accumulated tree count, so growth silently stopped for many
+   * days. Rewarding each completed multi-day block of the current streak keeps
+   * growth flowing whenever the user is consistent, regardless of history.
+   */
+  static earnsTreeOnDay(consecutiveDays: number): boolean {
+    const daysPerTree = GAME_CONFIG.trees.daysForNewTree;
+    return consecutiveDays > 0 && consecutiveDays % daysPerTree === 0;
   }
 
   /**

@@ -1,9 +1,16 @@
 /**
  * useGameLoop
  *
- * On app open, detects any unprocessed days since the last session
- * and runs WorldLogic.processDay() for each one in order.
- * Persists the updated profile after all days are processed.
+ * On app open (and whenever the app returns to the foreground), detects any
+ * days that elapsed since the last session and replays them in order so growth,
+ * worship-based clearing and — when rest mode is off — gentle decay are applied.
+ *
+ * The whole catch-up is a single sequential operation: read the last-active
+ * marker, compute the missed days, process them, persist the profile, then
+ * advance the marker. Because the read and the write happen inside one flow,
+ * there is no window in which the marker can be reset before the missed days
+ * are known — the earlier split-hook design could do that and silently skip
+ * decay after a multi-day absence.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +18,10 @@ import { useDayBoundary } from './useDayBoundary';
 import { WorldLogic } from '../logic/worldLogic';
 import { PrayerLogic } from '../logic/prayerLogic';
 import { ProfileManager } from '../persistence/profileManager';
+import { Storage } from '../persistence/storage';
 import { UserProfile } from '../types/models';
+
+const LAST_ACTIVE_DATE_KEY = '@jannah_builder:last_active_date';
 
 export interface GameLoopState {
   /** Whether the game loop is currently processing missed days */
@@ -27,112 +37,90 @@ export interface GameLoopState {
 }
 
 export function useGameLoop(): GameLoopState {
-  const { today, missedDates, dayChanged, markProcessed } = useDayBoundary();
+  const { changeToken } = useDayBoundary();
   const [processing, setProcessing] = useState(false);
   const [daysProcessed, setDaysProcessed] = useState(0);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const hasProcessed = useRef(false);
+  const [refreshToken, setRefreshToken] = useState(0);
   const isRunning = useRef(false);
 
-  // Store latest values in refs so the effect closure always sees current data
-  const missedDatesRef = useRef(missedDates);
-  missedDatesRef.current = missedDates;
-  const todayRef = useRef(today);
-  todayRef.current = today;
-
   useEffect(() => {
-    if (isRunning.current) return;
-    if (!hasProcessed.current || dayChanged) {
-      hasProcessed.current = true;
+    let cancelled = false;
 
-      const run = async () => {
-        if (isRunning.current) return;
-        isRunning.current = true;
+    const run = async () => {
+      // Guard against overlapping runs (e.g. rapid foreground/refresh events).
+      if (isRunning.current) return;
+      isRunning.current = true;
 
-        try {
-          setProcessing(true);
-          setError(null);
+      try {
+        setProcessing(true);
+        setError(null);
 
-          let currentProfile = await ProfileManager.getActiveProfile();
-          if (!currentProfile) {
-            const existing = await ProfileManager.loadProfiles();
-            if (existing.length > 0) {
-              currentProfile = existing[0];
-              await ProfileManager.setActiveProfileId(currentProfile.id);
-            } else {
-              setProfile(null);
-              return;
-            }
+        const today = PrayerLogic.getTodayDate();
+
+        let currentProfile = await ProfileManager.getActiveProfile();
+        if (!currentProfile) {
+          const existing = await ProfileManager.loadProfiles();
+          if (existing.length > 0) {
+            currentProfile = existing[0];
+            await ProfileManager.setActiveProfileId(currentProfile.id);
+          } else {
+            if (!cancelled) setProfile(null);
+            return;
           }
-
-          // Only process past missed days — today is still in progress and
-          // will be evaluated when the user navigates to the Jannah tab.
-          const datesToProcess = [...missedDatesRef.current];
-
-          let processed = 0;
-
-          for (const date of datesToProcess) {
-            // While rest mode is on, record each processed past missed day as a
-            // rest day so it doesn't break the streak and shows on the charts.
-            if (currentProfile.settings?.restMode) {
-              const marked = PrayerLogic.markRestDay(currentProfile.prayerLogs, date);
-              if (marked !== currentProfile.prayerLogs) {
-                currentProfile = { ...currentProfile, prayerLogs: marked };
-              }
-            }
-
-            const result = WorldLogic.processDay(currentProfile, date);
-
-            const hasChanges = Object.values(result).some(
-              (arr) => Array.isArray(arr) && arr.length > 0
-            );
-
-            if (hasChanges) {
-              currentProfile = WorldLogic.applyProcessingResult(
-                currentProfile,
-                result
-              );
-              processed++;
-            }
-
-            // Track the last date we processed
-            currentProfile = {
-              ...currentProfile,
-              worldState: {
-                ...currentProfile.worldState,
-                lastProcessedDate: date,
-              },
-            };
-          }
-
-          // Persist if missed days produced changes or if we updated lastProcessedDate
-          if (processed > 0 || datesToProcess.length > 0) {
-            currentProfile = WorldLogic.updateStatisticsForPrayer(currentProfile);
-            await ProfileManager.updateProfile(currentProfile);
-          }
-          await markProcessed();
-
-          setProfile(currentProfile);
-          setDaysProcessed(processed);
-        } catch (err) {
-          console.error('[useGameLoop] Error processing:', err);
-          setError(err instanceof Error ? err.message : String(err));
-        } finally {
-          setProcessing(false);
-          isRunning.current = false;
         }
-      };
 
-      run();
-    }
-  }, [dayChanged, today, markProcessed]);
+        const lastActiveDate = await Storage.get<string>(LAST_ACTIVE_DATE_KEY);
+
+        // First ever launch — nothing to catch up, just record today.
+        if (!lastActiveDate) {
+          await Storage.set(LAST_ACTIVE_DATE_KEY, today);
+          if (!cancelled) {
+            setProfile(currentProfile);
+            setDaysProcessed(0);
+          }
+          return;
+        }
+
+        // Only process past days — today is still in progress and is evaluated
+        // when the user navigates to the Jannah tab.
+        const missedDates = PrayerLogic.getMissedDatesBetween(lastActiveDate, today);
+
+        const { profile: updatedProfile, daysProcessed: processed } =
+          WorldLogic.processMissedDays(currentProfile, missedDates);
+
+        if (missedDates.length > 0) {
+          await ProfileManager.updateProfile(updatedProfile);
+        }
+
+        // Advance the marker only after processing has completed successfully.
+        await Storage.set(LAST_ACTIVE_DATE_KEY, today);
+
+        if (!cancelled) {
+          setProfile(updatedProfile);
+          setDaysProcessed(processed);
+        }
+      } catch (err) {
+        console.error('[useGameLoop] Error processing:', err);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      } finally {
+        isRunning.current = false;
+        if (!cancelled) setProcessing(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [changeToken, refreshToken]);
 
   const refresh = async () => {
-    hasProcessed.current = false;
-    isRunning.current = false;
-    // Trigger via state — the effect will pick it up
-    setProcessing(false);
+    setRefreshToken((t) => t + 1);
   };
 
   return { processing, daysProcessed, profile, error, refresh };

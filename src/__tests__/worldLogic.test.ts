@@ -198,6 +198,64 @@ describe('WorldLogic', () => {
       expect(result.treesUpgraded[0].id).toBe('tree_old');
     });
 
+    it('keeps growing after a broken streak even with many existing trees', () => {
+      // Reproduces the reported bug: a long-standing user (several trees) breaks
+      // their streak, then prays 3 consecutive full days again. Growth must
+      // resume — it previously stalled because the target was tied to the
+      // lifetime tree count rather than the current streak.
+      const existingTrees = Array.from({ length: 5 }, (_, i) => ({
+        id: `tree_${i}`,
+        stage: 'mature' as const,
+        position: { x: i, y: i + 3 },
+        createdAt: i,
+        lastUpdated: i,
+      }));
+
+      // A gap, then a fresh 3-day streak ending 2026-03-10.
+      const logs = [
+        makeLog('2026-03-01', true),
+        makeLog('2026-03-02', true),
+        // 2026-03-03 .. 2026-03-07 missing → streak broken
+        makeLog('2026-03-08', true),
+        makeLog('2026-03-09', true),
+        makeLog('2026-03-10', true),
+      ];
+
+      const profile = makeProfile({
+        prayerLogs: logs,
+        worldState: {
+          trees: existingTrees,
+          flowers: [],
+          buildings: [],
+          animals: [],
+          rivers: [],
+          illustriousItems: [],
+          dhikrFlowers: [],
+          mushrooms: [],
+          obstacles: [],
+          mapSize: { width: GAME_CONFIG.map.initialGridSize, height: GAME_CONFIG.map.initialGridSize },
+          gridSize: GAME_CONFIG.map.initialGridSize,
+          lastUpdated: 0,
+        },
+      });
+
+      const result = WorldLogic.processDay(profile, '2026-03-10');
+      // All existing trees are mature, so the earned action is a brand new tree.
+      expect(result.treesAdded).toHaveLength(1);
+    });
+
+    it('earns exactly one tree action per completed streak block, not per day', () => {
+      // A continuous 4-day streak: only day 3 (a multiple of daysForNewTree)
+      // earns an action; day 4 alone does not.
+      const profile = makeProfile({ prayerLogs: consecutiveLogs('2026-03-04', 4) });
+      const day4 = WorldLogic.processDay(profile, '2026-03-04');
+      expect(day4.treesAdded).toHaveLength(0);
+      expect(day4.treesUpgraded).toHaveLength(0);
+
+      const day3 = WorldLogic.processDay(profile, '2026-03-03');
+      expect(day3.treesAdded.length + day3.treesUpgraded.length).toBe(1);
+    });
+
     it('triggers decay on a missed day', () => {
       const tree = {
         id: 'tree_1',
