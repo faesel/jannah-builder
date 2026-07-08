@@ -173,12 +173,14 @@ jobs:
         with:
           name: jannah-builder-v${{ needs.validate.outputs.version }}-aab
           path: app-release.aab
+          retention-days: 2
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: jannah-builder-v${{ needs.validate.outputs.version }}-apk
           path: app-release.apk
+          retention-days: 2
 
   create-release:
     needs: [validate, build-android]
