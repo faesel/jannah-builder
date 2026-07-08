@@ -783,16 +783,17 @@ export class WorldElementLogic {
     ]);
     addReserved(occupied);
 
-    // River length scales with tree count
+    // River length scales with tree count. This is the *target* length the
+    // river will grow to over time — new rivers start as a single tile.
     const extraLength = Math.floor((treeCount - rc.threshold) * rc.lengthGrowth);
-    const riverLength = Math.min(
+    const targetLength = Math.min(
       rc.length.min + Math.floor(Math.random() * (rc.length.max - rc.length.min + 1)) + extraLength,
       rc.maxLength
     );
 
     const newRivers: River[] = [];
     for (let i = 0; i < needed; i++) {
-      const river = this.generateRiver(riverLength, occupied, bounds);
+      const river = this.generateRiver(targetLength, occupied, bounds);
       if (river) {
         river.tiles.forEach((t) => occupied.add(`${t.x},${t.y}`));
         newRivers.push(river);
@@ -802,9 +803,9 @@ export class WorldElementLogic {
   }
 
   /**
-   * Generate a single river with a snaking path.
-   * The snake constraint: no water tile may be cardinally adjacent to a
-   * non-consecutive tile in the path (prevents thick/blobby water).
+   * Seed a single river as one water tile near the map edge, recording the
+   * `targetLength` it will grow to. The snaking path is then extended one tile
+   * per day by {@link growRivers}, so water appears gradually.
    */
   private static generateRiver(
     targetLength: number,
@@ -812,21 +813,92 @@ export class WorldElementLogic {
     bounds: PlacementBounds = defaultPlacementBounds()
   ): River | null {
     const now = Date.now();
-    const maxAttempts = 10;
+    const start = this.findRiverStart(bounds, occupied);
+    if (!start) return null;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const start = this.findRiverStart(bounds, occupied);
-      if (!start) continue;
+    const tiles = [start];
+    return {
+      id: `river_${now}_${Math.random().toString(36).substring(2, 8)}`,
+      tiles,
+      targetLength: Math.max(1, targetLength),
+      createdAt: now,
+      decorations: this.generateWaterDecorations(tiles),
+    };
+  }
 
-      const path = this.walkRiverPath(start, targetLength, bounds, occupied);
-      if (path.length >= Math.max(3, Math.floor(targetLength * 0.5))) {
-        return {
-          id: `river_${now}_${attempt}`,
-          tiles: path,
-          createdAt: now,
-          decorations: this.generateWaterDecorations(path),
-        };
-      }
+  /**
+   * Extend each still-growing river by a single tile, continuing its snaking
+   * path from the current head. Returns only the rivers that actually grew,
+   * each as a new object (to be merged back by id in applyProcessingResult).
+   *
+   * Rivers grow one tile per processed day until they reach `targetLength`;
+   * rivers without a target (legacy saves) or already at length are skipped.
+   */
+  static growRivers(
+    rivers: River[],
+    bounds: PlacementBounds = defaultPlacementBounds(),
+    extraOccupied: Position[] = []
+  ): River[] {
+    if (rivers.length === 0) return [];
+
+    // Every tile taken by any river (so rivers never grow into one another),
+    // plus any externally occupied tiles (trees, buildings, etc.).
+    const occupied = new Set<string>([
+      ...rivers.flatMap((r) => r.tiles.map((t) => `${t.x},${t.y}`)),
+      ...extraOccupied.map((p) => `${p.x},${p.y}`),
+    ]);
+    addReserved(occupied);
+
+    const grown: River[] = [];
+    for (const river of rivers) {
+      const target = river.targetLength ?? river.tiles.length;
+      if (river.tiles.length >= target) continue;
+
+      const next = this.stepRiver(river.tiles, bounds, occupied);
+      if (!next) continue; // Dead end this day — try again tomorrow.
+
+      occupied.add(`${next.x},${next.y}`);
+      grown.push({
+        ...river,
+        tiles: [...river.tiles, next],
+        decorations: [
+          ...(river.decorations ?? []),
+          ...this.generateWaterDecorations([next]),
+        ],
+      });
+    }
+    return grown;
+  }
+
+  /**
+   * Pick the next tile for a snaking river, extending from its head while
+   * honouring bounds, occupancy and the snake constraint. Returns null if the
+   * river cannot extend right now (dead end).
+   */
+  private static stepRiver(
+    path: Position[],
+    bounds: PlacementBounds,
+    occupied: Set<string>
+  ): Position | null {
+    const current = path[path.length - 1];
+    const directions = [
+      { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
+    ];
+    const shuffled = [...directions].sort(() => Math.random() - 0.5);
+
+    for (const dir of shuffled) {
+      const nx = current.x + dir.dx;
+      const ny = current.y + dir.dy;
+      const key = `${nx},${ny}`;
+
+      if (Math.abs(nx) > bounds.halfX || Math.abs(ny) > bounds.halfY) continue;
+      if (occupied.has(key)) continue;
+      if (path.some((p) => p.x === nx && p.y === ny)) continue;
+      // Snake constraint: must not touch any path tile except the head.
+      if (this.violatesSnakeConstraint(nx, ny, path, path.length - 1)) continue;
+
+      return { x: nx, y: ny };
     }
     return null;
   }
@@ -878,59 +950,6 @@ export class WorldElementLogic {
       }
     }
     return null;
-  }
-
-  /**
-   * Random-walk to build a snaking river path.
-   * At each step, picks a random cardinal direction that:
-   *  - is within bounds
-   *  - is not occupied
-   *  - does not cardinally touch any earlier path tile except the previous one
-   */
-  private static walkRiverPath(
-    start: Position,
-    targetLength: number,
-    bounds: PlacementBounds,
-    occupied: Set<string>
-  ): Position[] {
-    const path: Position[] = [start];
-    const pathSet = new Set<string>([`${start.x},${start.y}`]);
-    const directions = [
-      { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
-      { dx: 0, dy: 1 }, { dx: 0, dy: -1 },
-    ];
-
-    for (let step = 1; step < targetLength; step++) {
-      const current = path[path.length - 1];
-      // Shuffle directions for randomness
-      const shuffled = [...directions].sort(() => Math.random() - 0.5);
-
-      let moved = false;
-      for (const dir of shuffled) {
-        const nx = current.x + dir.dx;
-        const ny = current.y + dir.dy;
-        const key = `${nx},${ny}`;
-
-        // Bounds check
-        if (Math.abs(nx) > bounds.halfX || Math.abs(ny) > bounds.halfY) continue;
-        // Already occupied by tree/building/other river
-        if (occupied.has(key)) continue;
-        // Already in this path
-        if (pathSet.has(key)) continue;
-        // Snake constraint: new tile must not be cardinally adjacent to any
-        // path tile except the current one (the previous in the path)
-        if (this.violatesSnakeConstraint(nx, ny, path, path.length - 1)) continue;
-
-        path.push({ x: nx, y: ny });
-        pathSet.add(key);
-        moved = true;
-        break;
-      }
-
-      if (!moved) break; // Dead end — stop growing
-    }
-
-    return path;
   }
 
   /**

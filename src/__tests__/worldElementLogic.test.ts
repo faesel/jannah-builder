@@ -192,11 +192,16 @@ describe('WorldElementLogic', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('returns one river at threshold', () => {
+    it('seeds one river as a single tile at threshold', () => {
       const trees = makeTrees(18);
       const result = WorldElementLogic.evaluateRivers(18, [], trees, []);
       expect(result).toHaveLength(1);
-      expect(result[0].tiles.length).toBeGreaterThanOrEqual(3);
+      // Rivers now appear gradually: they start as a single tile and record the
+      // full length they will grow to over subsequent days.
+      expect(result[0].tiles).toHaveLength(1);
+      expect(result[0].targetLength ?? 0).toBeGreaterThanOrEqual(
+        GAME_CONFIG.world.rivers.length.min
+      );
     });
 
     it('scales river count with trees', () => {
@@ -260,6 +265,65 @@ describe('WorldElementLogic', () => {
         for (const tile of river.tiles) {
           expect(treePositions.has(`${tile.x},${tile.y}`)).toBe(false);
           expect(buildingPositions.has(`${tile.x},${tile.y}`)).toBe(false);
+        }
+      }
+    });
+  });
+
+  describe('growRivers', () => {
+    it('extends a growing river by exactly one tile', () => {
+      const seed = WorldElementLogic.evaluateRivers(18, [], makeTrees(18), [])[0];
+      const grown = WorldElementLogic.growRivers([seed]);
+      expect(grown).toHaveLength(1);
+      expect(grown[0].id).toBe(seed.id);
+      expect(grown[0].tiles).toHaveLength(seed.tiles.length + 1);
+    });
+
+    it('does not grow a river that has reached its target length', () => {
+      const river = { id: 'r', tiles: [{ x: 0, y: 0 }], targetLength: 1, createdAt: 0 };
+      expect(WorldElementLogic.growRivers([river])).toHaveLength(0);
+    });
+
+    it('skips legacy rivers with no target length', () => {
+      const river = { id: 'r', tiles: [{ x: 0, y: 0 }, { x: 1, y: 0 }], createdAt: 0 };
+      expect(WorldElementLogic.growRivers([river])).toHaveLength(0);
+    });
+
+    it('does not grow into an occupied tile (dead end)', () => {
+      const river = { id: 'r', tiles: [{ x: 0, y: 0 }], targetLength: 5, createdAt: 0 };
+      const walls = [
+        { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 },
+      ];
+      expect(WorldElementLogic.growRivers([river], undefined, walls)).toHaveLength(0);
+    });
+
+    it('stays cardinally connected and snake-valid as it grows to full length', () => {
+      let rivers = WorldElementLogic.evaluateRivers(18, [], makeTrees(18), []);
+      for (let i = 0; i < 40; i++) {
+        const grown = WorldElementLogic.growRivers(rivers);
+        if (grown.length === 0) break;
+        rivers = grown;
+      }
+      const tiles = rivers[0].tiles;
+      // Never exceeds the target length.
+      expect(tiles.length).toBeLessThanOrEqual(rivers[0].targetLength ?? tiles.length);
+      // Cardinally connected chain.
+      for (let i = 1; i < tiles.length; i++) {
+        const dist = Math.abs(tiles[i].x - tiles[i - 1].x) + Math.abs(tiles[i].y - tiles[i - 1].y);
+        expect(dist).toBe(1);
+      }
+      // Snake constraint: each tile only touches its path neighbours.
+      for (let i = 0; i < tiles.length; i++) {
+        const cardinals = [
+          { x: tiles[i].x + 1, y: tiles[i].y },
+          { x: tiles[i].x - 1, y: tiles[i].y },
+          { x: tiles[i].x, y: tiles[i].y + 1 },
+          { x: tiles[i].x, y: tiles[i].y - 1 },
+        ];
+        for (const adj of cardinals) {
+          const adjIndex = tiles.findIndex((t) => t.x === adj.x && t.y === adj.y);
+          if (adjIndex === -1) continue;
+          expect(Math.abs(adjIndex - i)).toBe(1);
         }
       }
     });

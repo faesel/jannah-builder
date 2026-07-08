@@ -73,7 +73,8 @@ The app emphasises:
 - **Barakah flowers** — logging Qur'an or dhikr has a small (2%) chance to spawn a permanent basic flower or bush on the map, a gentle, lasting reward for spiritual practice
 
 ### Rivers
-- Rivers snake across the map as your garden grows (threshold: 35 trees)
+- Rivers snake across the map as your garden grows (threshold: 18 trees)
+- Rivers appear gradually — starting as a single water tile and extending one tile per day
 - Water tiles follow a snake constraint — no two edges may touch
 - Rivers cannot overlap trees or buildings
 - Ground animals cannot cross water (birds can fly over but not land)

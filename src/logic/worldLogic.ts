@@ -43,6 +43,7 @@ export class WorldLogic {
       animalsAdded: [],
       animalsRemoved: [],
       riversAdded: [],
+      riversGrown: [],
       riversRemoved: [],
       illustriousItemsAdded: [],
       illustriousItemsRemoved: [],
@@ -285,6 +286,18 @@ export class WorldLogic {
     );
     occupied.push(...result.riversAdded.flatMap((r) => r.tiles));
 
+    // Extend still-growing rivers by one tile so water appears gradually rather
+    // than all at once. Newly seeded rivers (above) stay a single tile today and
+    // begin extending tomorrow.
+    result.riversGrown = WorldElementLogic.growRivers(
+      profile.worldState.rivers,
+      bounds,
+      occupied
+    );
+    occupied.push(
+      ...result.riversGrown.flatMap((r) => r.tiles[r.tiles.length - 1])
+    );
+
     // --- Illustrious items ---
     const streak = PrayerLogic.countConsecutiveDaysFrom(
       profile.prayerLogs,
@@ -446,8 +459,14 @@ export class WorldLogic {
           ...profile.worldState.animals,
           ...result.animalsAdded,
         ].filter((a) => !result.animalsRemoved.includes(a.id)),
-        rivers: [...profile.worldState.rivers, ...result.riversAdded]
-          .filter((r) => !result.riversRemoved.includes(r.id)),
+        rivers: (() => {
+          const merged = [...profile.worldState.rivers, ...result.riversAdded];
+          for (const grown of result.riversGrown) {
+            const idx = merged.findIndex((r) => r.id === grown.id);
+            if (idx !== -1) merged[idx] = grown;
+          }
+          return merged.filter((r) => !result.riversRemoved.includes(r.id));
+        })(),
         illustriousItems: profile.worldState.illustriousItems
           .filter((item) => !result.illustriousItemsRemoved.includes(item.id))
           .concat(result.illustriousItemsAdded),

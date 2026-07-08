@@ -139,6 +139,14 @@ export interface River {
   id: string;
   tiles: Position[]; // Ordered sequence of cardinally-connected water tiles
   createdAt: number;
+  /**
+   * Full length this river will eventually reach. A river is created with a
+   * single water tile and extends by one tile per day until `tiles.length`
+   * reaches `targetLength`, so water appears gradually rather than all at once.
+   * Optional for backward compatibility — rivers saved before gradual growth
+   * have no target and are treated as already complete.
+   */
+  targetLength?: number;
   /** Optional reeds / rocks sitting on top of individual water tiles. */
   decorations?: WaterDecoration[];
 }
@@ -244,6 +252,7 @@ export interface DayProcessingResult {
   animalsAdded: Animal[];
   animalsRemoved: string[];
   riversAdded: River[];
+  riversGrown: River[]; // Existing rivers extended by a tile (replaced by id)
   riversRemoved: string[];
   illustriousItemsAdded: IllustriousItem[];
   illustriousItemsRemoved: string[];

@@ -85,6 +85,7 @@ export default function JannahScreen() {
             result.buildingsAdded.length > 0 ||
             result.animalsAdded.length > 0 ||
             result.riversAdded.length > 0 ||
+            result.riversGrown.length > 0 ||
             result.illustriousItemsAdded.length > 0;
 
           const hasTemporaryFade =
