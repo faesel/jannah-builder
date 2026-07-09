@@ -831,11 +831,14 @@ export class WorldElementLogic {
    * path from the current head. Returns only the rivers that actually grew,
    * each as a new object (to be merged back by id in applyProcessingResult).
    *
-   * Rivers grow one tile per processed day until they reach `targetLength`;
+   * Rivers grow one tile per calendar day until they reach `targetLength`;
    * rivers without a target (legacy saves) or already at length are skipped.
+   * A river that already grew on `date` is left untouched, so extending a river
+   * is capped at a single tile per day even if the day is processed twice.
    */
   static growRivers(
     rivers: River[],
+    date: string,
     bounds: PlacementBounds = defaultPlacementBounds(),
     extraOccupied: Position[] = []
   ): River[] {
@@ -853,6 +856,8 @@ export class WorldElementLogic {
     for (const river of rivers) {
       const target = river.targetLength ?? river.tiles.length;
       if (river.tiles.length >= target) continue;
+      // Already extended today — never grow more than one tile per day.
+      if (river.lastGrownDate === date) continue;
 
       const next = this.stepRiver(river.tiles, bounds, occupied);
       if (!next) continue; // Dead end this day — try again tomorrow.
@@ -861,6 +866,7 @@ export class WorldElementLogic {
       grown.push({
         ...river,
         tiles: [...river.tiles, next],
+        lastGrownDate: date,
         decorations: [
           ...(river.decorations ?? []),
           ...this.generateWaterDecorations([next]),

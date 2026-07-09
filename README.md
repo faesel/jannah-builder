@@ -74,7 +74,7 @@ The app emphasises:
 
 ### Rivers
 - Rivers snake across the map as your garden grows (threshold: 18 trees)
-- Rivers appear gradually — starting as a single water tile and extending one tile per day
+- Rivers appear gradually — starting as a single water tile and extending one tile per completed day (never more than one per day)
 - Water tiles follow a snake constraint — no two edges may touch
 - Rivers cannot overlap trees or buildings
 - Ground animals cannot cross water (birds can fly over but not land)

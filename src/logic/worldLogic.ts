@@ -287,16 +287,22 @@ export class WorldLogic {
     occupied.push(...result.riversAdded.flatMap((r) => r.tiles));
 
     // Extend still-growing rivers by one tile so water appears gradually rather
-    // than all at once. Newly seeded rivers (above) stay a single tile today and
-    // begin extending tomorrow.
-    result.riversGrown = WorldElementLogic.growRivers(
-      profile.worldState.rivers,
-      bounds,
-      occupied
-    );
-    occupied.push(
-      ...result.riversGrown.flatMap((r) => r.tiles[r.tiles.length - 1])
-    );
+    // than all at once. Growth is earned like trees: it only happens on days the
+    // player completes their prayers, and never more than one tile per calendar
+    // day. Newly seeded rivers (above) stay a single tile today and begin
+    // extending on the next completed day. Genuinely missed days therefore never
+    // lurch the river forward.
+    if (dayComplete) {
+      result.riversGrown = WorldElementLogic.growRivers(
+        profile.worldState.rivers,
+        date,
+        bounds,
+        occupied
+      );
+      occupied.push(
+        ...result.riversGrown.flatMap((r) => r.tiles[r.tiles.length - 1])
+      );
+    }
 
     // --- Illustrious items ---
     const streak = PrayerLogic.countConsecutiveDaysFrom(

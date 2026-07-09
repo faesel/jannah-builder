@@ -18,10 +18,10 @@ import { useDayBoundary } from './useDayBoundary';
 import { WorldLogic } from '../logic/worldLogic';
 import { PrayerLogic } from '../logic/prayerLogic';
 import { ProfileManager } from '../persistence/profileManager';
-import { Storage } from '../persistence/storage';
+import { Storage, STORAGE_KEYS } from '../persistence/storage';
 import { UserProfile } from '../types/models';
 
-const LAST_ACTIVE_DATE_KEY = '@jannah_builder:last_active_date';
+const LAST_ACTIVE_DATE_KEY = STORAGE_KEYS.LAST_ACTIVE_DATE;
 
 export interface GameLoopState {
   /** Whether the game loop is currently processing missed days */

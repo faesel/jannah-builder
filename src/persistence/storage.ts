@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   PROFILES: '@jannah_builder:profiles',
   ACTIVE_PROFILE_ID: '@jannah_builder:active_profile_id',
   SETTINGS: '@jannah_builder:settings',
+  LAST_ACTIVE_DATE: '@jannah_builder:last_active_date',
 } as const;
 
 export class Storage {

@@ -84,7 +84,7 @@ every `repeatEvery` trees. All values come from `src/config/game.config.ts`.
 | Base length | 6–10 tiles |
 | Length growth | +0.1 tiles per tree above threshold |
 | Max length | 25 tiles |
-| Growth pacing | Starts as 1 tile, +1 tile per day to target length |
+| Growth pacing | Starts as 1 tile, +1 tile per completed day (max one per day) to target length |
 
 ---
 

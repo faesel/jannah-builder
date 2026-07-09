@@ -273,20 +273,33 @@ describe('WorldElementLogic', () => {
   describe('growRivers', () => {
     it('extends a growing river by exactly one tile', () => {
       const seed = WorldElementLogic.evaluateRivers(18, [], makeTrees(18), [])[0];
-      const grown = WorldElementLogic.growRivers([seed]);
+      const grown = WorldElementLogic.growRivers([seed], '2026-01-01');
       expect(grown).toHaveLength(1);
       expect(grown[0].id).toBe(seed.id);
       expect(grown[0].tiles).toHaveLength(seed.tiles.length + 1);
+      expect(grown[0].lastGrownDate).toBe('2026-01-01');
+    });
+
+    it('grows at most one tile per calendar day', () => {
+      const seed = WorldElementLogic.evaluateRivers(18, [], makeTrees(18), [])[0];
+      const first = WorldElementLogic.growRivers([seed], '2026-01-01');
+      // Processing the same day again must not extend the river a second time.
+      const again = WorldElementLogic.growRivers(first, '2026-01-01');
+      expect(again).toHaveLength(0);
+      // A new day resumes growth.
+      const next = WorldElementLogic.growRivers(first, '2026-01-02');
+      expect(next).toHaveLength(1);
+      expect(next[0].tiles).toHaveLength(first[0].tiles.length + 1);
     });
 
     it('does not grow a river that has reached its target length', () => {
       const river = { id: 'r', tiles: [{ x: 0, y: 0 }], targetLength: 1, createdAt: 0 };
-      expect(WorldElementLogic.growRivers([river])).toHaveLength(0);
+      expect(WorldElementLogic.growRivers([river], '2026-01-01')).toHaveLength(0);
     });
 
     it('skips legacy rivers with no target length', () => {
       const river = { id: 'r', tiles: [{ x: 0, y: 0 }, { x: 1, y: 0 }], createdAt: 0 };
-      expect(WorldElementLogic.growRivers([river])).toHaveLength(0);
+      expect(WorldElementLogic.growRivers([river], '2026-01-01')).toHaveLength(0);
     });
 
     it('does not grow into an occupied tile (dead end)', () => {
@@ -294,13 +307,14 @@ describe('WorldElementLogic', () => {
       const walls = [
         { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 },
       ];
-      expect(WorldElementLogic.growRivers([river], undefined, walls)).toHaveLength(0);
+      expect(WorldElementLogic.growRivers([river], '2026-01-01', undefined, walls)).toHaveLength(0);
     });
 
     it('stays cardinally connected and snake-valid as it grows to full length', () => {
       let rivers = WorldElementLogic.evaluateRivers(18, [], makeTrees(18), []);
       for (let i = 0; i < 40; i++) {
-        const grown = WorldElementLogic.growRivers(rivers);
+        // A distinct date per day so the one-tile-per-day cap doesn't block us.
+        const grown = WorldElementLogic.growRivers(rivers, `2026-02-${(i % 27) + 1}`);
         if (grown.length === 0) break;
         rivers = grown;
       }

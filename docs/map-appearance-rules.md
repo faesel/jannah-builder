@@ -158,7 +158,7 @@ Formula: `targetCount = 1 + floor((trees − threshold) / repeatEvery)`
 
 Rivers are generated as snaking single-tile-wide paths from map edges. They never form thick blobs (enforced by a "snake constraint" preventing adjacency to non-consecutive path tiles).
 
-Rivers appear **gradually**: when unlocked a river starts as a single water tile and extends by one tile per day until it reaches its target length (the base length above). Water is never dumped onto the map all at once.
+Rivers appear **gradually**: when unlocked a river starts as a single water tile and extends by **at most one tile per day, and only on days the player completes their prayers**, until it reaches its target length (the base length above). Missed days never extend a river, and water is never dumped onto the map all at once.
 
 ---
 

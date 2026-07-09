@@ -7,6 +7,7 @@ import { UserProfile, WorldState, Statistics, StreakData, AppState, AppSettings 
 import { GAME_CONFIG } from '../config/game.config';
 import { Storage, STORAGE_KEYS } from './storage';
 import { WorldElementLogic } from '../logic/worldElementLogic';
+import { PrayerLogic } from '../logic/prayerLogic';
 
 export class ProfileManager {
   /**
@@ -183,6 +184,16 @@ export class ProfileManager {
 
     await this.saveProfiles(profiles);
     await this.setActiveProfileId(restored.id);
+
+    // Align the game-loop's last-active marker with the imported world. Without
+    // this the loop would treat every day since this device was last opened as a
+    // "missed" day and replay them all at once — compounding growth (e.g. a
+    // river lurching several tiles forward) and decay against freshly imported
+    // state. Anchoring to the imported world's own progress marker means the
+    // import is shown exactly as saved, and only genuinely new days advance it.
+    const marker =
+      restored.worldState.lastProcessedDate ?? PrayerLogic.getTodayDate();
+    await Storage.set(STORAGE_KEYS.LAST_ACTIVE_DATE, marker);
 
     return restored;
   }

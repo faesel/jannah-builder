@@ -147,6 +147,12 @@ export interface River {
    * have no target and are treated as already complete.
    */
   targetLength?: number;
+  /**
+   * The last date (YYYY-MM-DD) on which this river extended by a tile. Used to
+   * guarantee a river grows at most one tile per calendar day, even if that day
+   * happens to be processed more than once.
+   */
+  lastGrownDate?: string;
   /** Optional reeds / rocks sitting on top of individual water tiles. */
   decorations?: WaterDecoration[];
 }
